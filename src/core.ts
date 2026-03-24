@@ -314,7 +314,7 @@ export async function cmdIdentify(msg: Message, argv: string[]): Promise<Respons
     if (!out) {
         throw new BotError('Timed out!');
     }
-    return {embeds: embedIdentified(data.p, out, true)};
+    return {embeds: embedIdentified(data.p, out)};
 }
 
 export async function cmdBasicIdentify(msg: Message, argv: string[]): Promise<Response> {
