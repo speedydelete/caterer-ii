@@ -4,7 +4,7 @@ import {inspect} from 'node:util';
 import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReaction, PartialMessageReaction, MessageReplyOptions, TextChannel, Partials} from 'discord.js';
 import {BotError, Response, Message, readFile, writeFile, config, sentByAdmin, aliases, noReplyPings, findRLEFromText, findRLE} from './util.js';
 import {cmdHelp} from './help.js';
-import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax} from './core.js';
+import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax, cmdIdentifyConduit} from './core.js';
 import {cmdHashsoup, cmdApgencode, cmdApgdecode, cmdPopulation, cmdMAPToINT, cmdMAPToHexINT, cmdINTToMAP, cmdRuleInfo, cmdBlackWhiteReverse, cmdCheckerboardDual} from './ca.js';
 import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSimStats, cmdSaveSimStats, cmdAlias, cmdUnalias, cmdLookupAlias, cmdListAliases} from './db.js';
 import {cmdWiki} from './wiki.js';
@@ -80,6 +80,8 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
     'basic_identify': cmdBasicIdentify,
     'basicidentify': cmdBasicIdentify,
     'minmax': cmdMinmax,
+    'identify_conduit': cmdIdentifyConduit,
+    'identifyconduit': cmdIdentifyConduit,
 
     'hashsoup': cmdHashsoup,
     'apgencode': cmdApgencode,
