@@ -99,7 +99,7 @@ function createWorkerJob(type: 'sim', data: {argv: string[], rle: string}, noTim
 function createWorkerJob(type: 'identify', data: {rle: string, limit: number}, noTimeout?: boolean): Promise<Identified | null>;
 function createWorkerJob(type: 'basic_identify', data: {rle: string, limit: number}, noTimeout?: boolean): Promise<PatternType | null>;
 function createWorkerJob(type: 'minmax', data: {rle: string, gens: number}, noTimeout?: boolean): Promise<[string, string] | null>;
-function createWorkerJob(type: 'identify_conduit', data: {rle: string}, noTimeout?: boolean): Promise<false | Conduit | null>;
+function createWorkerJob(type: 'identify_conduit', data: {rle: string, maxTime: number, sepGens: number}, noTimeout?: boolean): Promise<false | Conduit | null>;
 function createWorkerJob(type: 'sim' | 'identify' | 'basic_identify' | 'minmax' | 'identify_conduit', data: any, noTimeout?: boolean): Promise<any> {
     return new Promise((resolve, reject) => {
         let id = nextID++;
@@ -394,7 +394,7 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
     if (!data) {
         throw new BotError('Cannot find RLE');
     }
-    let out = await createWorkerJob('identify_conduit', {rle: data.p.toRLE()}, noTimeout);
+    let out = await createWorkerJob('identify_conduit', {rle: data.p.toRLE(), maxTime: 384, sepGens: 0}, noTimeout);
     if (out === null) {
         throw new BotError('Timed out!');
     }
