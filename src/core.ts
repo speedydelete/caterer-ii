@@ -404,38 +404,38 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
     let title = removeHIfPossible(getConduitName(out));
     let desc: string[] = [];
     if (out.input.startsWith('(')) {
-        desc.push(`Input: ${out.input}`);
+        desc.push(`**Input:** ${out.input}`);
     } else {
         let name = CONDUIT_OBJECTS[out.input][0];
         name = name[0].toUpperCase() + name.slice(1);
-        desc.push(`Input: ${name}`);
+        desc.push(`**Input:** ${name}`);
     }
     for (let obj of out.output) {
         let suffix = `at generation ${obj.time} and position (${obj.x}, ${obj.y})`;
         if (obj.obj.startsWith('(')) {
-            desc.push(`Output: ${obj.obj} ${suffix}`);
+            desc.push(`**Output:** ${obj.obj} ${suffix}`);
         } else {
             let name = CONDUIT_OBJECTS[obj.obj][0];
             name = name[0].toUpperCase() + name.slice(1);
-            desc.push(`Output: ${name} ${suffix}`);
+            desc.push(`**Output:** ${name} ${suffix}`);
         }
     }
     for (let glider of out.gliders) {
-        desc.push(`Output: ${glider.dir} glider lane ${glider.lane} timing ${glider.timing}`);
+        desc.push(`**Output:** ${glider.dir} glider lane ${glider.lane} timing ${glider.timing}`);
     }
     for (let obj of out.otherOutputs) {
-        desc.push(`Output: ${obj.code} (${obj.x}, ${obj.y})`);
+        desc.push(`**Output:** ${obj.code} (${obj.x}, ${obj.y})`);
     }
     if (out.repeatTime !== undefined) {
-        desc.push(`Repeat time: ${out.repeatTime}`);
+        desc.push(`**Repeat time:** ${out.repeatTime}`);
         if (out.repeatTimeWithFNG) {
-            desc.push(`Repeat time (with FNG): ${out.repeatTime}`);
+            desc.push(`**Repeat time (with FNG):** ${out.repeatTime}`);
         }
         if (out.overclock) {
             if (out.overclock.length === 0) {
-                desc.push('No overclock');
+                desc.push('**No overclock**');
             } else {
-                desc.push(`Overclock: ${toRanges(out.overclock)}`);
+                desc.push(`**Overclock:** ${toRanges(out.overclock)}`);
             }
         }
     }
