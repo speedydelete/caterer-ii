@@ -2,11 +2,16 @@
 import {join} from 'node:path';
 import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
-import {RuleError, Pattern, PatternType, Identified, findMinmax, getApgcode, getDescription, ALTERNATE_SYMMETRIES, createPattern, toCatagolueRule} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, createPattern, toCatagolueRule} from '../lifeweb/lib/index.js';
+import {Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, removeHIfPossible} from '../lifeweb/lib/catask.js';
 import {BotError, Message, Response, writeFile, names, aliases, simStats, findRLE, sentByAdmin} from './util.js';
 
 
-type WorkerResult = {id: number, ok: true} & ({type: 'sim', data: [number, string | undefined]} | {type: 'identify', data: Identified} | {type: 'basic_identify', data: PatternType}) | {id: number, ok: false, error: string, intentional: boolean, type: string};
+type WorkerResult = {id: number, ok: true} & (
+    | {type: 'sim', data: [number, string | undefined]}
+    | {type: 'identify', data: Identified}
+    | {type: 'basic_identify', data: PatternType}
+) | {id: number, ok: false, error: string, intentional: boolean, type: string};
 
 interface Job {
     resolve: (data: any) => void;
@@ -93,7 +98,9 @@ function workerOnExit(code: number): void {
 function createWorkerJob(type: 'sim', data: {argv: string[], rle: string}, noTimeout?: boolean): Promise<[number, string | undefined] | null>;
 function createWorkerJob(type: 'identify', data: {rle: string, limit: number}, noTimeout?: boolean): Promise<Identified | null>;
 function createWorkerJob(type: 'basic_identify', data: {rle: string, limit: number}, noTimeout?: boolean): Promise<PatternType | null>;
-function createWorkerJob(type: 'sim' | 'identify' | 'basic_identify', data: any, noTimeout?: boolean): Promise<any> {
+function createWorkerJob(type: 'minmax', data: {rle: string, gens: number}, noTimeout?: boolean): Promise<[string, string] | null>;
+function createWorkerJob(type: 'identify_conduit', data: {rle: string}, noTimeout?: boolean): Promise<false | Conduit | null>;
+function createWorkerJob(type: 'sim' | 'identify' | 'basic_identify' | 'minmax' | 'identify_conduit', data: any, noTimeout?: boolean): Promise<any> {
     return new Promise((resolve, reject) => {
         let id = nextID++;
         let timeout = setTimeout(() => {
@@ -348,8 +355,14 @@ export async function cmdBasicIdentify(msg: Message, argv: string[]): Promise<Re
 
 export async function cmdMinmax(msg: Message, argv: string[]): Promise<Response> {
     await msg.channel.sendTyping();
-    if (!argv[1]) {
-        throw new BotError('Expected 1 argument');
+    let noTimeout = false;
+    if (argv[1] === 'notimeout') {
+        if (sentByAdmin(msg)) {
+            noTimeout = true;
+            argv = argv.slice(1);
+        } else {
+            throw new BotError(`You must be an admin to use notimeout!`);
+        }
     }
     let gens = parseInt(argv[1]);
     if (Number.isNaN(gens)) {
@@ -359,6 +372,72 @@ export async function cmdMinmax(msg: Message, argv: string[]): Promise<Response>
     if (!data) {
         throw new BotError('Cannot find RLE');
     }
-    let [min, max] = findMinmax(data.p, gens);
-    return `Min: ${min}\nMax: ${max}`;
+    let out = await createWorkerJob('minmax', {rle: data.p.toRLE(), gens}, noTimeout);
+    if (!out) {
+        throw new BotError('Timed out!');
+    }
+    return `Min: ${out[0]}\nMax: ${out[1]}`;
+}
+
+export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<Response> {
+    await msg.channel.sendTyping();
+    let noTimeout = false;
+    if (argv[1] === 'notimeout') {
+        if (sentByAdmin(msg)) {
+            noTimeout = true;
+            argv = argv.slice(1);
+        } else {
+            throw new BotError(`You must be an admin to use notimeout!`);
+        }
+    }
+    let data = await findRLE(msg);
+    if (!data) {
+        throw new BotError('Cannot find RLE');
+    }
+    let out = await createWorkerJob('identify_conduit', {rle: data.p.toRLE()}, noTimeout);
+    if (out === null) {
+        throw new BotError('Timed out!');
+    }
+    if (out === false) {
+        return 'Error: Not a conduit!';
+    }
+    let title = removeHIfPossible(getConduitName(out));
+    let desc: string[] = [];
+    if (out.input.startsWith('(')) {
+        desc.push(`Input: ${out.input}`);
+    } else {
+        let name = CONDUIT_OBJECTS[out.input][0];
+        name = name[0].toUpperCase() + name.slice(1);
+        desc.push(`Input: ${name}`);
+    }
+    for (let obj of out.output) {
+        let suffix = `at generation ${obj.time} and position (${obj.x}, ${obj.y})`;
+        if (obj.obj.startsWith('(')) {
+            desc.push(`Output: ${obj.obj} ${suffix}`);
+        } else {
+            let name = CONDUIT_OBJECTS[obj.obj][0];
+            name = name[0].toUpperCase() + name.slice(1);
+            desc.push(`Output: ${name} ${suffix}`);
+        }
+    }
+    for (let glider of out.gliders) {
+        desc.push(`Output: ${glider.dir} glider lane ${glider.lane} timing ${glider.timing}`);
+    }
+    for (let obj of out.otherOutputs) {
+        desc.push(`Output: ${obj.code} (${obj.x}, ${obj.y})`);
+    }
+    if (out.repeatTime !== undefined) {
+        desc.push(`Repeat time: ${out.repeatTime}`);
+        if (out.repeatTimeWithFNG) {
+            desc.push(`Repeat time (with FNG): ${out.repeatTime}`);
+        }
+        if (out.overclock) {
+            if (out.overclock.length === 0) {
+                desc.push('No overclock');
+            } else {
+                desc.push(`Overclock: ${toRanges(out.overclock)}`);
+            }
+        }
+    }
+    return {embeds: [(new EmbedBuilder()).setTitle(title).setDescription(desc.join('\n'))]};
 }

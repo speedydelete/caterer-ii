@@ -3,7 +3,8 @@ import {join} from 'node:path';
 import * as fs from 'node:fs/promises';
 import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
-import {RuleError, Pattern, CoordPattern, TreePattern, DataHistoryPattern, CoordHistoryPattern, DataSuperPattern, CoordSuperPattern, InvestigatorPattern, findType, getDescription, identify, createPattern, parse} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, CoordPattern, MAPPattern, DataHistoryPattern, CoordHistoryPattern, DataSuperPattern, CoordSuperPattern, InvestigatorPattern, TreePattern, findMinmax, findType, getDescription, identify, createPattern, parse} from '../lifeweb/lib/index.js';
+import {createPartial, checkConduit, catalystsAreFine} from '../lifeweb/lib/catask.js';
 import {BotError, aliases} from './util.js';
 
 
@@ -469,7 +470,13 @@ if (!parentPort) {
     throw new Error('No parent port');
 }
 
-parentPort.on('message', async (data: {id: number, type: 'sim', argv: string[], rle: string} | {id: number, type: 'identify' | 'basic_identify', rle: string, limit: number}) => {
+type Job = 
+        | {id: number, type: 'sim', argv: string[], rle: string}
+        | {id: number, type: 'identify' | 'basic_identify', rle: string, limit: number}
+        | {id: number, type: 'minmax', rle: string, gens: number}
+        | {id: number, type: 'identify_conduit', rle: string, maxTime: number, sepGens: number};
+
+parentPort.on('message', async (data: Job) => {
     if (!parentPort) {
         throw new Error('No parent port');
     }
@@ -481,6 +488,30 @@ parentPort.on('message', async (data: {id: number, type: 'sim', argv: string[], 
             parentPort.postMessage({id, ok: true, data: identify(parse(data.rle, aliases), data.limit)});
         } else if (data.type === 'basic_identify') {
             parentPort.postMessage({id, ok: true, data: findType(parse(data.rle, aliases), data.limit)});
+        } else if (data.type === 'minmax') {
+            parentPort.postMessage({id, ok: true, data: findMinmax(parse(data.rle, aliases), data.gens)})
+        } else if (data.type === 'identify_conduit') {
+            try {
+                let [partial, start] = createPartial(parse(data.rle, aliases) as MAPPattern);
+                let p = partial.p;
+                for (let i = 0; i < data.maxTime; i++) {
+                    if (catalystsAreFine(p, partial.cats) === 'restored') {
+                        let value = checkConduit(partial, data.sepGens, start);
+                        if (value) {
+                            parentPort.postMessage({id, ok: true, data: value});
+                            return;
+                        }
+                    }
+                    p.runGeneration();
+                }
+                parentPort.postMessage({id, ok: true, data: false});
+            } catch (error) {
+                if (error instanceof Error && (error.message === 'Oscillators are not supported' || error.message === 'Spaceships are not supported' || error.message === `More than 1 start object! (If there isn't, there is a bug, please tell speedydelete)` || error.message === 'No start object!')) {
+                    throw new BotError(error.message);
+                } else {
+                    throw error;
+                }
+            }
         } else {
             throw new Error('Invalid type!');
         }
