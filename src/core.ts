@@ -394,50 +394,51 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
     if (!data) {
         throw new BotError('Cannot find RLE');
     }
-    let out = await createWorkerJob('identify_conduit', {rle: data.p.toRLE(), maxTime: 384, sepGens: 0}, noTimeout);
-    if (out === null) {
+    let value = await createWorkerJob('identify_conduit', {rle: data.p.toRLE(), maxTime: 384, sepGens: 0}, noTimeout);
+    if (value === null) {
         throw new BotError('Timed out!');
     }
-    if (out === false) {
+    if (value === false) {
         return 'Error: Not a conduit!';
     }
-    let title = removeHIfPossible(getConduitName(out)).replaceAll('_', '\\_');
-    let desc: string[] = [];
-    if (out.input.startsWith('(')) {
-        desc.push(`**Input:** ${out.input}`);
-    } else {
-        let name = CONDUIT_OBJECTS[out.input][0];
+    let title = removeHIfPossible(getConduitName(value)).replaceAll('_', '\\_');
+    let out: string[] = [];
+    let inputTimeStr = value.inputTime ? ` at generation ${value.inputTime}` : '';
+    if (value.input in CONDUIT_OBJECTS) {
+        let name = CONDUIT_OBJECTS[value.input][0];
         name = name[0].toUpperCase() + name.slice(1);
-        desc.push(`**Input:** ${name}`);
+        out.push(`**Input:** ${name}${inputTimeStr}`);
+    } else {
+        out.push(`**Input:** ${value.input}${inputTimeStr}`);
     }
-    for (let obj of out.output) {
+    for (let obj of value.output) {
         let suffix = `at generation ${obj.time} and position (${obj.x}, ${obj.y})`;
-        if (obj.obj.startsWith('(')) {
-            desc.push(`**Output:** ${obj.obj} ${suffix}`);
-        } else {
+        if (obj.obj in CONDUIT_OBJECTS) {
             let name = CONDUIT_OBJECTS[obj.obj][0];
             name = name[0].toUpperCase() + name.slice(1);
-            desc.push(`**Output:** ${name} ${suffix}`);
+            out.push(`**Output:** ${name} ${suffix}`);
+        } else {
+            out.push(`**Output:** ${obj.obj} ${suffix}`);
         }
     }
-    for (let glider of out.gliders) {
-        desc.push(`**Output:** ${glider.dir} glider lane ${glider.lane} timing ${glider.timing}`);
+    for (let glider of value.gliders) {
+        out.push(`**Output:** ${glider.dir} glider lane ${glider.lane} timing ${glider.timing}`);
     }
-    for (let obj of out.otherOutputs) {
-        desc.push(`**Output:** ${obj.code} (${obj.x}, ${obj.y})`);
+    for (let obj of value.otherOutputs) {
+        out.push(`**Output:** ${obj.code} (${obj.x}, ${obj.y})`);
     }
-    if (out.repeatTime !== undefined) {
-        desc.push(`**Repeat time:** ${out.repeatTime}`);
-        if (out.repeatTimeWithFNG) {
-            desc.push(`**Repeat time (with FNG):** ${out.repeatTime}`);
+    if (value.repeatTime !== undefined) {
+        out.push(`**Repeat time:** ${value.repeatTime}`);
+        if (value.repeatTimeWithFNG) {
+            out.push(`**Repeat time (with FNG):** ${value.repeatTimeWithFNG}`);
         }
-        if (out.overclock) {
-            if (out.overclock.length === 0) {
-                desc.push('**No overclock**');
+        if (value.overclock) {
+            if (value.overclock.length === 0) {
+                out.push('**No overclock**');
             } else {
-                desc.push(`**Overclock:** ${toRanges(out.overclock)}`);
+                out.push(`**Overclock:** ${toRanges(value.overclock)}`);
             }
         }
     }
-    return {embeds: [(new EmbedBuilder()).setTitle(title).setDescription(desc.join('\n'))]};
+    return {embeds: [(new EmbedBuilder()).setTitle(title).setDescription(out.join('\n'))]};
 }
