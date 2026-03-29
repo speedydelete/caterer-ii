@@ -14,7 +14,7 @@ export async function cmdApgencode(msg: Message, argv: string[]): Promise<Respon
     if (!data) {
         throw new BotError('Cannot find RLE');
     }
-    return data.p.toApgcode();
+    return data.p.toApgcode().replaceAll('_', '\\_');
 }
 
 export async function cmdCanonicalApgenode(msg: Message, argv: string[]): Promise<Response> {
@@ -39,6 +39,9 @@ let lifePattern = createPattern('B3/S23');
 
 export async function cmdApgdecode(msg: Message, argv: string[]): Promise<Response> {
     let code = argv[1];
+    if (!code) {
+        throw new BotError('Expected at least 1 argument');
+    }
     let match = code.match(/x[spq]\d+_/);
     if (match) {
         code = code.slice(match[0].length);
