@@ -407,7 +407,7 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
     if (data === false) {
         return 'Error: Not a conduit!';
     }
-    let title = removeHIfPossible(getConduitName(data)).replaceAll('_', '\\_');
+    let title = removeHIfPossible(getConduitName(data)).replaceAll('_', '\\_').replaceAll('*', '\\*');
     let out: string[] = [];
     let inputTimeStr = data.inputTime ? ` at generation ${data.inputTime}` : '';
     if (data.input in CONDUIT_OBJECTS) {
