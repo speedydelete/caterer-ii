@@ -1,6 +1,6 @@
 
 import {EmbedBuilder} from 'discord.js';
-import {RuleError, TRANSITIONS, VALID_TRANSITIONS, HEX_TRANSITIONS, VALID_HEX_TRANSITIONS, unparseTransitions, arrayToTransitions, parseMAP, unparseMAP, MAPPattern, MAPB0Pattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, DataPattern, CoordPattern, TRANSITIONS, VALID_TRANSITIONS, HEX_TRANSITIONS, VALID_HEX_TRANSITIONS, unparseTransitions, arrayToTransitions, parseMAP, unparseMAP, MAPPattern, MAPB0Pattern, DataHistoryPattern, CoordHistoryPattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal} from '../lifeweb/lib/index.js';
 import {BotError, Message, Response, aliases, findRLE} from './util.js';
 
 
@@ -104,11 +104,21 @@ export async function cmdINTToMAP(msg: Message, argv: string[]): Promise<Respons
 }
 
 
+function getClass(p: Pattern): string {
+    if ('p' in p && (p.p instanceof DataPattern || p.p instanceof CoordPattern)) {
+        return `${p.constructor.name}<${p.p.constructor.name}>`;
+    } else if ('patterns' in p && Array.isArray(p.patterns) && p.patterns.every(x => x instanceof DataPattern || x instanceof CoordPattern)) {
+        return `${p.constructor.name}<[${p.patterns.map(x => getClass(x)).join(', ')}]>`;
+    } else {
+        return p.constructor.name;
+    }
+}
+
 export async function cmdRuleInfo(msg: Message, argv: string[]): Promise<Response> {
     let rule = argv.slice(1).join(' ');
     let p = createPattern(rule, aliases);
     let catagolue = toCatagolueRule(rule, aliases);
-    let out = `**Class:** ${p.constructor.name}\n**States:** ${p.states}\n**Symmetry:** ${p.ruleSymmetry}\n**Period:** ${p.rulePeriod}\n`;
+    let out = `**Class:** ${getClass(p)}\n**States:** ${p.states}\n**Symmetry:** ${p.ruleSymmetry}\n**Period:** ${p.rulePeriod}\n`;
     try {
         out += `**Black/white reversal:** ${getBlackWhiteReversal(rule)}\n`;
     } catch (error) {
@@ -118,6 +128,10 @@ export async function cmdRuleInfo(msg: Message, argv: string[]): Promise<Respons
     }
     out += `**Catagolue:** [${catagolue}](https://catagolue.hatsya.com/census/${catagolue})`;
     return {embeds: [(new EmbedBuilder()).setTitle(p.ruleStr).setDescription(out)]};
+}
+
+export async function cmdNormalizeRule(msg: Message, argv: string[]): Promise<Response> {
+    
 }
 
 export async function cmdBlackWhiteReverse(msg: Message, argv: string[]): Promise<Response> {

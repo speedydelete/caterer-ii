@@ -227,6 +227,12 @@ const HELP: {[key: string]: Help} = {
         aliases: ['ruleinfo'],
     },
 
+    normalize_rule: {
+        desc: 'Normalize a rulestring.',
+        args: [],
+        aliases: ['normalizerule'],
+    },
+
     black_white_reverse: {
         desc: 'Gets the black/white reversal of a rule.',
         args: [
