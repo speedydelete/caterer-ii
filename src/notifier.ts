@@ -67,7 +67,7 @@ type ShipGroup = {newShips: [string, number][], newPeriods: [string, number][], 
 export async function check5S(channel: TextChannel): Promise<void> {
     let resp = await fetch('https://speedydelete.com/5s/api/getnewships');
     if (!resp.ok) {
-        console.log(`${resp.status} ${resp.statusText} while fetching new ships`);
+        await channel.send(`<@1253852708826386518> ${resp.status} ${resp.statusText} while fetching new ships`);
         return;
     }
     let data = await resp.json() as {newShips: [string, string, number][], improvedShips: [string, string, number, number][], newPeriods: [string, string, number][], improvedPeriods: [string, string, number, number][]};
