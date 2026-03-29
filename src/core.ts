@@ -397,7 +397,9 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
         throw new BotError('Cannot find RLE');
     }
     let p = rleData.p;
-    p = new MAPPattern(p.height, p.width, p.getData().map(x => x % 2), lifePattern.trs, 'B3/S23', 'D8');
+    if (p.ruleStr.includes('History') || p.ruleStr.includes('Super')) {
+        p.setData(p.height, p.width, p.getData().map(x => x % 2));
+    }
     let data = await createWorkerJob('identify_conduit', {rle: p.toRLE(), maxTime: 384, sepGens: 0}, noTimeout);
     if (data === null) {
         throw new BotError('Timed out!');
