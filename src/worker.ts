@@ -502,6 +502,7 @@ parentPort.on('message', async (data: Job) => {
                             return;
                         }
                     }
+                    partial.prevPs.push(p.copy());
                     p.runGeneration();
                 }
                 parentPort.postMessage({id, ok: true, data: false});
