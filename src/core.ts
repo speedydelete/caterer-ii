@@ -2,7 +2,7 @@
 import {join} from 'node:path';
 import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
-import {RuleError, Pattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, createPattern, toCatagolueRule} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, MAPPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, createPattern, toCatagolueRule} from '../lifeweb/lib/index.js';
 import {Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, removeHIfPossible} from '../lifeweb/lib/catask.js';
 import {BotError, Message, Response, writeFile, names, aliases, simStats, findRLE, sentByAdmin} from './util.js';
 
@@ -379,6 +379,8 @@ export async function cmdMinmax(msg: Message, argv: string[]): Promise<Response>
     return `Min: ${out[0]}\nMax: ${out[1]}`;
 }
 
+let lifePattern = createPattern('B3/S23') as MAPPattern;
+
 export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<Response> {
     await msg.channel.sendTyping();
     let noTimeout = false;
@@ -390,28 +392,30 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
             throw new BotError(`You must be an admin to use notimeout!`);
         }
     }
-    let data = await findRLE(msg);
-    if (!data) {
+    let rleData = await findRLE(msg);
+    if (!rleData) {
         throw new BotError('Cannot find RLE');
     }
-    let value = await createWorkerJob('identify_conduit', {rle: data.p.toRLE(), maxTime: 384, sepGens: 0}, noTimeout);
-    if (value === null) {
+    let p = rleData.p;
+    p = new MAPPattern(p.height, p.width, p.getData().map(x => x % 2), lifePattern.trs, 'B3/S23', 'D8');
+    let data = await createWorkerJob('identify_conduit', {rle: p.toRLE(), maxTime: 384, sepGens: 0}, noTimeout);
+    if (data === null) {
         throw new BotError('Timed out!');
     }
-    if (value === false) {
+    if (data === false) {
         return 'Error: Not a conduit!';
     }
-    let title = removeHIfPossible(getConduitName(value)).replaceAll('_', '\\_');
+    let title = removeHIfPossible(getConduitName(data)).replaceAll('_', '\\_');
     let out: string[] = [];
-    let inputTimeStr = value.inputTime ? ` at generation ${value.inputTime}` : '';
-    if (value.input in CONDUIT_OBJECTS) {
-        let name = CONDUIT_OBJECTS[value.input][0];
+    let inputTimeStr = data.inputTime ? ` at generation ${data.inputTime}` : '';
+    if (data.input in CONDUIT_OBJECTS) {
+        let name = CONDUIT_OBJECTS[data.input][0];
         name = name[0].toUpperCase() + name.slice(1);
         out.push(`**Input:** ${name}${inputTimeStr}`);
     } else {
-        out.push(`**Input:** ${value.input}${inputTimeStr}`);
+        out.push(`**Input:** ${data.input}${inputTimeStr}`);
     }
-    for (let obj of value.output) {
+    for (let obj of data.output) {
         let suffix = `at generation ${obj.time} and position (${obj.x}, ${obj.y})`;
         if (obj.obj in CONDUIT_OBJECTS) {
             let name = CONDUIT_OBJECTS[obj.obj][0];
@@ -421,22 +425,22 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
             out.push(`**Output:** ${obj.obj} ${suffix}`);
         }
     }
-    for (let glider of value.gliders) {
+    for (let glider of data.gliders) {
         out.push(`**Output:** ${glider.dir} glider lane ${glider.lane} timing ${glider.timing}`);
     }
-    for (let obj of value.otherOutputs) {
+    for (let obj of data.otherOutputs) {
         out.push(`**Output:** ${obj.code} (${obj.x}, ${obj.y})`);
     }
-    if (value.repeatTime !== undefined) {
-        out.push(`**Repeat time:** ${value.repeatTime}`);
-        if (value.repeatTimeWithFNG) {
-            out.push(`**Repeat time (with FNG):** ${value.repeatTimeWithFNG}`);
+    if (data.repeatTime !== undefined) {
+        out.push(`**Repeat time:** ${data.repeatTime}`);
+        if (data.repeatTimeWithFNG) {
+            out.push(`**Repeat time (with FNG):** ${data.repeatTimeWithFNG}`);
         }
-        if (value.overclock) {
-            if (value.overclock.length === 0) {
+        if (data.overclock) {
+            if (data.overclock.length === 0) {
                 out.push('**No overclock**');
             } else {
-                out.push(`**Overclock:** ${toRanges(value.overclock)}`);
+                out.push(`**Overclock:** ${toRanges(data.overclock)}`);
             }
         }
     }

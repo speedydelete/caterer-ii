@@ -177,7 +177,6 @@ async function runCommand(msg: Message): Promise<void> {
         try {
             runningCommands.add(msg.id);
             let out = await COMMANDS[cmd](msg, argv);
-            runningCommands.delete(msg.id);
             if (out) {
                 if (typeof out === 'string') {
                     previousMsgs.push([msg.id, await msg.reply({content: out, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
@@ -219,6 +218,8 @@ async function runCommand(msg: Message): Promise<void> {
                 }
                 previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: ['users']}})]);
             }
+        } finally {
+            runningCommands.delete(msg.id);
         }
         if (previousMsgs.length > 2000) {
             previousMsgs = previousMsgs.slice(1000);
