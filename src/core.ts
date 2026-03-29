@@ -417,6 +417,9 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
     }
     for (let obj of data.output) {
         let suffix = `at generation ${obj.time} and position (${obj.x}, ${obj.y})`;
+        if (obj.objTime !== 0) {
+            suffix = `(after ${obj.objTime} generation${obj.objTime === 1 ? '' : 's'}) ` + suffix;
+        }
         if (obj.obj in CONDUIT_OBJECTS) {
             let name = CONDUIT_OBJECTS[obj.obj][0];
             name = name[0].toUpperCase() + name.slice(1);
