@@ -433,9 +433,6 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
     }
     if (data.repeatTime !== undefined) {
         out.push(`**Repeat time:** ${data.repeatTime}`);
-        if (data.repeatTimeWithFNG) {
-            out.push(`**Repeat time (with FNG):** ${data.repeatTimeWithFNG}`);
-        }
         if (data.overclock) {
             if (data.overclock.length === 0) {
                 out.push('**No overclock**');
