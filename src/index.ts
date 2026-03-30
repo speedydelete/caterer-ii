@@ -74,6 +74,17 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
         }
     },
 
+    async da2a(msg: Message, argv: string[]): Promise<Response> {
+        if (msg.reference) {
+            let ref = await msg.fetchReference();
+            if (ref.type === 0) {
+                ref.reply({content: `Don't ask to ask, you should beg to ask! Many users on mathcord are important people with busy lives and you are inconveniencing them by asking a question. As such you should grovel and beg for the privilege of doing so.`, allowedMentions: {repliedUser: false}});
+            }
+        } else {
+            msg.channel.send(`Don't ask to ask, you should beg to ask! Many users on mathcord are important people with busy lives and you are inconveniencing them by asking a question. As such you should grovel and beg for the privilege of doing so.`);
+        }
+    },
+
     'sim': cmdSim,
 
     'identify': cmdIdentify,
