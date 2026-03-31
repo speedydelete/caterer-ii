@@ -335,18 +335,24 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
     let gifData: Uint8Array[] = [new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, width & 255, (width >> 8) & 255, height & 255, (height >> 8) & 255, 0xf0 | (bitWidth - 1), 0x00, 0x00])];
     let gct = new Uint8Array(colors * 3);
     let i = 0;
-    gct[i++] = 0x36;
-    gct[i++] = 0x39;
-    gct[i++] = 0x3e;
+    // gct[i++] = 0x36;
+    // gct[i++] = 0x39;
+    // gct[i++] = 0x3e;
+    gct[i++] = 0xff;
+    gct[i++] = 0xff;
+    gct[i++] = 0xff;
     for (let value = 1; value < colors; value++) {
         if (value >= p.states) {
             gct[i++] = 0x00;
             gct[i++] = 0x00;
             gct[i++] = 0x00;
         } else if (p.states === 2) {
-            gct[i++] = 0xff;
-            gct[i++] = 0xff;
-            gct[i++] = 0xff;
+            // gct[i++] = 0xff;
+            // gct[i++] = 0xff;
+            // gct[i++] = 0xff;
+            gct[i++] = 0x36;
+            gct[i++] = 0x39;
+            gct[i++] = 0x3e;
         } else if (p instanceof TreePattern && p.rule.colors && p.rule.colors[value]) {
             let [r, g, b] = p.rule.colors[value];
             gct[i++] = r;
