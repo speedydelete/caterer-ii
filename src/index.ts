@@ -430,10 +430,10 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     //     await starboardChannel.messages.delete(entry[0]);
     //     await starboardChannel.messages.delete(entry[1]);
     // }
-    if (data.partial) {
-        data = await data.fetch();
-    }
     let msg = data.message;
+    if (msg.partial) {
+        msg = await msg.fetch();
+    }
     if (msg.guildId !== '357922255553953794') {
         return;
     }
@@ -441,8 +441,8 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     let reacts = Array.from(msg.reactions.cache).map(x => x[1]).filter(x => x.count >= 3);
     if (reacts.length > 0) {
         let text = '';
-        for (let value of Array.from(reacts.values()).sort((x, y) => x.count - y.count)) {
-            text += `${value.toString()} **${value.count}**`;
+        for (let value of reacts.sort((x, y) => x.count - y.count)) {
+            text += `${String(value.toString())} **${value.count}** `;
         }
         if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
             let msg2 = await msg.fetchReference();
