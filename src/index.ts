@@ -9,6 +9,7 @@ import {cmdHashsoup, cmdApgencode, cmdApgdecode, cmdPopulation, cmdMAPToINT, cmd
 import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSimStats, cmdSaveSimStats, cmdAlias, cmdUnalias, cmdLookupAlias, cmdListAliases} from './db.js';
 import {cmdWiki} from './wiki.js';
 import {check5S} from './notifier.js';
+import {validateHeaderValue} from 'node:http';
 
 
 const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\n';
@@ -347,63 +348,96 @@ async function getStarReactions(msg: _Message): Promise<string[]> {
 }
 
 async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
-    if (data.emoji.name !== '⭐') {
-        return;
-    }
-    if (data.partial) {
-        data = await data.fetch();
-    }
-    if (data.count === null) {
-        return;
-    }
+    // if (data.emoji.name !== '⭐') {
+    //     return;
+    // }
+    // if (data.partial) {
+    //     data = await data.fetch();
+    // }
+    // if (data.count === null) {
+    //     return;
+    // }
+    // let msg = data.message;
+    // if (msg.createdTimestamp < config.initTime || !(msg.guildId === '357922255553953794' || msg.guildId === '1417233330679844937')) {
+    //     return;
+    // }
+    // let users = (await data.users.fetch()).map(x => x.id);
+    // if (msg.channel.id === config.starboardChannel) {
+    //     if (msg.reference) {
+    //         msg = await msg.fetchReference();
+    //         users.push(...(await getStarReactions(msg)));
+    //     } else {
+    //         msg = Array.from((await msg.channel.messages.fetch({limit: 1, after: msg.id})).values())[0];
+    //         if (msg.reference) {
+    //             msg = await msg.fetchReference();
+    //             users.push(...(await getStarReactions(msg)));
+    //         } else {
+    //             return;
+    //         }
+    //     }
+    // }
+    // let senderId: string;
+    // if (msg.author) {
+    //     senderId = msg.author.id;
+    // } else {
+    //     return;
+    // }
+    // let entry = starboard.get(msg.id);
+    // if (entry) {
+    //     users.push(...(await getStarReactions(await starboardChannel.messages.fetch(entry[0]))));
+    //     users.push(...(await getStarReactions(await starboardChannel.messages.fetch(entry[1]))));
+    // }
+    // let users2 = Array.from(new Set(users)).filter(x => x !== senderId);
+    // if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
+    //     let msg2 = await msg.fetchReference();
+    //     users2 = users2.filter(x => x !== msg2.author.id);
+    // }
+    // let count = users2.length;
+    // if (count >= config.starThreshold) {
+    //     let text: string;
+    //     if (count < Math.floor(config.starThreshold * 2)) {
+    //         text = '⭐';
+    //     } else if (count < Math.floor(config.starThreshold * 3)) {
+    //         text = '🌟';
+    //     } else if (count < Math.floor(config.starThreshold * 4)) {
+    //         text = '💫';
+    //     } else {
+    //         text = '✨';
+    //     }
+    //     text += ` **${count}** `;
+    //     if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
+    //         let msg2 = await msg.fetchReference();
+    //         let data = findRLEFromText(msg2.content);
+    //         if (data) {
+    //             text += `Pattern by <@${msg2.author.id}> in \`${data.ruleStr}\``;
+    //         } else {
+    //             text += `Pattern by <@${msg2.author.id}>`;
+    //         }
+    //     } else {
+    //         text += `<@${msg.author?.id}>`;
+    //     }
+    //     text += ` (https://discord.com/channels/${msg.guildId}/${msg.channelId}/${msg.id})`;
+    //     if (entry) {
+    //         (await starboardChannel.messages.fetch(entry[0])).edit({content: text, allowedMentions: {parse: []}});
+    //     } else {
+    //         let msg0 = await starboardChannel.send({content: text, allowedMentions: {parse: []}});
+    //         let msg1 = await msg.forward(starboardChannel);
+    //         starboard.set(msg.id, [msg0.id, msg1.id]);
+    //         await writeFile('data/starboard.json', JSON.stringify(Array.from(starboard.entries())));
+    //     }
+    // } else if (entry) {
+    //     starboard.delete(msg.id);
+    //     await starboardChannel.messages.delete(entry[0]);
+    //     await starboardChannel.messages.delete(entry[1]);
+    // }
     let msg = data.message;
-    if (msg.createdTimestamp < config.initTime || !(msg.guildId === '357922255553953794' || msg.guildId === '1417233330679844937')) {
-        return;
-    }
-    let users = (await data.users.fetch()).map(x => x.id);
-    if (msg.channel.id === config.starboardChannel) {
-        if (msg.reference) {
-            msg = await msg.fetchReference();
-            users.push(...(await getStarReactions(msg)));
-        } else {
-            msg = Array.from((await msg.channel.messages.fetch({limit: 1, after: msg.id})).values())[0];
-            if (msg.reference) {
-                msg = await msg.fetchReference();
-                users.push(...(await getStarReactions(msg)));
-            } else {
-                return;
-            }
-        }
-    }
-    let senderId: string;
-    if (msg.author) {
-        senderId = msg.author.id;
-    } else {
-        return;
-    }
     let entry = starboard.get(msg.id);
-    if (entry) {
-        users.push(...(await getStarReactions(await starboardChannel.messages.fetch(entry[0]))));
-        users.push(...(await getStarReactions(await starboardChannel.messages.fetch(entry[1]))));
-    }
-    let users2 = Array.from(new Set(users)).filter(x => x !== senderId);
-    if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
-        let msg2 = await msg.fetchReference();
-        users2 = users2.filter(x => x !== msg2.author.id);
-    }
-    let count = users2.length;
-    if (count >= config.starThreshold) {
-        let text: string;
-        if (count < Math.floor(config.starThreshold * 2)) {
-            text = '⭐';
-        } else if (count < Math.floor(config.starThreshold * 3)) {
-            text = '🌟';
-        } else if (count < Math.floor(config.starThreshold * 4)) {
-            text = '💫';
-        } else {
-            text = '✨';
+    let reacts = (await msg.awaitReactions()).filter(x => x.count >= 3);
+    if (reacts.size > 0) {
+        let text = '';
+        for (let value of Array.from(reacts.values()).sort((x, y) => x.count - y.count)) {
+            text += `${value.toString()} **${value.count}**`;
         }
-        text += ` **${count}** `;
         if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
             let msg2 = await msg.fetchReference();
             let data = findRLEFromText(msg2.content);
@@ -422,7 +456,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
             let msg0 = await starboardChannel.send({content: text, allowedMentions: {parse: []}});
             let msg1 = await msg.forward(starboardChannel);
             starboard.set(msg.id, [msg0.id, msg1.id]);
-            await writeFile('data/starboard.json', JSON.stringify(Array.from(starboard.entries())));
+            // await writeFile('data/starboard.json', JSON.stringify(Array.from(starboard.entries())));
         }
     } else if (entry) {
         starboard.delete(msg.id);
