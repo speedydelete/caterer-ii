@@ -441,7 +441,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     let reacts = Array.from(msg.reactions.cache).map(x => x[1]).filter(x => x.count >= 3);
     if (reacts.length > 0) {
         let text = '';
-        for (let value of reacts.sort((x, y) => x.count - y.count)) {
+        for (let value of reacts.sort((x, y) => y.count - x.count)) {
             text += `${String(value.emoji.toString())} **${value.count}** `;
         }
         if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
