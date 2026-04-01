@@ -430,7 +430,11 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     //     await starboardChannel.messages.delete(entry[0]);
     //     await starboardChannel.messages.delete(entry[1]);
     // }
+    if (data.partial) {
+        data = await data.fetch();
+    }
     let msg = data.message;
+    console.log(msg);
     let entry = starboard.get(msg.id);
     let reacts = (await msg.awaitReactions()).filter(x => x.count >= 3);
     console.log(reacts);
