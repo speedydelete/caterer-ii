@@ -433,6 +433,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     let msg = data.message;
     let entry = starboard.get(msg.id);
     let reacts = (await msg.awaitReactions()).filter(x => x.count >= 3);
+    console.log(reacts);
     if (reacts.size > 0) {
         let text = '';
         for (let value of Array.from(reacts.values()).sort((x, y) => x.count - y.count)) {
