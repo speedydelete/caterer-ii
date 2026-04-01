@@ -442,7 +442,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     if (reacts.length > 0) {
         let text = '';
         for (let value of reacts.sort((x, y) => x.count - y.count)) {
-            text += `${String(value.toString())} **${value.count}** `;
+            text += `${String(value.emoji.toString())} **${value.count}** `;
         }
         if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
             let msg2 = await msg.fetchReference();
