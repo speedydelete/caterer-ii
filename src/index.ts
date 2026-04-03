@@ -464,7 +464,7 @@ setInterval(async () => {
         }
         await sssssChannel.send('<@1253852708826386518>\n```' + str + '```');
     }
-}, 60000);
+}, 300000);
 
 
 client.login(config.token);
