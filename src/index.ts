@@ -162,8 +162,6 @@ let previousMsgs: [string, Message][] = [];
 let deleters: [string, string][] = [];
 let runningCommands = new Set<string>();
 
-const INTENTIONAL_ERRORS = ['Pattern too big for torus!',]
-
 async function runCommand(msg: Message): Promise<void> {
     if (msg.author.bot || msg.createdTimestamp < config.initTime || runningCommands.has(msg.id)) {
         return;
@@ -210,7 +208,7 @@ async function runCommand(msg: Message): Promise<void> {
                 }
             }
         } catch (error) {
-            if (error instanceof BotError || error instanceof lifeweb.RuleError || (error instanceof Error && (INTENTIONAL_ERRORS.includes(error.message) || error.message.startsWith('Invalid symmetry: ')))) {
+            if (error instanceof BotError || error instanceof lifeweb.RuleError || (error instanceof Error && (error.message.includes('Pattern too big for torus!') || error.message.startsWith('Invalid symmetry: ')))) {
                 previousMsgs.push([msg.id, await msg.reply({content: 'Error: ' + error.message, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             } else if (error instanceof Error && error.message === 'Worker exited with code 1!') {
                 previousMsgs.push([msg.id, await msg.reply({content: `Error: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
