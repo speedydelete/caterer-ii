@@ -502,6 +502,16 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         gct[i++] = 0x39;
         gct[i++] = 0x3e;
     }
+    let clsP = p;
+    for (let i = 0; i < 10; i++) {
+        if ('pattern' in clsP && clsP.pattern && typeof clsP.pattern === 'object' && clsP.pattern.constructor.name.includes('Pattern')) {
+            clsP = clsP.pattern as Pattern;
+        } else if ('p' in clsP && clsP.p && typeof clsP.p === 'object' && clsP.p.constructor.name.includes('Pattern')) {
+            clsP = clsP.p as Pattern;
+        } else {
+            break;
+        }
+    }
     for (let value = 1; value < colors; value++) {
         if (customColors[value]) {
             let [r, g, b] = customColors[value];
@@ -516,22 +526,22 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
             gct[i++] = 0xff;
             gct[i++] = 0xff;
             gct[i++] = 0xff;
-        } else if (p instanceof TreePattern && p.rule.colors && p.rule.colors[value]) {
-            let [r, g, b] = p.rule.colors[value];
+        } else if (clsP instanceof TreePattern && clsP.rule.colors && clsP.rule.colors[value]) {
+            let [r, g, b] = clsP.rule.colors[value];
             gct[i++] = r;
             gct[i++] = g;
             gct[i++] = b;
-        } else if (p instanceof DataHistoryPattern || p instanceof CoordHistoryPattern) {
+        } else if (clsP instanceof DataHistoryPattern || clsP instanceof CoordHistoryPattern) {
             let [r, g, b] = HISTORY_COLORS[value - 1];
             gct[i++] = r;
             gct[i++] = g;
             gct[i++] = b;
-        } else if (p instanceof DataSuperPattern || p instanceof CoordSuperPattern) {
+        } else if (clsP instanceof DataSuperPattern || clsP instanceof CoordSuperPattern) {
             let [r, g, b] = SUPER_COLORS[value - 1];
             gct[i++] = r;
             gct[i++] = g;
             gct[i++] = b;
-        } else if (p instanceof InvestigatorPattern) {
+        } else if (clsP instanceof InvestigatorPattern) {
             let [r, g, b] = INVESTIGATOR_COLORS[value - 1];
             gct[i++] = r;
             gct[i++] = g;
