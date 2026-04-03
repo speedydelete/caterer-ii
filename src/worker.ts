@@ -391,7 +391,10 @@ function parseSim(argv: string[], rle: string): SimData {
             }
         }
     }
-    parts.push(currentPart);
+    if (currentPart.length > 0) {
+        parts.push(currentPart);
+    }
+    console.log(parts);
     let time: number | undefined = undefined;
     if (parts[0] && parts[0][1] === 'fps' && typeof parts[0][0] === 'number') {
         time = Math.ceil(100 / parts[0][0]);
