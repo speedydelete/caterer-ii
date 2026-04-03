@@ -289,6 +289,7 @@ client.on('messageUpdate', async (old, msg) => {
             } catch {}
             previousMsgs = previousMsgs.splice(index, 1);
         }
+        runCommand(msg);
     } catch (error) {
         let str: string;
         if (error && typeof error === 'object' && 'stack' in error) {
@@ -306,7 +307,6 @@ client.on('messageUpdate', async (old, msg) => {
         }
         await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: ['users']}});
     }
-    runCommand(msg);
 });
 
 client.on('messageReactionAdd', async data => {
