@@ -57,7 +57,35 @@ const HELP: {[key: string]: Help} = {
                 desc: 'Specifies how to simulate',
             },
         ],
-        extra: `Example: !sim 1 fps 20 > wait 10 > 10 fps 200\nThe parts are seperated by spaces (some parts also include spaces, so if you want to disambiguate it, you may use > as a separator). Each part specifies a thing to do.\n\nValid parts:\n* \`<gens>\` - Run for that many generations\n* \`<gens> <step>\` - Run for that many generations at that step.\n* \`wait <seconds>\` - Wait for that many seconds.\n* \`jump <gens>\` - Run the pattern for that many generations, but don't add the frames.\n* \`<x> fps\` - Sets the frames per second of the outputted gif (default 20).\n* \`size <x>\` - Sets the size (in the outputted gif) of the smaller axis (width or height, whichever is smaller) to x pixels (default 100). This cannot be used multiple times to have different parts of the gif at different sizes.\n* \`removefirst\` - Remove the first frame.\n* \`stable\` - Run the pattern until stabilization (this even works with linear growth).\n* \`identify\` - Identify the pattern and run for that many generations. Will also put a short description with the GIF output.\n* \`identify x<number>\` - Identify the pattern and additionally run for that many periods, so "identify x2", instead of running for 1 period, will run for 2 periods. "identify x1" is equal to "identify".\n* \`setrule <rule>\` - Changes the rule.\n\nWhen there is only 1 part, and it is just a number (or 2 numbers), the number is subtracted by 1. This makes it so you can do !sim <period of oscillator> and it will work.\n\nIt will automatically time out after 30 seconds, you cannot simulate things for longer than this.`
+        extra: `Example: !sim 1 fps 20 > wait 10 > 10 fps 200
+The parts are seperated by spaces (some parts also include spaces, so if you want to disambiguate it, you may use > or newlines as a separator). Each part specifies a thing to do.
+
+Valid parts:
+* \`<gens>\` - Run for that many generations
+* \`<gens> <step>\` - Run for that many generations at that step.
+* \`wait <seconds>\` - Wait for that many seconds.
+* \`jump <gens>\` - Run the pattern for that many generations, but don't add the frames.
+* \`<x> fps\` - Sets the frames per second of the outputted gif (default 20).
+* \`size <x>\` - Sets the size (in the outputted gif) of the smaller axis (width or height, whichever is smaller) to x pixels (default 100). This cannot be used multiple times to have different parts of the gif at different sizes.
+* \`stable\` - Run the pattern until stabilization (this even works with linear growth).
+* \`stable <security>\` - Run the pattern until stabilization with the given period security (number of times the population period must repeat for it to count as stable).
+* \`identify\` - Identify the pattern and run for that many generations. Will also put a short description with the GIF output.
+* \`identify x<number>\` - Identify the pattern and additionally run for that many periods, so "identify x2", instead of running for 1 period, will run for 2 periods. "identify x1" is equal to "identify".
+* \`setrule <rule>\` - Changes the rule.
+* \`text <text>\` - Set some text to be displayed.
+* \`color <state> <color>\` - Set a hexadecimal color code for a state.
+* \`useadvancedcolors\` - Enable advanced colors. For 2-state rules, states 2-127 are cells that are alive for n generations, state 128 are cells that have been alive for a long time, and states 129-254 are cells that were alive n generations ago. For multi-state rules, states greater than the number of states of the rule but less than 255 are dead cells that were alive n generations ago, and state 255 are cells that have been dead for a long time.
+* \`bb <min-x> <min-y> <width> <height>\` - Set the bounding box of the displayed pattern.
+* \`movebb <x> <y>\` - Move the set bounding box, must be used after \`bb\`.
+* \`resizebb <width> <height>\` - Adjust the size of the set bounding box, must be used after \`bb\`.
+* \`setorigin <x> <y>\` - Set the origin of the displayed pattern.
+* \`moveorigin <x> <y>\` - Move the origin of the displayed pattern.
+* \`repeat <times>\` - Repeat the section until the matching \`endrepeat\` that many times.
+* \`endrepeat\` - End a repeat section.
+
+When there is only 1 part, and it is just a number (or 2 numbers), the number is subtracted by 1. This makes it so you can do !sim <period of oscillator> and it will work.
+
+It will automatically time out after 30 seconds, you cannot simulate things for longer than this.`
     },
 
     'sim rand': {
@@ -402,7 +430,7 @@ const HELP: {[key: string]: Help} = {
 };
 
 
-const HELP_MSG = `A cellular automata bot for the ConwayLife Lounge Discord server
+const HELP_MSG = `A cellular automata bot for the ConwayLife Lounge Discord server.
 
 Commands:
 * Simulation: \`!sim\`, \`!sim rand\`
@@ -417,6 +445,8 @@ Commands:
 * Other: \`!wiki\`, \`!help\`, \`!eval\`, \`!ping\`
 
 This bot stores your user ID when you use \`!noreplypings\`, and deletes it when you use \`!yesreplypings\`. So, to delete all your data, use \`!yesreplypings\`.
+
+You can use Bash-style quoting and escaping in commands.
 
 Type \`!help <command>\` for help for a specific command!`;
 

@@ -69,9 +69,300 @@ const INVESTIGATOR_COLORS: [number, number, number][] = [
 ];
 
 
-let dir = join(import.meta.dirname, '..');
+interface Frame<T extends boolean = boolean> {
+    p: Pattern;
+    time: T extends true ? number : number | undefined;
+}
 
-async function parseSim(argv: string[], rle: string): Promise<{frames: [Pattern, number][], gifSize: number, minX: number, minY: number, width: number, height: number, customColors: {[key: number]: [number, number, number]}, desc?: string}> {
+interface SimData {
+    frames: Frame<true>[];
+    gifSize: number;
+    minX: number;
+    minY: number;
+    width: number;
+    height: number;
+    useAdvancedColors: boolean;
+    customColors: {[key: number]: [number, number, number]};
+    text?: string;
+}
+
+interface PartRunnerData {
+    partCount: number;
+    gifSize: number;
+    time: number | undefined;
+    text: string | undefined;
+    useAdvancedColors: boolean;
+    customColors: {[key: number]: [number, number, number]};
+    bb: [number, number, number, number] | undefined;
+    origin: [number, number];
+}
+
+function getFrame(p: Pattern, {time, bb, origin}: PartRunnerData): Frame {
+    let out: Pattern;
+    if (!bb) {
+        out = p.copy();
+    } else if (p instanceof CoordPattern) {
+        out = p.copyPart(bb[0], bb[1], bb[2], bb[3]);
+    } else {
+        let x = bb[0] + p.xOffset;
+        let y = bb[1] + p.yOffset;
+        out = p.copyPart(Math.min(x, 0), Math.min(y, 0), bb[3], bb[2]);
+        out.xOffset = x;
+        out.yOffset = y;
+    }
+    if (origin) {
+        out.xOffset -= origin[0];
+        out.yOffset -= origin[1];
+    }
+    return {p: out, time};
+}
+
+function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: PartRunnerData): void {
+    while (part.length > 0) {
+        if (typeof part[0] === 'number') {
+            if (part[1] === 'fps') {
+                data.time = Math.ceil(100 / part[0]);
+                part = part.slice(2);
+            } else {
+                let step = 1;
+                let remove = 1;
+                if (typeof part[1] === 'number') {
+                    step = part[1];
+                    remove = 2;
+                }
+                if (data.partCount === 1) {
+                    part[0] = part[0] - 1;
+                    if (part[0] === 0) {
+                        continue;
+                    }
+                }
+                for (let i = 0; i < Math.ceil(part[0] / step); i++) {
+                    p.run(step);
+                    frames.push(getFrame(p, data));
+                }
+                part = part.slice(remove);
+            }
+        } else if (part[0] === 'size') {
+            if (typeof part[1] !== 'number') {
+                throw new BotError(`Invalid part: Expected argument of type number for "size", got type ${typeof part[1]}: ${part.join(' ')}`);
+            }
+            data.gifSize = part[1];
+            part = part.slice(2);
+        } else if (part[0] === 'wait') {
+            if (typeof part[1] !== 'number') {
+                throw new BotError(`Invalid part: Expected argument of type number for "wait", got type ${typeof part[1]}: ${part.join(' ')}`);
+            }
+            let frame = getFrame(p, data);
+            frame.time = part[1] * 100;
+            frames.push(frame);
+            part = part.slice(2);
+        } else if (part[0] === 'jump') {
+            if (typeof part[1] !== 'number') {
+                throw new BotError(`Invalid part: Expected argument of type number for "jump", got type ${typeof part[1]}: ${part.join(' ')}`);
+            }
+            if (frames.length === 1) {
+                frames = [];
+            }
+            p.run(part[1]);
+            part = part.slice(2);
+        } else if (part[0] === 'stable') {
+            part = part.slice(1);
+            let security = 16;
+            if (typeof part[0] === 'number') {
+                security = part[0];
+                part = part.slice(1);
+            }
+            let pops: number[] = [];
+            for (let i = 0; i < 120000; i++) {
+                p.runGeneration();
+                frames.push(getFrame(p, data));
+                let pop = p.population;
+                if (pop === 0) {
+                    break;
+                }
+                let found = false;
+                for (let period = 1; period < Math.floor(i / security); period++) {
+                    found = true;
+                    for (let j = 1; j < security; j++) {
+                        if (pop !== pops[pops.length - period * j]) {
+                            found = false;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        break;
+                    }
+                }
+                if (found) {
+                    break;
+                }
+                for (let period = 1; period < Math.floor(i / security); period++) {
+                    let diff = pop - pops[pops.length - period];
+                    found = true;
+                    for (let j = 1; j < security; j++) {
+                        if (diff !== pops[pops.length - period * j] - pops[pops.length - period * (j + 1)]) {
+                            found = false;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        break;
+                    }
+                }
+                if (found) {
+                    break;
+                }
+                pops.push(pop);
+            }
+        } else if (part[0] === 'identify') {
+            part = part.slice(1);
+            let type = findType(p, 120000, true);
+            data.text = getDescription(type);
+            for (let i = 0; i < type.stabilizedAt + type.period - (type.disp && type.disp[0] === 0 && type.disp[1] === 0 ? 1 : 0); i++) {
+                p.runGeneration();
+                frames.push(getFrame(p, data));
+            }
+            if (typeof part[0] === 'string' && part[0].match(/^x[0-9]+$/)) {
+                let amount = parseInt(part[0].slice(1));
+                if (type.period > 0) {
+                    for (let i = 0; i < (amount - 1) * type.period; i++) {
+                        p.runGeneration();
+                        frames.push(getFrame(p, data));
+                    }
+                }
+                part = part.slice(1);
+            }
+        } else if (part[0] === 'setrule') {
+            if (typeof part[1] === 'number') {
+                throw new BotError(`Invalid part: Expected argument of type string for "setrule", got type ${typeof part[1]}: ${part.join(' ')}`);
+            }
+            let q = createPattern(part[1], aliases, p.height, p.width, p.getData());
+            q.xOffset = p.xOffset;
+            q.yOffset = p.yOffset;
+            q.generation = p.generation;
+            p = q;
+            part = part.slice(2);
+        } else if (part[0] === 'text') {
+            if (typeof part[1] === 'number') {
+                throw new BotError(`Invalid part: Expected argument of type string for "text", got type ${typeof part[1]}: ${part.join(' ')}`);
+            }
+            data.text = part[1];
+            part = part.slice(2);
+        } else if (part[0] === 'color') {
+            if (typeof part[1] !== 'number') {
+                throw new BotError(`Invalid part: Expected argument 1 to be of type number for "color", got type ${typeof part[1]}: ${part.join(' ')}`);
+            }
+            let value = String(part[2]);
+            if (value.startsWith('#')) {
+                value = value[1];
+            }
+            let color: [number, number, number];
+            if (value.length === 3) {
+                color = [parseInt(value[0], 16) * 17, parseInt(value[1], 16) * 17, parseInt(value[2], 16) * 17];
+            } else if (value.length === 6) {
+                color = [parseInt(value.slice(0, 2), 16), parseInt(value.slice(2, 4), 16), parseInt(value.slice(4, 6), 16)];
+            } else {
+                throw new BotError(`Invalid color: '${value}'`);
+            }
+            data.customColors[part[1]] = color;
+            part = part.slice(3);
+        } else if (part[0] === 'useadvancedcolors') {
+            data.useAdvancedColors = true;
+            part = part.slice(1);
+        } else if (part[0] === 'bb') {
+            if (typeof part[1] !== 'number' || typeof part[2] !== 'number' || typeof part[3] !== 'number' || typeof part[4] !== 'number') {
+                throw new BotError(`Invalid part: Expected 4 arguments of type number for "bb": ${part.join(' ')}`);
+            }
+            data.bb = [part[1], part[2], part[3], part[4]];
+            part = part.slice(5);
+        } else if (part[0] === 'movebb') {
+            if (typeof part[1] !== 'number' || typeof part[2] !== 'number') {
+                throw new BotError(`Invalid part: Expected 2 arguments of type number for "movebb": ${part.join(' ')}`);
+            }
+            if (!data.bb) {
+                throw new BotError(`Cannot use "movebb" before using "bb"!`);
+            }
+            data.bb[0] += part[1];
+            data.bb[1] += part[2];
+            part = part.slice(2);
+        } else if (part[0] === 'resizebb') {
+            if (typeof part[1] !== 'number' || typeof part[2] !== 'number') {
+                throw new BotError(`Invalid part: Expected 2 arguments of type number for "resizebb": ${part.join(' ')}`);
+            }
+            if (!data.bb) {
+                throw new BotError(`Cannot use "resizebb" before using "bb"!`);
+            }
+            data.bb[2] = part[1];
+            data.bb[3] = part[2];
+            part = part.slice(2);
+        } else if (part[0] === 'setorigin') {
+            if (typeof part[1] !== 'number' || typeof part[2] !== 'number') {
+                throw new BotError(`Invalid part: Expected 2 arguments of type number for "setorigin": ${part.join(' ')}`);
+            }
+            data.origin = [part[1], part[2]];
+            part = part.slice(3);
+        } else if (part[0] === 'moveorigin') {
+            if (typeof part[1] !== 'number' || typeof part[2] !== 'number') {
+                throw new BotError(`Invalid part: Expected 2 arguments of type number for "moveorigin": ${part.join(' ')}`);
+            }
+            data.origin = [part[1], part[2]];
+            part = part.slice(3);
+        } else {
+            throw new BotError(`Invalid part: Unrecognized command: ${part.join(' ')}`);
+        }
+    }
+}
+
+function runParts(parts: (string | number)[][], frames: Frame[], p: Pattern, data: PartRunnerData): void {
+    if (parts.some(x => x[0] === 'repeat' || x[0] === 'endrepeat')) {
+        let level = 0;
+        let times = 0;
+        let current: (string | number)[][] = [];
+        for (let part of parts) {
+            if (part[0] === 'repeat') {
+                if (level === 0) {
+                    if (typeof part[1] !== 'number') {
+                        throw new BotError(`Invalid part: Expected argument of type number for "repeat", got type ${typeof part[1]}: ${part.join(' ')}`);
+                    }
+                    times = part[1];
+                } else {
+                    current.push(part);
+                }
+                level++;
+            } else if (part[0] === 'endrepeat') {
+                level--;
+                if (level === 0) {
+                    if (times === 0) {
+                        throw new Error('Times is 0 (this is a bug!)');
+                    }
+                    for (let i = 0; i < times; i++) {
+                        runParts(current, frames, p, data);
+                    }
+                    times = 0;
+                } else if (level < 0) {
+                    throw new BotError(`Unmatched endrepeat`);
+                } else {
+                    current.push(part);
+                }
+            } else {
+                if (level === 0) {
+                    runPart(part, frames, p, data);
+                } else {
+                    current.push(part);
+                }
+            }
+        }
+        if (level > 0) {
+            throw new BotError(`Unmatched repeat`);
+        }
+    } else {
+        for (let part of parts) {
+            runPart(part, frames, p, data);
+        }
+    }
+}
+
+function parseSim(argv: string[], rle: string): SimData {
     let p = parse(rle, aliases).shrinkToFit();
     let parts: (string | number)[][] = [];
     let currentPart: (string | number)[] = [];
@@ -85,190 +376,44 @@ async function parseSim(argv: string[], rle: string): Promise<{frames: [Pattern,
         } else {
             if (arg.match(/^[0-9.-]+$/)) {
                 currentPart.push(parseFloat(arg));
+            } else if (arg === 'repeat') {
+                parts.push(currentPart);
+                currentPart = [];
+            } else if (arg === 'endrepeat') {
+                parts.push(currentPart, [arg]);
+                currentPart = [];
             } else {
                 currentPart.push(arg);
+            }
+            if (currentPart.length === 2 && currentPart[0] === 'repeat') {
+                parts.push(currentPart);
+                currentPart = [];
             }
         }
     }
     parts.push(currentPart);
-    let frameTime: number | null = null;
+    let time: number | undefined = undefined;
     if (parts[0] && parts[0][1] === 'fps' && typeof parts[0][0] === 'number') {
-        frameTime = Math.ceil(100 / parts[0][0]);
+        time = Math.ceil(100 / parts[0][0]);
     }
-    let frames: [Pattern, number | null][] = [[p.copy(), frameTime]];
+    let frames: Frame[] = [{p: p.copy(), time}];
     let gifSize = 200;
-    let useCAViewer = false;
-    let customColors: {[key: number]: [number, number, number]} = {};
-    let desc: string | undefined;
-    let partCount = parts.length;
-    for (let part of parts) {
-        while (part.length > 0) {
-            if (typeof part[0] === 'number') {
-                if (part[1] === 'fps') {
-                    frameTime = Math.ceil(100 / part[0]);
-                    part = part.slice(2);
-                } else {
-                    let step = 1;
-                    let remove = 1;
-                    if (typeof part[1] === 'number') {
-                        step = part[1];
-                        remove = 2;
-                    }
-                    if (partCount === 1) {
-                        part[0] = part[0] - 1;
-                        if (part[0] === 0) {
-                            continue;
-                        }
-                    }
-                    if (useCAViewer) {
-                        await fs.writeFile(join(dir, 'in.rle'), p.toRLE());
-                        execSync(`rm -f ${join(dir, 'out.rle')}`);
-                        execSync(`box64 /home/opc/caviewer/lib/runtime/bin/java -p /home/opc/caviewer/app -m CAViewer/application.Main sim -g ${part[0]} -s ${step} -i ${join(dir, 'in.rle')} -o ${join(dir, 'out.rle')}`);
-                        let data = (await fs.readFile(join(dir, 'out.rle'))).toString();
-                        let xOffset: number | null = null;
-                        let yOffset: number | null = null;
-                        let inColors = false;
-                        let firstDone = false;
-                        for (let line of data.split('\n')) {
-                            if (line === '') {
-                                continue;
-                            } else if (line.includes(',')) {
-                                if (xOffset === null && yOffset === null) {
-                                    [xOffset, yOffset] = line.split(',').map(x => parseInt(x));
-                                }
-                            } else if (inColors) {
-                                let data = line.split(' ').map(x => parseInt(x));
-                                customColors[data[0]] = [data[1], data[2], data[3]];
-                            } else if (line === '@COLOR') {
-                                inColors = true;
-                            } else {
-                                let q = parse(`x = 0, y = 0, rule = B3/S23\n${line}`, aliases);
-                                q.xOffset = xOffset ?? 0;
-                                q.yOffset = yOffset ?? 0;
-                                xOffset = null;
-                                yOffset = null;
-                                q.xOffset--;
-                                q.yOffset--;
-                                if (!firstDone) {
-                                    firstDone = true;
-                                    continue;
-                                }
-                                frames.push([q, frameTime]);
-                            }
-                        }
-                    } else {
-                        for (let i = 0; i < Math.ceil(part[0] / step); i++) {
-                            p.run(step);
-                            frames.push([p.copy(), frameTime]);
-                        }
-                    }
-                    part = part.slice(remove);
-                }
-            } else if (part[0] === 'size') {
-                if (typeof part[1] !== 'number') {
-                    throw new BotError(`Invalid part: ${part.join(' ')}`);
-                }
-                gifSize = part[1];
-                part = part.slice(2);
-            } else if (part[0] === 'wait') {
-                if (typeof part[1] !== 'number') {
-                    throw new BotError(`Invalid part: ${part.join(' ')}`);
-                }
-                frames.push([p.copy(), part[1] * 100]);
-                part = part.slice(2);
-            } else if (part[0] === 'jump') {
-                if (typeof part[1] !== 'number') {
-                    throw new BotError(`Invalid part: ${part.join(' ')}`);
-                }
-                p.run(part[1]);
-                part = part.slice(2);
-            } else if (part[0] === 'ca') {
-                useCAViewer = !useCAViewer;
-                part = part.slice(1);
-            } else if (part[0] === 'stable') {
-                part = part.slice(1);
-                let pops: number[] = [];
-                for (let i = 0; i < 120000; i++) {
-                    p.runGeneration();
-                    frames.push([p.copy(), frameTime]);
-                    let pop = p.population;
-                    if (pop === 0) {
-                        break;
-                    }
-                    let found = false;
-                    for (let period = 1; period < Math.floor(i / 16); period++) {
-                        found = true;
-                        for (let j = 1; j < 16; j++) {
-                            if (pop !== pops[pops.length - period * j]) {
-                                found = false;
-                                break;
-                            }
-                        }
-                        if (found) {
-                            break;
-                        }
-                    }
-                    if (found) {
-                        break;
-                    }
-                    for (let period = 1; period < Math.floor(i / 16); period++) {
-                        let diff = pop - pops[pops.length - period];
-                        found = true;
-                        for (let j = 1; j < 16; j++) {
-                            if (diff !== pops[pops.length - period * j] - pops[pops.length - period * (j + 1)]) {
-                                found = false;
-                                break;
-                            }
-                        }
-                        if (found) {
-                            break;
-                        }
-                    }
-                    if (found) {
-                        break;
-                    }
-                    pops.push(pop);
-                }
-            } else if (part[0] === 'identify') {
-                part = part.slice(1);
-                let type = findType(p, 120000, true);
-                desc = getDescription(type);5
-                for (let i = 0; i < type.stabilizedAt + type.period - (type.disp && type.disp[0] === 0 && type.disp[1] === 0 ? 1 : 0); i++) {
-                    p.runGeneration();
-                    frames.push([p.copy(), frameTime]);
-                }
-                if (typeof part[0] === 'string' && part[0].match(/^x[0-9]+$/)) {
-                    let amount = parseInt(part[0].slice(1));
-                    if (type.period > 0) {
-                        for (let i = 0; i < (amount - 1) * type.period; i++) {
-                            p.runGeneration();
-                            frames.push([p.copy(), frameTime]);
-                        }
-                    }
-                    part = part.slice(1);
-                }
-            } else if (part[0] === 'setrule') {
-                if (typeof part[1] === 'number') {
-                    throw new BotError(`Invalid part: ${part.join(' ')}`);
-                }
-                let q = createPattern(part[1], aliases, p.height, p.width, p.getData());
-                q.xOffset = p.xOffset;
-                q.yOffset = p.yOffset;
-                q.generation = p.generation;
-                p = q;
-                part = part.slice(2);
-            } else if (part[0] === 'removefirst') {
-                frames.shift();
-            } else {
-                throw new BotError(`Invalid part: ${part.join(' ')}`);
-            }
-        }
-    }
+    let data: PartRunnerData = {
+        partCount: parts.length,
+        gifSize: 200,
+        time,
+        text: undefined,
+        useAdvancedColors: false,
+        customColors: {},
+        bb: undefined,
+        origin: [0, 0],
+    };
+    runParts(parts, frames, p, data);
     let minX = Infinity;
     let maxX = -Infinity;
     let minY = Infinity;
     let maxY = -Infinity;
-    for (let [p] of frames) {
+    for (let {p} of frames) {
         if (p instanceof CoordPattern) {
             let data = p.getMinMaxCoords();
             if (data.minX < minX) {
@@ -309,12 +454,12 @@ async function parseSim(argv: string[], rle: string): Promise<{frames: [Pattern,
         height++;
     }
     let defaultTime = Math.ceil(Math.min(1, Math.max(1/50, 4 / frames.length)) * 100);
-    return {frames: frames.map(([p, time]) => [p, Math.max(time ?? defaultTime, 2)]), gifSize, minX, minY, width, height, customColors, desc};
+    return {frames: frames.map(({p, time}) => ({p, time: Math.max(time ?? defaultTime, 2)})), gifSize, minX, minY, width, height, useAdvancedColors: data.useAdvancedColors, customColors: data.customColors, text: data.text};
 }
 
 async function runSim(argv: string[], rle: string): Promise<[number, string | undefined]> {
     let startTime = performance.now();
-    let {frames, gifSize, minX, minY, width, height, customColors, desc} = await parseSim(argv, rle);
+    let {frames, gifSize, minX, minY, width, height, useAdvancedColors, customColors, text} = parseSim(argv, rle);
     let parseTime = performance.now() - startTime;
     let xOffset = 0;
     let yOffset = 0;
@@ -326,8 +471,9 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         yOffset = -minY;
         minY = 0;
     }
-    let p = frames[0][0];
-    let bitWidth = Math.max(2, Math.ceil(Math.log2(p.states)));
+    let p = frames[0].p;
+    let colorCount = Math.max(p.states, ...Object.keys(customColors).map(x => parseInt(x)));
+    let bitWidth = Math.max(2, Math.ceil(Math.log2(colorCount)));
     let colors = 2**bitWidth;
     let clearCode = 1 << bitWidth;
     let endCode = (1 << bitWidth) + 1;
@@ -335,24 +481,30 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
     let gifData: Uint8Array[] = [new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, width & 255, (width >> 8) & 255, height & 255, (height >> 8) & 255, 0xf0 | (bitWidth - 1), 0x00, 0x00])];
     let gct = new Uint8Array(colors * 3);
     let i = 0;
-    gct[i++] = 0x36;
-    gct[i++] = 0x39;
-    gct[i++] = 0x3e;
-    // gct[i++] = 0xff;
-    // gct[i++] = 0xff;
-    // gct[i++] = 0xff;
+    if (customColors[0]) {
+        let [r, g, b] = customColors[0];
+        gct[i++] = r;
+        gct[i++] = g;
+        gct[i++] = b;
+    } else {
+        gct[i++] = 0x36;
+        gct[i++] = 0x39;
+        gct[i++] = 0x3e;
+    }
     for (let value = 1; value < colors; value++) {
-        if (value >= p.states) {
-            gct[i++] = 0x00;
-            gct[i++] = 0x00;
-            gct[i++] = 0x00;
+        if (customColors[value]) {
+            let [r, g, b] = customColors[value];
+            gct[i++] = r;
+            gct[i++] = g;
+            gct[i++] = b;
+        } else if (value >= p.states) {
+            gct[i++] = gct[0];
+            gct[i++] = gct[1];
+            gct[i++] = gct[2];
         } else if (p.states === 2) {
             gct[i++] = 0xff;
             gct[i++] = 0xff;
             gct[i++] = 0xff;
-            // gct[i++] = 0x36;
-            // gct[i++] = 0x39;
-            // gct[i++] = 0x3e;
         } else if (p instanceof TreePattern && p.rule.colors && p.rule.colors[value]) {
             let [r, g, b] = p.rule.colors[value];
             gct[i++] = r;
@@ -373,21 +525,16 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
             gct[i++] = r;
             gct[i++] = g;
             gct[i++] = b;
-        } else if (customColors[value]) {
-            let [r, g, b] = customColors[value];
-            gct[i++] = r;
-            gct[i++] = g;
-            gct[i++] = b;
         } else {
             gct[i++] = 0xff;
             gct[i++] = 0xff - Math.max(0, Math.ceil((value - 1) / (p.states - 2) * 256) - 1);
-            // gct[i++] = Math.max(0, Math.ceil((value - 1) / (p.states - 2) * 256) - 1);
             gct[i++] = 0;
         }
     }
     gifData.push(gct);
     gifData.push(new Uint8Array([0x21, 0xff, 0x0b, 0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30, 0x03, 0x01, 0x00, 0x00, 0x00]));
-    for (let [p, frameTime] of frames) {
+    let history = new Uint8Array(width * height);
+    for (let {p, time} of frames) {
         let startX: number;
         let startY: number;
         if (p instanceof CoordPattern) {
@@ -406,7 +553,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         let endY = startY + pHeight;
         let pData = p.getData();
         let index = 0;
-        gifData.push(new Uint8Array([0x21, 0xf9, 0x04, 0x00, frameTime & 255, (frameTime >> 8) & 255, 0xff, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, width & 255, (width >> 8) & 255, height & 255, (height >> 8) & 255, 0x00]));
+        gifData.push(new Uint8Array([0x21, 0xf9, 0x04, 0x00, time & 255, (time >> 8) & 255, 0xff, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, width & 255, (width >> 8) & 255, height & 255, (height >> 8) & 255, 0x00]));
         let data: number[] = [];
         for (let y = 0; y < startY; y++) {
             for (let x = 0; x < width; x++) {
@@ -418,7 +565,55 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
                 data.push(clearCode, 0);
             }
             for (let x = startX; x < endX; x++) {
-                data.push(clearCode, pData[index++]);
+                let value = pData[index++];
+                data.push(clearCode);
+                if (useAdvancedColors) {
+                    let i = y * width + x;
+                    if (p.states === 2) {
+                        if (value === 0) {
+                            if (history[i] === 0 || history[i] > 128) {
+                                history[i] = 2;
+                            } else if (history[i] < 128) {
+                                history[i]++;
+                            }
+                            let state = history[i];
+                            if (!(state in customColors) && 128 in customColors) {
+                                data.push(128);
+                            } else {
+                                data.push(state);
+                            }
+                        } else {
+                            if (history[i] < 129) {
+                                history[i] = 129;
+                            } else if (history[i] < 255) {
+                                history[i]++;
+                            }
+                            let state = history[i];
+                            if (!(state in customColors) && 255 in customColors) {
+                                data.push(255);
+                            } else {
+                                data.push(state);
+                            }
+                        }
+                    } else if (value === 0) {
+                        if (history[i] === 0) {
+                            history[i] = p.states;
+                        } else if (history[i] < 255) {
+                            history[i]++;
+                        }
+                        let state = history[i];
+                        if (!(state in customColors) && 255 in customColors) {
+                            data.push(255);
+                        } else {
+                            data.push(state);
+                        }
+                    } else {
+                        history[i] = 0;
+                        data.push(value);
+                    }
+                } else {
+                    data.push(value);
+                }
             }
             for (let x = endX; x < width; x++) {
                 data.push(clearCode, 0);
@@ -469,7 +664,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
     let scale = Math.ceil(gifSize / Math.min(width, height));
     gifSize = Math.min(width, height) * scale;
     execSync(`gifsicle --resize-${width < height ? 'width' : 'height'} ${gifSize} -O3 sim_base.gif > sim.gif`);
-    return [parseTime, desc];
+    return [parseTime, text];
 }
 
 

@@ -23,7 +23,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
     async eval(msg: Message, argv: string[]): Promise<Response> {
         if (sentByAdmin(msg)) {
             await msg.channel.sendTyping();
-            let code = argv.slice(1).join(' ');
+            let code = msg.content.slice(msg.content.indexOf('_') + 1);
             if (!code.includes(';') && !code.includes('\n')) {
                 code = 'return ' + code;
             }
