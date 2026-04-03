@@ -123,6 +123,12 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             if (part[1] === 'fps') {
                 data.time = Math.ceil(100 / part[0]);
                 part = part.slice(2);
+            } else if (part[1] === 'faster') {
+                if (data.time === undefined) {
+                    throw new BotError(`Must use \`fps\` before using \`faster\`!`);
+                }
+                data.time /= part[0];
+                part = part.slice(2);
             } else {
                 let step = 1;
                 let remove = 1;

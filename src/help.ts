@@ -57,7 +57,7 @@ const HELP: {[key: string]: Help} = {
                 desc: 'Specifies how to simulate',
             },
         ],
-        extra: `See https://discord.com/channels/357922255553953794/404518331605975040/1489678824932380774 for more details.`,
+        extra: `See https://discord.com/channels/357922255553953794/404518331605975040/1489678824932380774 for more details.`
     },
 
     'sim rand': {
