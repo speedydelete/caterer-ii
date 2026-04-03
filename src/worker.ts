@@ -77,7 +77,7 @@ async function parseSim(argv: string[], rle: string): Promise<{frames: [Pattern,
     let currentPart: (string | number)[] = [];
     for (let arg of argv.slice(1)) {
         arg = arg.replaceAll('`', '');
-        if (arg === '>') {
+        if (arg === '>' || arg === '\n') {
             parts.push(currentPart);
             currentPart = [];
         } else if (arg === '') {

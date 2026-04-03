@@ -100,10 +100,7 @@ export async function findRLEFromMessage(msg: Message): Promise<{msg: Message, p
 }
 
 export async function findRLE(msg: Message): Promise<{msg: Message, p: Pattern} | undefined> {
-    let out = await findRLEFromMessage(msg);
-    if (out) {
-        return out;
-    }
+    let out: {msg: Message, p: Pattern} | undefined;
     if (msg.reference) {
         let reply: Message | undefined = undefined;
         try {

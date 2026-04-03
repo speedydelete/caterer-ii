@@ -191,7 +191,7 @@ export async function cmdSimStats(msg: Message, argv: string[]): Promise<Respons
     return {embeds: [new EmbedBuilder().setTitle('Most popular rules (page ' + (page + 1) + ')').setDescription(out)]};
 }
 
-export async function cmdSaveSimStats(msg: Message): Promise<Response> {
+export async function cmdSaveSimStats(msg: Message, argv: string[]): Promise<Response> {
     if (!sentByAccepterer(msg)) {
         throw new BotError('You are not an accepterer');
     }
@@ -200,7 +200,7 @@ export async function cmdSaveSimStats(msg: Message): Promise<Response> {
 }
 
 
-export async function cmdAlias(msg: Message): Promise<Response> {
+export async function cmdAlias(msg: Message, argv: string[]): Promise<Response> {
     let data = msg.content.slice(msg.content.indexOf(' ') + 1).split('\n');
     let alias = data[0].toLowerCase().trim();
     if (alias === '') {

@@ -1,7 +1,7 @@
 
 import * as lifeweb from '../lifeweb/lib/index.js';
 import {inspect} from 'node:util';
-import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReaction, PartialMessageReaction, MessageReplyOptions, TextChannel, Partials} from 'discord.js';
+import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReaction, PartialMessageReaction, MessageReplyOptions, TextChannel, Partials, quote} from 'discord.js';
 import {BotError, Response, Message, readFile, writeFile, config, sentByAdmin, aliases, noReplyPings, findRLEFromText, findRLE} from './util.js';
 import {cmdHelp} from './help.js';
 import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax, cmdIdentifyConduit} from './core.js';
@@ -161,7 +161,20 @@ let previousMsgs: [string, Message][] = [];
 let deleters: [string, string][] = [];
 let runningCommands = new Set<string>();
 
-const INTENTIONAL_ERRORS = ['Pattern too big for torus!'];
+const INTENTIONAL_ERRORS: string[] = ['Pattern too big for torus!'];
+
+const ESCAPES: {[key: string]: string} = {
+    'a': '\x07',
+    'b': '\x08',
+    'e': '\x1b',
+    'f': '\f',
+    'n': '\n',
+    'r': '\r',
+    't': '\t',
+    'v': '\v',
+};
+
+const MULTILINE_CMDS: string[] = ['sim'];
 
 async function runCommand(msg: Message): Promise<void> {
     if (msg.author.bot || msg.createdTimestamp < config.initTime || runningCommands.has(msg.id)) {
@@ -175,20 +188,79 @@ async function runCommand(msg: Message): Promise<void> {
     } else {
         return;
     }
-    let argv: string[];
-    if (data.includes('\n')) {
-        let parts = data.split('\n');
-        if (!parts[0].includes(' ')) {
-            argv = [parts[0], ...parts.slice(1).join('\n').split(' ')];
-        } else {
-            argv = data.split(' ');
-        }
+    let cmd: string;
+    if (data.includes(' ')) {
+        let index = data.indexOf(' ');
+        cmd = data.slice(0, index);
+        data = data.slice(index + 1);
+    } else if (data.includes('\n')) {
+        let index = data.indexOf('\n');
+        cmd = data.slice(0, index);
+        data = data.slice(index + 1);
     } else {
-        argv = data.split(' ');
+        cmd = data;
+        data = '';
     }
-    let cmd = argv[0].toLowerCase();
+    cmd = cmd.toLowerCase();
     if (cmd in COMMANDS) {
         runningCommands.add(msg.id);
+        let argv: string[] = [cmd];
+        let currentArg = '';
+        let quoteMode: 'none' | 'single' | 'double' = 'none';
+        for (let i = 0; i < data.length; i++) {
+            let char = data[i];
+            if (char === '\\' && quoteMode !== 'single') {
+                if (i === data.length - 1) {
+                    currentArg += char;
+                    continue;
+                }
+                char = data[i++];
+                if (char in ESCAPES) {
+                    currentArg += ESCAPES[char];
+                } else if (char === 'x') {
+                    currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 3), 16));
+                    i += 2;
+                } else if (char === 'u') {
+                    currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 5), 16));
+                    i += 4;
+                } else if (char === 'U') {
+                    currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 6), 16));
+                    i += 5;
+                } else if ('0123456789'.includes(char)) {
+                    currentArg += String.fromCharCode(parseInt(data.slice(i, i + 3), 8));
+                    i += 2;
+                } else {
+                    currentArg += char;
+                }
+            } else if (char === "'") {
+                if (quoteMode === 'none') {
+                    quoteMode = 'single';
+                } else if (quoteMode === 'single') {
+                    quoteMode = 'none';
+                } else {
+                    currentArg += char;
+                }
+            } else if (char === '"') {
+                if (quoteMode === 'none') {
+                    quoteMode = 'double';
+                } else if (quoteMode === 'single') {
+                    currentArg += char;
+                } else {
+                    quoteMode = 'none';
+                }
+            } else if (char === '\n' && MULTILINE_CMDS.includes(cmd)) {
+                argv.push(currentArg, '\n');
+                currentArg = '';
+            } else if ((char === ' ' || char === '\n') && quoteMode === 'none') {
+                argv.push(currentArg);
+                currentArg = '';
+            } else {
+                currentArg += char;
+            }
+        }
+        if (currentArg.length > 0) {
+            argv.push(currentArg);
+        }
         try {
             let value = await COMMANDS[cmd](msg, argv);
             if (value) {
