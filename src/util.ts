@@ -10,7 +10,7 @@ export class BotError extends Error {}
 
 export type Message = OmitPartialGroupDMChannel<_Message>;
 
-export type Response = undefined | void | Parameters<Message['reply']>[0] | Message;
+export type Response = undefined | void | Parameters<Message['reply']>[0] | Message | [Parameters<Message['reply']>[0] | Message, string[]];
 
 export interface Config {
     token: string;

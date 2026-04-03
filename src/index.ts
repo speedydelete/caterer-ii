@@ -9,7 +9,6 @@ import {cmdHashsoup, cmdApgencode, cmdApgdecode, cmdPopulation, cmdMAPToINT, cmd
 import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSimStats, cmdSaveSimStats, cmdAlias, cmdUnalias, cmdLookupAlias, cmdListAliases} from './db.js';
 import {cmdWiki} from './wiki.js';
 import {check5S} from './notifier.js';
-import {validateHeaderValue} from 'node:http';
 
 
 const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\n';
@@ -189,24 +188,33 @@ async function runCommand(msg: Message): Promise<void> {
     }
     let cmd = argv[0].toLowerCase();
     if (cmd in COMMANDS) {
+        runningCommands.add(msg.id);
         try {
-            runningCommands.add(msg.id);
-            let out = await COMMANDS[cmd](msg, argv);
-            if (out) {
-                if (typeof out === 'string') {
-                    previousMsgs.push([msg.id, await msg.reply({content: out, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
-                } else if (out instanceof _Message) {
-                    previousMsgs.push([msg.id, out]);
-                    deleters.push([msg.author.id, out.id]);
-                    if (deleters.length > 2000) {
-                        deleters.shift();
-                    }
-                } else {
-                    (out as MessageReplyOptions).allowedMentions = {repliedUser: !noReplyPings.includes(msg.author.id), parse: []};
-                    previousMsgs.push([msg.id, await msg.reply(out)]);
+            let value = await COMMANDS[cmd](msg, argv);
+            if (value) {
+                let out: Message;
+                let newDeleters: string[] = [msg.author.id];
+                if (Array.isArray(value)) {
+                    newDeleters.push(...value[1]);
+                    value = value[0];
                 }
-                if (previousMsgs.length > 2000) {
+                if (typeof value === 'string') {
+                    out = await msg.reply({content: value, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}});
+                } else if (value instanceof _Message) {
+                    out = value;
+                } else {
+                    (value as MessageReplyOptions).allowedMentions = {repliedUser: !noReplyPings.includes(msg.author.id), parse: []};
+                    out = await msg.reply(value);
+                }
+                previousMsgs.push([msg.id, out]);
+                if (previousMsgs.length > 4096) {
                     previousMsgs.shift();
+                }
+                for (let id of newDeleters) {
+                    deleters.push([id, out.id]);
+                }
+                if (deleters.length > 65536) {
+                    deleters.shift();
                 }
             }
         } catch (error) {
@@ -235,9 +243,6 @@ async function runCommand(msg: Message): Promise<void> {
             }
         } finally {
             runningCommands.delete(msg.id);
-        }
-        if (previousMsgs.length > 2000) {
-            previousMsgs = previousMsgs.slice(1000);
         }
     }
 }
@@ -430,45 +435,6 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         await starboardChannel.messages.delete(entry[0]);
         await starboardChannel.messages.delete(entry[1]);
     }
-    // let msg = data.message;
-    // if (msg.partial) {
-    //     msg = await msg.fetch();
-    // }
-    // if (msg.guildId !== '357922255553953794') {
-    //     return;
-    // }
-    // let entry = starboard.get(msg.id);
-    // let reacts = Array.from(msg.reactions.cache).map(x => x[1]).filter(x => x.count >= 3);
-    // if (reacts.length > 0) {
-    //     let text = '';
-    //     for (let value of reacts.sort((x, y) => y.count - x.count)) {
-    //         text += `${String(value.emoji.toString())} **${value.count}** `;
-    //     }
-    //     if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
-    //         let msg2 = await msg.fetchReference();
-    //         let data = findRLEFromText(msg2.content);
-    //         if (data) {
-    //             text += `Pattern by <@${msg2.author.id}> in \`${data.ruleStr}\``;
-    //         } else {
-    //             text += `Pattern by <@${msg2.author.id}>`;
-    //         }
-    //     } else {
-    //         text += `<@${msg.author?.id}>`;
-    //     }
-    //     text += ` (https://discord.com/channels/${msg.guildId}/${msg.channelId}/${msg.id})`;
-    //     if (entry) {
-    //         (await starboardChannel.messages.fetch(entry[0])).edit({content: text, allowedMentions: {parse: []}});
-    //     } else {
-    //         let msg0 = await starboardChannel.send({content: text, allowedMentions: {parse: []}});
-    //         let msg1 = await msg.forward(starboardChannel);
-    //         starboard.set(msg.id, [msg0.id, msg1.id]);
-    //         // await writeFile('data/starboard.json', JSON.stringify(Array.from(starboard.entries())));
-    //     }
-    // } else if (entry) {
-    //     starboard.delete(msg.id);
-    //     await starboardChannel.messages.delete(entry[0]);
-    //     await starboardChannel.messages.delete(entry[1]);
-    // }
 }
 
 client.on('messageReactionAdd', updateStarboard);

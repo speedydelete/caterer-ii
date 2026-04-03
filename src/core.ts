@@ -214,11 +214,11 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
     } else if (desc) {
         content = desc;
     }
-    return await replyTo.reply({
+    return [await replyTo.reply({
         content,
         files: ['sim.gif'],
         allowedMentions: {repliedUser: false},
-    });
+    }), [replyTo.author.id]];
 }
 
 
