@@ -2,7 +2,7 @@
 import {join} from 'node:path';
 import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
-import {RuleError, Pattern, MAPPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, createPattern, toCatagolueRule} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, MAPPattern, TorusDataPattern, TorusCoordPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, createPattern, toCatagolueRule} from '../lifeweb/lib/index.js';
 import {Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, removeHIfPossible} from '../lifeweb/lib/catask.js';
 import {BotError, Message, Response, writeFile, names, aliases, simStats, findRLE, sentByAdmin} from './util.js';
 
@@ -155,6 +155,13 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         let rule = argv[2];
         argv = argv.slice(2);
         p = createPattern(rule, aliases);
+        if (p instanceof TorusDataPattern && (p.height < height || p.width < width)) {
+            height = p.height;
+            width = p.width;
+        } else if (p instanceof TorusCoordPattern && (p.torusHeight < height || p.torusWidth < width)) {
+            height = p.torusHeight;
+            width = p.torusWidth;
+        }
         let size = height * width;
         let data = new Uint8Array(size);
         for (let i = 0; i < size; i++) {
