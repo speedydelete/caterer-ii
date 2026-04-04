@@ -295,9 +295,9 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             data.bb[2] = part[1];
             data.bb[3] = part[2];
             part = part.slice(2);
-        } else if (part[0] === 'setorigin') {
+        } else if (part[0] === 'origin') {
             if (typeof part[1] !== 'number' || typeof part[2] !== 'number') {
-                throw new BotError(`Invalid part: Expected 2 arguments of type number for "setorigin": ${part.join(' ')}`);
+                throw new BotError(`Invalid part: Expected 2 arguments of type number for "origin": ${part.join(' ')}`);
             }
             data.origin = [part[1], part[2]];
             part = part.slice(3);
@@ -316,6 +316,9 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
                 throw new BotError(`Invalid part: Invalid number: ${part.join(' ')}`);
             }
             part = part.slice(2);
+        } else if (part[0] === 'removefirst') {
+            frames.shift();
+            part = part.slice(1);
         } else {
             throw new BotError(`Invalid part: Unrecognized command: ${part.join(' ')}`);
         }
