@@ -395,7 +395,6 @@ client.on('messageReactionAdd', async data => {
     if (!msg.author || (msg.author.id !== client.user?.id) || !msg.deletable) {
         return;
     }
-
     for (let admin of config.admins) {
         if (data.users.cache.has(admin)) {
             msg.delete();
