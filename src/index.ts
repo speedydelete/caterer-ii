@@ -386,6 +386,9 @@ client.on('messageReactionAdd', async data => {
     if (!msg.author || (msg.author.id !== client.user?.id) || !(data.emoji.name === '❌' || data.emoji.name === '🗑️') || !msg.deletable) {
         return;
     }
+    if (data.partial) {
+        data = await data.fetch();
+    }
     for (let admin of config.admins) {
         if (data.users.cache.has(admin)) {
             msg.delete();
