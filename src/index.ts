@@ -382,10 +382,19 @@ client.on('messageUpdate', async (old, msg) => {
 });
 
 client.on('messageReactionAdd', async data => {
-    if (!(data.emoji.name === '❌' || data.emoji.name === '🗑️') || !data.message.author || (data.message.author?.id !== client.user?.id && !sentByAdmin(data.message as Message))) {
+    if (!data.message.author || (data.message.author?.id !== client.user?.id)) {
+        return;
+    }
+    if (!(data.emoji.name === '❌' || data.emoji.name === '🗑️')) {
         return;
     }
     let msg = data.message;
+    for (let admin of config.admins) {
+        if (data.users.cache.has(admin)) {
+            msg.delete();
+            return;
+        }
+    }
     if (msg.channel.id === config.starboardChannel) {
         return;
     }
