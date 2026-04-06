@@ -382,13 +382,10 @@ client.on('messageUpdate', async (old, msg) => {
 });
 
 client.on('messageReactionAdd', async data => {
-    if (!data.message.author || (data.message.author?.id !== client.user?.id)) {
-        return;
-    }
-    if (!(data.emoji.name === '❌' || data.emoji.name === '🗑️')) {
-        return;
-    }
     let msg = data.message;
+    if (!msg.author || (msg.author.id !== client.user?.id) || !(data.emoji.name === '❌' || data.emoji.name === '🗑️') || !msg.deletable) {
+        return;
+    }
     for (let admin of config.admins) {
         if (data.users.cache.has(admin)) {
             msg.delete();
