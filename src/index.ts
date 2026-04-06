@@ -382,13 +382,20 @@ client.on('messageUpdate', async (old, msg) => {
 });
 
 client.on('messageReactionAdd', async data => {
-    let msg = data.message;
-    if (!msg.author || (msg.author.id !== client.user?.id) || !(data.emoji.name === '❌' || data.emoji.name === '🗑️') || !msg.deletable) {
+    if (!(data.emoji.name === '❌' || data.emoji.name === '🗑️')) {
         return;
     }
     if (data.partial) {
         data = await data.fetch();
     }
+    let msg = data.message;
+    if (msg.partial) {
+        msg = await msg.fetch();
+    }
+    if (!msg.author || (msg.author.id !== client.user?.id) || !msg.deletable) {
+        return;
+    }
+
     for (let admin of config.admins) {
         if (data.users.cache.has(admin)) {
             msg.delete();
