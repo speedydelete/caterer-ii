@@ -714,8 +714,13 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
                         codeSize++;
                     }
                 }
+                if (out.length > (1 << 24)) {
+                    outs.push(new Uint8Array(out));
+                    out = [];
+                }
             }
         }
+        outs.push(new Uint8Array(out));
         if (bitCount > 0) {
             out.push(accumulator & 0xff);
         }
