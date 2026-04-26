@@ -140,8 +140,8 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         }
         if (argv[2].match(/^\d+x\d+$/)) {
             let data = argv[2].split('x');
-            width = parseInt(data[0]);
-            height = parseInt(data[1]);
+            width = Number(data[0]);
+            height = Number(data[1]);
             argv = argv.slice(1);
         }
         let fill = 0.5;
@@ -149,7 +149,7 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
             throw new BotError('Expected arguments!');
         }
         if (argv[2].endsWith('%')) {
-            fill = parseFloat(argv[2]) / 100;
+            fill = Number(argv[2]) / 100;
             argv = argv.slice(1);
         }
         let rule = argv[2];
@@ -166,10 +166,10 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         let data = new Uint8Array(size);
         for (let i = 0; i < size; i++) {
             if (Math.random() < fill) {
-                if (p.states === 2) {
+                if (p.rule.states === 2) {
                     data[i] = 1;
                 } else {
-                    data[i] = Math.floor(Math.random() * (p.states - 1)) + 1;
+                    data[i] = Math.floor(Math.random() * (p.rule.states - 1)) + 1;
                 }
             }
         }
@@ -193,10 +193,10 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         return 'Error: Timed out!';
     }
     let [parseTime, desc] = data;
-    if (p.ruleStr in simStats) {
-        simStats[p.ruleStr]++;
+    if (p.rule.str in simStats) {
+        simStats[p.rule.str]++;
     } else {
-        simStats[p.ruleStr] = 1;
+        simStats[p.rule.str] = 1;
     }
     simCounter++;
     if (simCounter === 4) {
@@ -280,7 +280,7 @@ function embedIdentified(original: Pattern, type: PatternType | Identified, isOu
         } else {
             out += apgcode;
         }
-        out += '](https://catagolue.hatsya.com/object/' + apgcode + '/' + toCatagolueRule(type.phases[0].ruleStr) + ')';
+        out += '](https://catagolue.hatsya.com/object/' + apgcode + '/' + toCatagolueRule(type.phases[0].rule.str) + ')';
     }
     let title = 'desc' in type ? type.desc : getDescription(type);
     let name: string | undefined = undefined;
@@ -315,7 +315,7 @@ export async function cmdIdentify(msg: Message, argv: string[]): Promise<Respons
     }
     let limit = 256;
     if (argv[1]) {
-        let parsed = parseFloat(argv[1]);
+        let parsed = Number(argv[1]);
         if (!Number.isNaN(parsed)) {
             limit = parsed;
         }
@@ -344,7 +344,7 @@ export async function cmdBasicIdentify(msg: Message, argv: string[]): Promise<Re
     }
     let limit = 256;
     if (argv[1]) {
-        let parsed = parseFloat(argv[1]);
+        let parsed = Number(argv[1]);
         if (!Number.isNaN(parsed)) {
             limit = parsed;
         }
@@ -371,7 +371,7 @@ export async function cmdMinmax(msg: Message, argv: string[]): Promise<Response>
             throw new BotError(`You must be an admin to use notimeout!`);
         }
     }
-    let gens = parseInt(argv[1]);
+    let gens = Number(argv[1]);
     if (Number.isNaN(gens)) {
         throw new BotError('Argument 1 is not a valid number');
     }
@@ -385,8 +385,6 @@ export async function cmdMinmax(msg: Message, argv: string[]): Promise<Response>
     }
     return `Min: ${out[0]}\nMax: ${out[1]}`;
 }
-
-let lifePattern = createPattern('B3/S23') as MAPPattern;
 
 export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<Response> {
     await msg.channel.sendTyping();
@@ -404,7 +402,7 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
         throw new BotError('Cannot find RLE');
     }
     let p = rleData.p;
-    if (p.ruleStr.includes('History') || p.ruleStr.includes('Super')) {
+    if (p.rule.str.includes('History') || p.rule.str.includes('Super')) {
         p.setData(p.height, p.width, p.getData().map(x => x % 2));
     }
     let data = await createWorkerJob('identify_conduit', {rle: p.toRLE(), maxTime: 384, sepGens: 0}, noTimeout);

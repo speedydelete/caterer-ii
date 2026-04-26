@@ -25,7 +25,7 @@ export async function cmdCanonicalApgenode(msg: Message, argv: string[]): Promis
     if (argv[1].startsWith('c')) {
         let gens = 0;
         if (argv[2] !== undefined) {
-            gens = parseInt(argv[2]);
+            gens = Number(argv[2]);
             if (Number.isNaN(gens)) {
                 throw new BotError('Invalid number');
             }
@@ -60,11 +60,11 @@ export async function cmdPopulation(msg: Message, argv: string[]): Promise<Respo
     }
     let p = data.p;
     msg = data.msg;
-    if (p.states === 2) {
+    if (p.rule.states === 2) {
         return String(p.population);
     } else {
         let counts = [];
-        for (let i = 0; i < p.states; i++) {
+        for (let i = 0; i < p.rule.states; i++) {
             counts.push(0);
         }
         let total = 0;
@@ -118,7 +118,7 @@ export async function cmdRuleInfo(msg: Message, argv: string[]): Promise<Respons
     let rule = argv.slice(1).join(' ');
     let p = createPattern(rule, aliases);
     let catagolue = toCatagolueRule(rule, aliases);
-    let out = `**Class:** ${getClass(p)}\n**States:** ${p.states}\n**Symmetry:** ${p.ruleSymmetry}\n**Period:** ${p.rulePeriod}\n`;
+    let out = `**Class:** ${getClass(p)}\n**States:** ${p.rule.states}\n**Symmetry:** ${p.rule.symmetry}\n**Period:** ${p.rule.period}\nRange: ${p.rule.range}\nNeighborhood: ${p.rule.neighborhood.map(x => `(${x[0]}, ${x[1]})`).join(', ')}`;
     try {
         out += `**Black/white reversal:** ${getBlackWhiteReversal(rule)}\n`;
     } catch (error) {
@@ -127,11 +127,11 @@ export async function cmdRuleInfo(msg: Message, argv: string[]): Promise<Respons
         }
     }
     out += `**Catagolue:** [${catagolue}](https://catagolue.hatsya.com/census/${catagolue})`;
-    return {embeds: [(new EmbedBuilder()).setTitle(p.ruleStr).setDescription(out)]};
+    return {embeds: [(new EmbedBuilder()).setTitle(p.rule.str).setDescription(out)]};
 }
 
 export async function cmdNormalizeRule(msg: Message, argv: string[]): Promise<Response> {
-    return createPattern(argv.slice(1).join(' ')).ruleStr;
+    return createPattern(argv.slice(1).join(' ')).rule.str;
 }
 
 export async function cmdBlackWhiteReverse(msg: Message, argv: string[]): Promise<Response> {
@@ -150,7 +150,7 @@ export async function cmdCheckerboardDual(msg: Message, argv: string[]): Promise
         even[i ^ 0b010101010] = trs[i];
         odd[i ^ 0b101010101] = trs[i] ^ 1;
     }
-    if (p.ruleSymmetry === 'D8') {
+    if (p.rule.symmetry === 'D8') {
         let [evenB, evenS] = arrayToTransitions(even, TRANSITIONS);
         let [oddB, oddS] = arrayToTransitions(odd, TRANSITIONS);
         return `Even: B${unparseTransitions(evenB, VALID_TRANSITIONS)}/S${unparseTransitions(evenS, VALID_TRANSITIONS)}\nOdd: B${unparseTransitions(oddB, VALID_TRANSITIONS)}/S${unparseTransitions(oddS, VALID_TRANSITIONS)}`;

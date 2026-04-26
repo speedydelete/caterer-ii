@@ -73,7 +73,7 @@ export let dyks = (await readFile('data/dyk.txt')).split('\n').slice(1);
 export async function cmdDyk(msg: Message, argv: string[]): Promise<Response> {
     let num: number;
     if (argv.length > 1) {
-        num = parseInt(argv[1]) - 1;
+        num = Number(argv[1]) - 1;
         if (Number.isNaN(num)) {
             throw new BotError('Invalid number!');
         }
@@ -179,7 +179,7 @@ export async function cmdDeleteName(msg: Message, argv: string[]): Promise<Respo
 
 
 export async function cmdSimStats(msg: Message, argv: string[]): Promise<Response> {
-    let page = argv[1] ? parseInt(argv[1]) - 1 : 0;
+    let page = argv[1] ? Number(argv[1]) - 1 : 0;
     if (Number.isNaN(page)) {
         throw new BotError('Invalid page number');
     }

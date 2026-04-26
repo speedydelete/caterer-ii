@@ -501,7 +501,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
             let msg2 = await msg.fetchReference();
             let data = findRLEFromText(msg2.content);
             if (data) {
-                text += `Pattern by <@${msg2.author.id}> in \`${data.ruleStr}\``;
+                text += `Pattern by <@${msg2.author.id}> in \`${data.rule.str}\``;
             } else {
                 text += `Pattern by <@${msg2.author.id}>`;
             }

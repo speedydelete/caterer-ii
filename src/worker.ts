@@ -223,7 +223,7 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
                 frames.push(getFrame(p, data));
             }
             if (typeof part[0] === 'string' && part[0].match(/^x[0-9]+$/)) {
-                let amount = parseInt(part[0].slice(1));
+                let amount = Number(part[0].slice(1));
                 if (type.period > 0) {
                     for (let i = 0; i < (amount - 1) * type.period; i++) {
                         p.runGeneration();
@@ -311,7 +311,7 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             if (data.time === undefined) {
                 throw new BotError(`Must use \`fps\` before using \`faster\`!`);
             }
-            data.time /= parseInt(part[0].slice(0, -1));
+            data.time /= Number(part[0].slice(0, -1));
             if (Number.isNaN(data.time)) {
                 throw new BotError(`Invalid part: Invalid number: ${part.join(' ')}`);
             }
@@ -387,7 +387,7 @@ function parseSim(argv: string[], rle: string): SimData {
             continue;
         } else {
             if (arg.match(/^[0-9.-]+$/)) {
-                currentPart.push(parseFloat(arg));
+                currentPart.push(Number(arg));
             } else if (arg === 'repeat') {
                 parts.push(currentPart);
                 currentPart = [arg];
@@ -486,7 +486,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         minY = 0;
     }
     let p = frames[0].p;
-    let colorCount = Math.max(p.states, ...Object.keys(customColors).map(x => parseInt(x)));
+    let colorCount = Math.max(p.rule.states, ...Object.keys(customColors).map(x => Number(x)));
     let bitWidth = Math.max(2, Math.ceil(Math.log2(colorCount)));
     let colors = 2**bitWidth;
     let clearCode = 1 << bitWidth;
@@ -523,16 +523,16 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
             gct[i++] = r;
             gct[i++] = g;
             gct[i++] = b;
-        } else if (value >= p.states) {
+        } else if (value >= p.rule.states) {
             gct[i++] = gct[0];
             gct[i++] = gct[1];
             gct[i++] = gct[2];
-        } else if (p.states === 2) {
+        } else if (p.rule.states === 2) {
             gct[i++] = 0xff;
             gct[i++] = 0xff;
             gct[i++] = 0xff;
-        } else if (clsP instanceof TreePattern && clsP.rule.colors && clsP.rule.colors[value]) {
-            let [r, g, b] = clsP.rule.colors[value];
+        } else if (clsP instanceof TreePattern && clsP.atRule.colors && clsP.atRule.colors[value]) {
+            let [r, g, b] = clsP.atRule.colors[value];
             gct[i++] = r;
             gct[i++] = g;
             gct[i++] = b;
@@ -553,7 +553,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
             gct[i++] = b;
         } else {
             gct[i++] = 0xff;
-            gct[i++] = 0xff - Math.max(0, Math.ceil((value - 1) / (p.states - 2) * 256) - 1);
+            gct[i++] = 0xff - Math.max(0, Math.ceil((value - 1) / (p.rule.states - 2) * 256) - 1);
             gct[i++] = 0;
         }
     }
@@ -595,7 +595,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
                 data.push(clearCode);
                 if (useAdvancedColors) {
                     let i = y * width + x;
-                    if (p.states === 2) {
+                    if (p.rule.states === 2) {
                         if (value === 0) {
                             if (history[i] === 0 || history[i] > 128) {
                                 history[i] = 2;
@@ -623,7 +623,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
                         }
                     } else if (value === 0) {
                         if (history[i] === 0) {
-                            history[i] = p.states;
+                            history[i] = p.rule.states;
                         } else if (history[i] < 255) {
                             history[i]++;
                         }
