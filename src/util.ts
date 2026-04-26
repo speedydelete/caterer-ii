@@ -63,7 +63,17 @@ export const RLE_HEADER = /\s*x\s*=\s*\d+\s*,?\s*y\s*=\s*\d+/;
 export function findRLEFromText(data: string): Pattern | undefined {
     let match = RLE_HEADER.exec(data);
     if (!match) {
-        return;
+        let index = data.indexOf('```rpf\n');
+        if (index === -1) {
+            return;
+        }
+        data = data.slice(index + '```rpf\n'.length);
+        index = data.indexOf('```');
+        if (index === -1) {
+            return;
+        }
+        data = data.slice(0, index);
+        return rpfToPattern(parseRPF(data, '/'));
     }
     data = data.slice(match.index);
     let index = data.indexOf('!');
