@@ -578,7 +578,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         let pData = p.getData();
         let index = 0;
         gifData.push(new Uint8Array([0x21, 0xf9, 0x04, 0x00, time & 255, (time >> 8) & 255, 0xff, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, width & 255, (width >> 8) & 255, height & 255, (height >> 8) & 255, 0x00, bitWidth]));
-        let datas: number[][] = [];
+        let datas: Uint16Array[] = [];
         let data: number[] = [];
         for (let y = 0; y < startY; y++) {
             for (let x = 0; x < width; x++) {
@@ -640,7 +640,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
                     data.push(value);
                 }
                 if (data.length > (1 << 24)) {
-                    datas.push(data);
+                    datas.push(new Uint16Array(data));
                     data = [];
                 }
             }
@@ -654,7 +654,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
             }
         }
         data.push(endCode);
-        datas.push(data);
+        datas.push(new Uint16Array(data));
         let outs: Uint8Array[] = [];
         let out: number[] = [];
         let accumulator = 0;
