@@ -627,7 +627,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         let index = 0;
         gifData.push(new Uint8Array([0x21, 0xf9, 0x04, 0x00, time & 255, (time >> 8) & 255, 0xff, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, width & 255, (width >> 8) & 255, height & 255, (height >> 8) & 255, 0x00, bitWidth]));
         let pixels: Uint8Array[] = [];
-        pixels.push(new Uint8Array(startY + width));
+        pixels.push(new Uint8Array(startY * width));
         let padStartArray = new Uint8Array(startX);
         let padEndArray = new Uint8Array(width - endX);
         for (let y = startY; y < endY; y++) {
@@ -687,7 +687,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
             pixels.push(data);
             pixels.push(padEndArray);
         }
-        pixels.push(new Uint8Array(endY * height));
+        pixels.push(new Uint8Array(width * (height - endY)));
         let codesArray = lzwEncode(pixels, bitWidth);
         let outs: Uint8Array[] = [];
         let out: number[] = [];
