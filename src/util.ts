@@ -97,14 +97,15 @@ export async function findRLEFromMessage(msg: Message): Promise<{msg: Message, p
         }
     }
     if (!msg.author.bot && msg.attachments.size > 0) {
-        for (let [name, attachment] of msg.attachments) {
-            if (name.endsWith('.rle') || name.endsWith('.txt')) {
+        for (let [_, attachment] of msg.attachments) {
+            let file = attachment.name;
+            if (file.endsWith('.rle') || file.endsWith('.txt')) {
                 let data = await (await fetch(attachment.url)).text();
                 let out = findRLEFromText(data);
                 if (out) {
                     return {msg, p: out};
                 }
-            } else if (name.endsWith('.rpf')) {
+            } else if (file.endsWith('.rpf')) {
                 let data = await (await fetch(attachment.url)).text();
                 let rpf = parseRPF(data, '/');
                 // @ts-ignore
