@@ -386,7 +386,7 @@ function parseSim(argv: string[], rle: string): SimData {
         } else if (arg === '') {
             continue;
         } else {
-            if (arg.match(/^[0-9.-]+$/)) {
+            if (arg.match(/^([0-9.-]+|-?Infinity|-?NaN)$/)) {
                 currentPart.push(Number(arg));
             } else if (arg === 'repeat') {
                 parts.push(currentPart);
