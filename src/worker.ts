@@ -469,6 +469,57 @@ function parseSim(argv: string[], rle: string): SimData {
     return {frames: frames.map(({p, time}) => ({p, time: Math.max(time ?? defaultTime, 2)})), gifSize, minX, minY, width, height, useAdvancedColors: data.useAdvancedColors, customColors: data.customColors, text: data.text};
 }
 
+function lzwEncode(pixels: Uint8Array[], minCodeSize: number): Uint16Array[] {
+    let clearCode = 1 << minCodeSize;
+    let endCode = clearCode + 1;
+    let dict = new Map<string, number>();
+    for (let i = 0; i < clearCode; i++) {
+        dict.set(i.toString(), i);
+    }
+    let nextCode = endCode + 1;
+    let codeSize = minCodeSize + 1;
+    let outs: Uint16Array[] = [];
+    let out: number[] = [];
+    out.push(clearCode);
+    let w = pixels[0][0].toString();
+    let isStart = true;
+    for (let array of pixels) {
+        for (let i = isStart ? 1 : 0; i < array.length; i++) {
+            let k = array[i];
+            let wk = w + ',' + k;
+            if (dict.has(wk)) {
+                w = wk;
+            } else {
+                out.push(dict.get(w)!);
+                if (nextCode < 4096) {
+                    dict.set(wk, nextCode++);
+                    if (nextCode === (1 << codeSize)) {
+                        codeSize++;
+                    }
+                } else {
+                    out.push(clearCode);
+                    dict.clear();
+                    for (let j = 0; j < clearCode; j++) {
+                        dict.set(j.toString(), j);
+                    }
+                    nextCode = endCode + 1;
+                    codeSize = minCodeSize + 1;
+                }
+                w = k.toString();
+            }
+            if (out.length > (1 << 24)) {
+                outs.push(new Uint16Array(out));
+                out = [];
+            }
+        }
+        isStart = false;
+    }
+    out.push(dict.get(w)!);
+    out.push(endCode);
+    outs.push(new Uint16Array(out));
+    return outs;
+}
+
 async function runSim(argv: string[], rle: string): Promise<[number, string | undefined]> {
     let startTime = performance.now();
     let {frames, gifSize, minX, minY, width, height, useAdvancedColors, customColors, text} = parseSim(argv, rle);
@@ -487,9 +538,6 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
     let colorCount = Math.max(p.rule.states, ...Object.keys(customColors).map(x => Number(x)));
     let bitWidth = Math.max(2, Math.ceil(Math.log2(colorCount)));
     let colors = 2**bitWidth;
-    let clearCode = 1 << bitWidth;
-    let endCode = (1 << bitWidth) + 1;
-    let codeSize = bitWidth + 1;
     let gifData: Uint8Array[] = [new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, width & 255, (width >> 8) & 255, height & 255, (height >> 8) & 255, 0xf0 | (bitWidth - 1), 0x00, 0x00])];
     let gct = new Uint8Array(colors * 3);
     let i = 0;
@@ -578,20 +626,16 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         let pData = p.getData();
         let index = 0;
         gifData.push(new Uint8Array([0x21, 0xf9, 0x04, 0x00, time & 255, (time >> 8) & 255, 0xff, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, width & 255, (width >> 8) & 255, height & 255, (height >> 8) & 255, 0x00, bitWidth]));
-        let datas: Uint16Array[] = [];
-        let data: number[] = [];
-        for (let y = 0; y < startY; y++) {
-            for (let x = 0; x < width; x++) {
-                data.push(clearCode, 0);
-            }
-        }
+        let pixels: Uint8Array[] = [];
+        pixels.push(new Uint8Array(startY + width));
+        let padStartArray = new Uint8Array(startX);
+        let padEndArray = new Uint8Array(width - endX);
         for (let y = startY; y < endY; y++) {
-            for (let x = 0; x < startX; x++) {
-                data.push(clearCode, 0);
-            }
+            pixels.push(padStartArray);
+            let data = new Uint8Array(pWidth);
+            let j = 0;
             for (let x = startX; x < endX; x++) {
                 let value = pData[index++];
-                data.push(clearCode);
                 if (useAdvancedColors) {
                     let i = y * width + x;
                     if (p.rule.states === 2) {
@@ -603,9 +647,9 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
                             }
                             let state = history[i];
                             if (!(state in customColors) && 128 in customColors) {
-                                data.push(128);
+                                data[j++] = 128;
                             } else {
-                                data.push(state);
+                                data[j++] = state;
                             }
                         } else {
                             if (history[i] < 129) {
@@ -615,9 +659,9 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
                             }
                             let state = history[i];
                             if (!(state in customColors) && 255 in customColors) {
-                                data.push(255);
+                                data[j++] = 255;
                             } else {
-                                data.push(state);
+                                data[j++] = state;
                             }
                         }
                     } else if (value === 0) {
@@ -628,47 +672,46 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
                         }
                         let state = history[i];
                         if (!(state in customColors) && 255 in customColors) {
-                            data.push(255);
+                            data[j++] = 255;
                         } else {
-                            data.push(state);
+                            data[j++] = state;
                         }
                     } else {
                         history[i] = 0;
-                        data.push(value);
+                        data[j++] = value;
                     }
                 } else {
-                    data.push(value);
-                }
-                if (data.length > (1 << 24)) {
-                    datas.push(new Uint16Array(data));
-                    data = [];
+                    data[j++] = value;
                 }
             }
-            for (let x = endX; x < width; x++) {
-                data.push(clearCode, 0);
-            }
+            pixels.push(data);
+            pixels.push(padEndArray);
         }
-        for (let y = endY; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                data.push(clearCode, 0);
-            }
-        }
-        data.push(endCode);
-        datas.push(new Uint16Array(data));
+        pixels.push(new Uint8Array(endY * height));
+        let codesArray = lzwEncode(pixels, bitWidth);
         let outs: Uint8Array[] = [];
         let out: number[] = [];
         let accumulator = 0;
         let bitCount = 0;
-        for (let data of datas) {
-            for (let value of data) {
-                accumulator |= value << bitCount;
+        let codeSize = bitWidth + 1;
+        let clearCode = 1 << bitWidth;
+        let nextCode = clearCode + 2;
+        for (let codes of codesArray) {
+            for (let code of codes) {
+                accumulator |= code << bitCount;
                 bitCount += codeSize;
                 while (bitCount >= 8) {
                     out.push(accumulator & 0xff);
                     accumulator >>= 8;
                     bitCount -= 8;
-                    if (out.length > (1 << 24)) {
-                        outs.push(new Uint8Array(out));
+                }
+                if (code === clearCode) {
+                    codeSize = bitWidth + 1;
+                    nextCode = clearCode + 2;
+                } else {
+                    nextCode++;
+                    if (nextCode === (1 << codeSize) && codeSize < 12) {
+                        codeSize++;
                     }
                 }
             }
@@ -676,7 +719,6 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         if (bitCount > 0) {
             out.push(accumulator & 0xff);
         }
-        outs.push(new Uint8Array(out));
         for (let out of outs) {
             let i = 0;
             while (i < out.length) {
