@@ -493,7 +493,7 @@ function lzwEncode(pixels: Uint8Array[], minCodeSize: number): Uint16Array[] {
                 out.push(dict.get(w)!);
                 if (nextCode < 4096) {
                     dict.set(wk, nextCode++);
-                    if (nextCode === (1 << codeSize)) {
+                    if (nextCode === (1 << codeSize) && codeSize < 12) {
                         codeSize++;
                     }
                 } else {
