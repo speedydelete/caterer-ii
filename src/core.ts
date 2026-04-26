@@ -3,6 +3,7 @@ import {join} from 'node:path';
 import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
 import {RuleError, Pattern, MAPPattern, TorusDataPattern, TorusCoordPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, removeHIfPossible, createPattern} from '../lifeweb/lib/index.js';
+import {RPFPattern} from '../lifeweb/lib/rpf.js';
 import {BotError, Message, Response, writeFile, names, aliases, simStats, findRLE, sentByAdmin} from './util.js';
 
 
@@ -94,11 +95,11 @@ function workerOnExit(code: number): void {
     workerHandleFatal(new Error(msg));
 }
 
-function createWorkerJob(type: 'sim', data: {argv: string[], rle: string}, noTimeout?: boolean): Promise<[number, string | undefined] | null>;
-function createWorkerJob(type: 'identify', data: {rle: string, limit: number}, noTimeout?: boolean): Promise<Identified | null>;
-function createWorkerJob(type: 'basic_identify', data: {rle: string, limit: number}, noTimeout?: boolean): Promise<PatternType | null>;
-function createWorkerJob(type: 'minmax', data: {rle: string, gens: number}, noTimeout?: boolean): Promise<[string, string] | null>;
-function createWorkerJob(type: 'identify_conduit', data: {rle: string, maxTime: number, sepGens: number}, noTimeout?: boolean): Promise<false | Conduit | null>;
+function createWorkerJob(type: 'sim', data: {argv: string[], value: string}, noTimeout?: boolean): Promise<[number, string | undefined] | null>;
+function createWorkerJob(type: 'identify', data: {value: string, limit: number}, noTimeout?: boolean): Promise<Identified | null>;
+function createWorkerJob(type: 'basic_identify', data: {value: string, limit: number}, noTimeout?: boolean): Promise<PatternType | null>;
+function createWorkerJob(type: 'minmax', data: {value: string, gens: number}, noTimeout?: boolean): Promise<[string, string] | null>;
+function createWorkerJob(type: 'identify_conduit', data: {value: string, maxTime: number, sepGens: number}, noTimeout?: boolean): Promise<false | Conduit | null>;
 function createWorkerJob(type: 'sim' | 'identify' | 'basic_identify' | 'minmax' | 'identify_conduit', data: any, noTimeout?: boolean): Promise<any> {
     return new Promise((resolve, reject) => {
         let id = nextID++;
@@ -116,6 +117,15 @@ function createWorkerJob(type: 'sim' | 'identify' | 'basic_identify' | 'minmax' 
 
 
 let simCounter = 0;
+
+function serialize(value: Pattern): string {
+    if (value instanceof RPFPattern) {
+        // @ts-ignore
+        return 'rpf\n' + value.toRPF();
+    } else {
+        return 'rle\n' + value.toRLE();
+    }
+}
 
 export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
     let startTime = performance.now();
@@ -187,15 +197,16 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         outputTime = true;
         argv = argv.slice(1);
     }
-    let data = await createWorkerJob('sim', {argv, rle: p.toRLE()}, noTimeout);
+    let data = await createWorkerJob('sim', {argv, value: serialize(p)}, noTimeout);
     if (!data) {
         return 'Error: Timed out!';
     }
     let [parseTime, desc] = data;
-    if (p.rule.str in simStats) {
-        simStats[p.rule.str]++;
+    let rule = p.rule.str;
+    if (rule in simStats) {
+        simStats[rule]++;
     } else {
-        simStats[p.rule.str] = 1;
+        simStats[rule] = 1;
     }
     simCounter++;
     if (simCounter === 4) {
@@ -323,7 +334,7 @@ export async function cmdIdentify(msg: Message, argv: string[]): Promise<Respons
     if (!data) {
         throw new BotError('Cannot find RLE');
     }
-    let out = await createWorkerJob('identify', {rle: data.p.toRLE(), limit}, noTimeout);
+    let out = await createWorkerJob('identify', {value: serialize(data.p), limit}, noTimeout);
     if (!out) {
         throw new BotError('Timed out!');
     }
@@ -352,7 +363,7 @@ export async function cmdBasicIdentify(msg: Message, argv: string[]): Promise<Re
     if (!data) {
         throw new BotError('Cannot find RLE');
     }
-    let out = await createWorkerJob('basic_identify', {rle: data.p.toRLE(), limit}, noTimeout);
+    let out = await createWorkerJob('basic_identify', {value: serialize(data.p), limit}, noTimeout);
     if (!out) {
         throw new BotError('Timed out!');
     }
@@ -378,7 +389,7 @@ export async function cmdMinmax(msg: Message, argv: string[]): Promise<Response>
     if (!data) {
         throw new BotError('Cannot find RLE');
     }
-    let out = await createWorkerJob('minmax', {rle: data.p.toRLE(), gens}, noTimeout);
+    let out = await createWorkerJob('minmax', {value: serialize(data.p), gens}, noTimeout);
     if (!out) {
         throw new BotError('Timed out!');
     }
@@ -404,7 +415,7 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
     if (p.rule.str.includes('History') || p.rule.str.includes('Super')) {
         p.setData(p.height, p.width, p.getData().map(x => x % 2));
     }
-    let data = await createWorkerJob('identify_conduit', {rle: p.toRLE(), maxTime: 384, sepGens: 0}, noTimeout);
+    let data = await createWorkerJob('identify_conduit', {value: serialize(p), maxTime: 384, sepGens: 0}, noTimeout);
     if (data === null) {
         throw new BotError('Timed out!');
     }

@@ -3,7 +3,18 @@ import * as fs from 'node:fs/promises';
 import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
 import {RuleError, Pattern, CoordPattern, MAPPattern, DataHistoryPattern, CoordHistoryPattern, DataSuperPattern, CoordSuperPattern, InvestigatorPattern, TreePattern, findMinmax, findType, getDescription, identify, identifyConduit, createPattern, parse} from '../lifeweb/lib/index.js';
+import {parseRPF, RPFPattern} from '../lifeweb/lib/rpf.js';
 import {BotError, aliases} from './util.js';
+
+
+function deserialize(value: string): Pattern {
+    if (value.startsWith('rle\n')) {
+        return parse(value.slice(4), aliases);
+    } else {
+        // @ts-ignore
+        return new RPFPattern(parseRPF(value.slice(4), '/'));
+    }
+}
 
 
 const HISTORY_COLORS: [number, number, number][] = [
@@ -709,10 +720,10 @@ if (!parentPort) {
 }
 
 type Job = 
-        | {id: number, type: 'sim', argv: string[], rle: string}
-        | {id: number, type: 'identify' | 'basic_identify', rle: string, limit: number}
-        | {id: number, type: 'minmax', rle: string, gens: number}
-        | {id: number, type: 'identify_conduit', rle: string, maxTime: number, maxRT: number, sepGens: number};
+        | {id: number, type: 'sim', argv: string[], value: string}
+        | {id: number, type: 'identify' | 'basic_identify', value: string, limit: number}
+        | {id: number, type: 'minmax', value: string, gens: number}
+        | {id: number, type: 'identify_conduit', value: string, maxTime: number, maxRT: number, sepGens: number};
 
 parentPort.on('message', async (data: Job) => {
     if (!parentPort) {
@@ -721,16 +732,16 @@ parentPort.on('message', async (data: Job) => {
     let id = data.id;
     try {
         if (data.type === 'sim') {
-            parentPort.postMessage({id, ok: true, data: await runSim(data.argv, data.rle)});
+            parentPort.postMessage({id, ok: true, data: await runSim(data.argv, data.value)});
         } else if (data.type === 'identify') {
-            parentPort.postMessage({id, ok: true, data: identify(parse(data.rle, aliases), data.limit)});
+            parentPort.postMessage({id, ok: true, data: identify(parse(data.value, aliases), data.limit)});
         } else if (data.type === 'basic_identify') {
-            parentPort.postMessage({id, ok: true, data: findType(parse(data.rle, aliases), data.limit)});
+            parentPort.postMessage({id, ok: true, data: findType(parse(data.value, aliases), data.limit)});
         } else if (data.type === 'minmax') {
-            parentPort.postMessage({id, ok: true, data: findMinmax(parse(data.rle, aliases), data.gens)})
+            parentPort.postMessage({id, ok: true, data: findMinmax(parse(data.value, aliases), data.gens)})
         } else if (data.type === 'identify_conduit') {
             try {
-                parentPort.postMessage({id, ok: true, data: identifyConduit(parse(data.rle, aliases) as MAPPattern, data.maxTime, data.maxTime, data.sepGens, 256)});
+                parentPort.postMessage({id, ok: true, data: identifyConduit(parse(data.value, aliases) as MAPPattern, data.maxTime, data.maxTime, data.sepGens, 256)});
             } catch (error) {
                 if (error instanceof Error && (error.message === 'Oscillators are not supported' || error.message === 'Spaceships are not supported' || error.message === `More than 1 start object! (If there isn't, there is a bug, please tell speedydelete)` || error.message === 'No start object!')) {
                     throw new BotError(error.message);
