@@ -106,6 +106,7 @@ function getFrame(p: Pattern, {time, bb, origin}: PartRunnerData): Frame {
     } else {
         let x = bb[0] + p.xOffset;
         let y = bb[1] + p.yOffset;
+        console.log(x, y, bb[3], bb[2]);
         out = p.copyPart(Math.max(x, 0), Math.max(y, 0), bb[3], bb[2]);
         out.xOffset = x;
         out.yOffset = y;
