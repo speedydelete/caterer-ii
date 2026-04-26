@@ -472,21 +472,21 @@ function parseSim(argv: string[], rle: string): SimData {
 function lzwEncode(pixels: Uint8Array[], minCodeSize: number): Uint16Array[] {
     let clearCode = 1 << minCodeSize;
     let endCode = clearCode + 1;
-    let dict = new Map<string, number>();
+    let dict = new Map<number, number>();
     for (let i = 0; i < clearCode; i++) {
-        dict.set(i.toString(), i);
+        dict.set(i, i);
     }
     let nextCode = endCode + 1;
     let codeSize = minCodeSize + 1;
     let outs: Uint16Array[] = [];
     let out: number[] = [];
     out.push(clearCode);
-    let w = pixels[0][0].toString();
+    let w = pixels[0][0];
     let isStart = true;
     for (let array of pixels) {
         for (let i = isStart ? 1 : 0; i < array.length; i++) {
             let k = array[i];
-            let wk = w + ',' + k;
+            let wk = (w << 8) | k;
             if (dict.has(wk)) {
                 w = wk;
             } else {
@@ -500,12 +500,12 @@ function lzwEncode(pixels: Uint8Array[], minCodeSize: number): Uint16Array[] {
                     out.push(clearCode);
                     dict.clear();
                     for (let j = 0; j < clearCode; j++) {
-                        dict.set(j.toString(), j);
+                        dict.set(j, j);
                     }
                     nextCode = endCode + 1;
                     codeSize = minCodeSize + 1;
                 }
-                w = k.toString();
+                w = k;
             }
             if (out.length > (1 << 24)) {
                 outs.push(new Uint16Array(out));
@@ -709,9 +709,11 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
                     codeSize = bitWidth + 1;
                     nextCode = clearCode + 2;
                 } else {
-                    nextCode++;
-                    if (nextCode === (1 << codeSize) && codeSize < 12) {
-                        codeSize++;
+                    if (nextCode < 4096) {
+                        nextCode++;
+                        if (nextCode === (1 << codeSize) && codeSize < 12) {
+                            codeSize++;
+                        }
                     }
                 }
                 if (out.length > (1 << 24)) {
