@@ -472,21 +472,21 @@ function parseSim(argv: string[], rle: string): SimData {
 function lzwEncode(pixels: Uint8Array[], minCodeSize: number): Uint16Array[] {
     let clearCode = 1 << minCodeSize;
     let endCode = clearCode + 1;
-    let dict = new Map<number, number>();
+    let dict = new Map<string, number>();
     for (let i = 0; i < clearCode; i++) {
-        dict.set(i, i);
+        dict.set(i.toString(), i);
     }
     let nextCode = endCode + 1;
     let codeSize = minCodeSize + 1;
     let outs: Uint16Array[] = [];
     let out: number[] = [];
     out.push(clearCode);
-    let w = pixels[0][0];
+    let w = pixels[0][0].toString();
     let isStart = true;
     for (let array of pixels) {
         for (let i = isStart ? 1 : 0; i < array.length; i++) {
             let k = array[i];
-            let wk = (w << 8) | k;
+            let wk = w + ',' + k;
             if (dict.has(wk)) {
                 w = wk;
             } else {
@@ -500,12 +500,12 @@ function lzwEncode(pixels: Uint8Array[], minCodeSize: number): Uint16Array[] {
                     out.push(clearCode);
                     dict.clear();
                     for (let j = 0; j < clearCode; j++) {
-                        dict.set(j, j);
+                        dict.set(j.toString(), j);
                     }
                     nextCode = endCode + 1;
                     codeSize = minCodeSize + 1;
                 }
-                w = k;
+                w = k.toString();
             }
             if (out.length > (1 << 24)) {
                 outs.push(new Uint16Array(out));
@@ -514,7 +514,7 @@ function lzwEncode(pixels: Uint8Array[], minCodeSize: number): Uint16Array[] {
         }
         isStart = false;
     }
-    out.push(dict.get(w)!);
+    out.push(dict.get('w')!);
     out.push(endCode);
     outs.push(new Uint16Array(out));
     return outs;
@@ -722,10 +722,10 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
                 }
             }
         }
-        outs.push(new Uint8Array(out));
         if (bitCount > 0) {
             out.push(accumulator & 0xff);
         }
+        outs.push(new Uint8Array(out));
         for (let out of outs) {
             let i = 0;
             while (i < out.length) {
