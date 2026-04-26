@@ -2,7 +2,8 @@
 import * as fs from 'node:fs/promises';
 import {join} from 'node:path';
 import {DiscordAPIError, Message as _Message, OmitPartialGroupDMChannel} from 'discord.js';
-import {RuleError, Pattern, MAPPattern, parse} from '../lifeweb/lib/index.js';
+import {Pattern, parse} from '../lifeweb/lib/index.js';
+import {parseRPF, rpfToPattern} from '../lifeweb/lib/rpf.js';
 
 
 export class BotError extends Error {}
@@ -35,9 +36,6 @@ export async function writeFile(path: string, data: Parameters<typeof fs.writeFi
 }
 
 
-export const RLE_HEADER = /\s*x\s*=\s*\d+\s*,?\s*y\s*=\s*\d+/;
-
-
 export let config: Config = JSON.parse(await readFile('config.json'));
 export let aliases = JSON.parse(await readFile('data/aliases.json')) as {[key: string]: string};
 export let noReplyPings = JSON.parse(await readFile('data/no_reply_pings.json')) as string[];
@@ -59,6 +57,8 @@ export function sentByAccepterer(msg: Message): boolean {
     return false;
 }
 
+
+export const RLE_HEADER = /\s*x\s*=\s*\d+\s*,?\s*y\s*=\s*\d+/;
 
 export function findRLEFromText(data: string): Pattern | undefined {
     let match = RLE_HEADER.exec(data);
@@ -86,14 +86,16 @@ export async function findRLEFromMessage(msg: Message): Promise<{msg: Message, p
         }
     }
     if (!msg.author.bot && msg.attachments.size > 0) {
-        let attachment = msg.attachments.first();
-        if (attachment) {
-            let data = await (await fetch(attachment.url)).text();
-            let out = findRLEFromText(data);
-            if (out) {
-                return {msg, p: out};
-            } else {
-                return undefined;
+        for (let [name, attachment] of msg.attachments) {
+            if (name.endsWith('.rle') || name.endsWith('.txt')) {
+                let data = await (await fetch(attachment.url)).text();
+                let out = findRLEFromText(data);
+                if (out) {
+                    return {msg, p: out};
+                }
+            } else if (name.endsWith('.rpf')) {
+                let data = await (await fetch(attachment.url)).text();
+                return {msg, p: rpfToPattern(parseRPF(data, '/'))};
             }
         }
     }

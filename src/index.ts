@@ -1,7 +1,8 @@
 
 import * as lifeweb from '../lifeweb/lib/index.js';
+import {RPFFileError} from '../lifeweb/lib/rpf.js';
 import {inspect} from 'node:util';
-import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReaction, PartialMessageReaction, MessageReplyOptions, TextChannel, Partials, quote} from 'discord.js';
+import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReaction, PartialMessageReaction, MessageReplyOptions, TextChannel, Partials} from 'discord.js';
 import {BotError, Response, Message, readFile, writeFile, config, sentByAdmin, aliases, noReplyPings, findRLEFromText, findRLE} from './util.js';
 import {cmdHelp} from './help.js';
 import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax, cmdIdentifyConduit} from './core.js';
@@ -290,7 +291,7 @@ async function runCommand(msg: Message): Promise<void> {
                 }
             }
         } catch (error) {
-            if (error instanceof BotError || error instanceof lifeweb.RuleError || (error instanceof Error && (INTENTIONAL_ERRORS.includes(error.message) || error.message.startsWith('Invalid symmetry: ')))) {
+            if (error instanceof BotError || error instanceof lifeweb.RuleError || error instanceof RPFFileError || (error instanceof Error && (INTENTIONAL_ERRORS.includes(error.message) || error.message.startsWith('Invalid symmetry: ')))) {
                 previousMsgs.push([msg.id, await msg.reply({content: 'Error: ' + error.message, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             } else if (error instanceof Error && error.message === 'Worker exited with code 1!') {
                 previousMsgs.push([msg.id, await msg.reply({content: `Error: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);

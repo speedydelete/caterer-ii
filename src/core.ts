@@ -2,8 +2,7 @@
 import {join} from 'node:path';
 import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
-import {RuleError, Pattern, MAPPattern, TorusDataPattern, TorusCoordPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, createPattern, toCatagolueRule} from '../lifeweb/lib/index.js';
-import {Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, removeHIfPossible} from '../lifeweb/lib/catask.js';
+import {RuleError, Pattern, MAPPattern, TorusDataPattern, TorusCoordPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, removeHIfPossible, createPattern} from '../lifeweb/lib/index.js';
 import {BotError, Message, Response, writeFile, names, aliases, simStats, findRLE, sentByAdmin} from './util.js';
 
 

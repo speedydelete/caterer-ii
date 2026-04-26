@@ -1,10 +1,8 @@
 
-import {join} from 'node:path';
 import * as fs from 'node:fs/promises';
 import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
-import {RuleError, Pattern, CoordPattern, MAPPattern, DataHistoryPattern, CoordHistoryPattern, DataSuperPattern, CoordSuperPattern, InvestigatorPattern, TreePattern, findMinmax, findType, getDescription, identify, createPattern, parse} from '../lifeweb/lib/index.js';
-import {createPartial, checkConduit, catalystsAreFine} from '../lifeweb/lib/catask.js';
+import {RuleError, Pattern, CoordPattern, MAPPattern, DataHistoryPattern, CoordHistoryPattern, DataSuperPattern, CoordSuperPattern, InvestigatorPattern, TreePattern, findMinmax, findType, getDescription, identify, identifyConduit, createPattern, parse} from '../lifeweb/lib/index.js';
 import {BotError, aliases} from './util.js';
 
 
@@ -714,7 +712,7 @@ type Job =
         | {id: number, type: 'sim', argv: string[], rle: string}
         | {id: number, type: 'identify' | 'basic_identify', rle: string, limit: number}
         | {id: number, type: 'minmax', rle: string, gens: number}
-        | {id: number, type: 'identify_conduit', rle: string, maxTime: number, sepGens: number};
+        | {id: number, type: 'identify_conduit', rle: string, maxTime: number, maxRT: number, sepGens: number};
 
 parentPort.on('message', async (data: Job) => {
     if (!parentPort) {
@@ -732,20 +730,7 @@ parentPort.on('message', async (data: Job) => {
             parentPort.postMessage({id, ok: true, data: findMinmax(parse(data.rle, aliases), data.gens)})
         } else if (data.type === 'identify_conduit') {
             try {
-                let [partial, start] = createPartial(parse(data.rle, aliases) as MAPPattern);
-                let p = partial.p;
-                for (let i = 0; i < data.maxTime; i++) {
-                    if (catalystsAreFine(p, partial.cats) === 'restored') {
-                        let value = checkConduit(partial, data.sepGens, start);
-                        if (value) {
-                            parentPort.postMessage({id, ok: true, data: value});
-                            return;
-                        }
-                    }
-                    partial.prevPs.push(p.copy());
-                    p.runGeneration();
-                }
-                parentPort.postMessage({id, ok: true, data: false});
+                parentPort.postMessage({id, ok: true, data: identifyConduit(parse(data.rle, aliases) as MAPPattern, data.maxTime, data.maxTime, data.sepGens, 256)});
             } catch (error) {
                 if (error instanceof Error && (error.message === 'Oscillators are not supported' || error.message === 'Spaceships are not supported' || error.message === `More than 1 start object! (If there isn't, there is a bug, please tell speedydelete)` || error.message === 'No start object!')) {
                     throw new BotError(error.message);
