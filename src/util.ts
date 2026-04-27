@@ -73,8 +73,11 @@ export function findRLEFromText(data: string): Pattern | undefined {
             return;
         }
         data = data.slice(0, index);
-        // @ts-ignore
-        return new RPFPattern(parseRPF(data, '/'));
+        let rpf = parseRPF(data, '/');
+        if (!rpf.data['main']) {
+            throw new BotError(`No 'main' object in RPF!`);
+        }
+        return rpf.data['main'];
     }
     data = data.slice(match.index);
     let index = data.indexOf('!');
@@ -108,8 +111,10 @@ export async function findRLEFromMessage(msg: Message): Promise<{msg: Message, p
             } else if (file.endsWith('.rpf')) {
                 let data = await (await fetch(attachment.url)).text();
                 let rpf = parseRPF(data, '/');
-                // @ts-ignore
-                return {msg, p: new RPFPattern(rpf)};
+                if (!rpf.data['main']) {
+                    throw new BotError(`No 'main' object in RPF!`);
+                }
+                return {msg, p: rpf.data['main']};
             }
         }
     }
