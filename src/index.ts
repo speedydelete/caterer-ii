@@ -33,6 +33,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
                 throw new BotError(`No separating whitespace detected`);
             }
             let code = msg.content.slice(index + 1);
+            throw new Error(code);
             if (!code.includes(';') && !code.includes('\n')) {
                 code = 'return ' + code;
             }
