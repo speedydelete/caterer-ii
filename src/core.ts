@@ -3,7 +3,7 @@ import {join} from 'node:path';
 import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
 import {RuleError, Pattern, MAPPattern, TorusDataPattern, TorusCoordPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, removeHIfPossible, createPattern} from '../lifeweb/lib/index.js';
-import {RPFPattern} from '../lifeweb/lib/rpf.js';
+import {RPFPattern, rpfToString} from '../lifeweb/lib/rpf.js';
 import {BotError, Message, Response, writeFile, names, aliases, simStats, findRLE, sentByAdmin} from './util.js';
 
 
@@ -120,8 +120,7 @@ let simCounter = 0;
 
 function serialize(value: Pattern): string {
     if (value instanceof RPFPattern) {
-        // @ts-ignore
-        return 'rpf\n' + value.toRPF();
+        return 'rpf\n' + rpfToString(value.toRPFFile());
     } else {
         return 'rle\n' + value.toRLE();
     }
