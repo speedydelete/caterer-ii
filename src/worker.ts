@@ -7,16 +7,6 @@ import {parseRPF, RPFPattern} from '../lifeweb/lib/rpf.js';
 import {BotError, aliases} from './util.js';
 
 
-function deserialize(value: string): Pattern {
-    if (value.startsWith('rle\n')) {
-        return parse(value.slice(4), aliases);
-    } else {
-        // @ts-ignore
-        return new RPFPattern(parseRPF(value.slice(4), '/'));
-    }
-}
-
-
 const HISTORY_COLORS: [number, number, number][] = [
     [0, 255, 0],
     [0, 0, 128],
@@ -493,7 +483,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         minY = 0;
     }
     let p = frames[0].p;
-    let colorCount = Math.max(p.rule.states, ...Object.keys(customColors).map(x => Number(x)));
+    let colorCount = Math.max(p.rule.states, ...Object.keys(customColors).map(x => parseInt(x)));
     let bitWidth = Math.max(2, Math.ceil(Math.log2(colorCount)));
     let colors = 2**bitWidth;
     let clearCode = 1 << bitWidth;
