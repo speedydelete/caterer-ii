@@ -1,6 +1,6 @@
 
 import * as lifeweb from '../lifeweb/lib/index.js';
-import {RPFFileError} from '../lifeweb/lib/rpf.js';
+import * as lifewebRPF from '../lifeweb/lib/rpf.js';
 import {inspect} from 'node:util';
 import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReaction, PartialMessageReaction, MessageReplyOptions, TextChannel, Partials} from 'discord.js';
 import {BotError, Response, Message, readFile, writeFile, config, sentByAdmin, aliases, noReplyPings, findRLEFromText, findRLE} from './util.js';
@@ -12,7 +12,7 @@ import {cmdWiki} from './wiki.js';
 import {check5S} from './notifier.js';
 
 
-const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\n';
+const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\n';
 
 
 const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Response>} = {
@@ -29,7 +29,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
                 code = 'return ' + code;
             }
             code = `return (async () => {${code}})()`;
-            let out = await (new Function('client', 'msg', 'lifeweb', 'aliases', 'findRLE', 'readFile', 'writeFile', '"use strict";' + EVAL_PREFIX + code))(client, msg, lifeweb, aliases, findRLE, readFile, writeFile);
+            let out = await (new Function('client', 'msg', 'lifeweb', 'lifewebRPF', 'aliases', 'findRLE', 'readFile', 'writeFile', '"use strict";' + EVAL_PREFIX + code))(client, msg, lifeweb, lifewebRPF, aliases, findRLE, readFile, writeFile);
             if (typeof out === 'string') {
                 return '```\n' + out + '\n```';
             } else {
@@ -291,7 +291,7 @@ async function runCommand(msg: Message): Promise<void> {
                 }
             }
         } catch (error) {
-            if (error instanceof BotError || error instanceof lifeweb.RuleError || error instanceof RPFFileError || (error instanceof Error && (INTENTIONAL_ERRORS.includes(error.message) || error.message.startsWith('Invalid symmetry: ')))) {
+            if (error instanceof BotError || error instanceof lifeweb.RuleError || error instanceof lifewebRPF.RPFError || (error instanceof Error && (INTENTIONAL_ERRORS.includes(error.message) || error.message.startsWith('Invalid symmetry: ')))) {
                 previousMsgs.push([msg.id, await msg.reply({content: 'Error: ' + error.message, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             } else if (error instanceof Error && error.message === 'Worker exited with code 1!') {
                 previousMsgs.push([msg.id, await msg.reply({content: `Error: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
