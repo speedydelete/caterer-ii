@@ -7,6 +7,15 @@ import {parseRPF, RPFPattern} from '../lifeweb/lib/rpf.js';
 import {BotError, aliases} from './util.js';
 
 
+function deserialize(value: string): Pattern {
+    if (value.startsWith('rle\n')) {
+        return parse(value.slice(4), aliases);
+    } else {
+        return parseRPF(value.slice(4), '/').data['main'];
+    }
+}
+
+
 const HISTORY_COLORS: [number, number, number][] = [
     [0, 255, 0],
     [0, 0, 128],
@@ -372,7 +381,7 @@ function runParts(parts: (string | number)[][], frames: Frame[], p: Pattern, dat
 }
 
 function parseSim(argv: string[], rle: string): SimData {
-    let p = parse(rle, aliases).shrinkToFit();
+    let p = deserialize(rle).shrinkToFit();
     let parts: (string | number)[][] = [];
     let currentPart: (string | number)[] = [];
     for (let arg of argv.slice(1)) {
@@ -469,8 +478,6 @@ function parseSim(argv: string[], rle: string): SimData {
 }
 
 async function runSim(argv: string[], rle: string): Promise<[number, string | undefined]> {
-    throw new Error(rle);
-    /*
     let startTime = performance.now();
     let {frames, gifSize, minX, minY, width, height, useAdvancedColors, customColors, text} = parseSim(argv, rle);
     let parseTime = performance.now() - startTime;
@@ -485,7 +492,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         minY = 0;
     }
     let p = frames[0].p;
-    let colorCount = Math.max(p.rule.states, ...Object.keys(customColors).map(x => parseInt(x)));
+    let colorCount = Math.max(p.rule.states, ...Object.keys(customColors).map(x => Number(x)));
     let bitWidth = Math.max(2, Math.ceil(Math.log2(colorCount)));
     let colors = 2**bitWidth;
     let clearCode = 1 << bitWidth;
@@ -689,7 +696,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
     let scale = Math.ceil(gifSize / Math.min(width, height));
     gifSize = Math.min(width, height) * scale;
     execSync(`gifsicle --resize-${width < height ? 'width' : 'height'} ${gifSize} -O3 sim_base.gif > sim.gif`);
-    return [parseTime, text];*/
+    return [parseTime, text];
 }
 
 
@@ -712,14 +719,14 @@ parentPort.on('message', async (data: Job) => {
         if (data.type === 'sim') {
             parentPort.postMessage({id, ok: true, data: await runSim(data.argv, data.value)});
         } else if (data.type === 'identify') {
-            parentPort.postMessage({id, ok: true, data: identify(parse(data.value, aliases), data.limit)});
+            parentPort.postMessage({id, ok: true, data: identify(deserialize(data.value), data.limit)});
         } else if (data.type === 'basic_identify') {
-            parentPort.postMessage({id, ok: true, data: findType(parse(data.value, aliases), data.limit)});
+            parentPort.postMessage({id, ok: true, data: findType(deserialize(data.value), data.limit)});
         } else if (data.type === 'minmax') {
-            parentPort.postMessage({id, ok: true, data: findMinmax(parse(data.value, aliases), data.gens)})
+            parentPort.postMessage({id, ok: true, data: findMinmax(deserialize(data.value), data.gens)})
         } else if (data.type === 'identify_conduit') {
             try {
-                parentPort.postMessage({id, ok: true, data: identifyConduit(parse(data.value, aliases) as MAPPattern, data.maxTime, data.maxTime, data.sepGens, 256)});
+                parentPort.postMessage({id, ok: true, data: identifyConduit(deserialize(data.value) as MAPPattern, data.maxTime, data.maxTime, data.sepGens, 256)});
             } catch (error) {
                 if (error instanceof Error && (error.message === 'Oscillators are not supported' || error.message === 'Spaceships are not supported' || error.message === `More than 1 start object! (If there isn't, there is a bug, please tell speedydelete)` || error.message === 'No start object!')) {
                     throw new BotError(error.message);
