@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import {join} from 'node:path';
 import {DiscordAPIError, Message as _Message, OmitPartialGroupDMChannel} from 'discord.js';
 import {Pattern, parse} from '../lifeweb/lib/index.js';
-import {parseRPF, RPFPattern} from '../lifeweb/lib/rpf.js';
+import {parseRPF} from '../lifeweb/lib/rpf.js';
 
 
 export class BotError extends Error {}
