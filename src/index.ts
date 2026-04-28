@@ -33,7 +33,6 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
                 throw new BotError(`No separating whitespace detected`);
             }
             let code = msg.content.slice(index + 1);
-            throw new Error(code);
             if (!code.includes(';') && !code.includes('\n')) {
                 code = 'return ' + code;
             }
@@ -201,7 +200,7 @@ async function runCommand(msg: Message): Promise<void> {
     let cmd: string;
     let index = data.indexOf(' ');
     let index2 = data.indexOf('\n');
-    if (index === -1 || index2 < index) {
+    if (index === -1 || (index2 !== -1 && index2 < index)) {
         index = index2;
     }
     if (index === -1) {
