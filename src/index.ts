@@ -26,7 +26,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
             await msg.channel.sendTyping();
             let index = msg.content.indexOf(' ');
             let index2 = msg.content.indexOf('\n');
-            if (index === -1 || index2 < index) {
+            if (index === -1 || (index2 !== -1 && index2 < index)) {
                 index = index2;
             }
             if (index === -1) {
