@@ -469,6 +469,8 @@ function parseSim(argv: string[], rle: string): SimData {
 }
 
 async function runSim(argv: string[], rle: string): Promise<[number, string | undefined]> {
+    throw new Error(rle);
+    /*
     let startTime = performance.now();
     let {frames, gifSize, minX, minY, width, height, useAdvancedColors, customColors, text} = parseSim(argv, rle);
     let parseTime = performance.now() - startTime;
@@ -687,7 +689,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
     let scale = Math.ceil(gifSize / Math.min(width, height));
     gifSize = Math.min(width, height) * scale;
     execSync(`gifsicle --resize-${width < height ? 'width' : 'height'} ${gifSize} -O3 sim_base.gif > sim.gif`);
-    return [parseTime, text];
+    return [parseTime, text];*/
 }
 
 
