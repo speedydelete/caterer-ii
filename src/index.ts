@@ -24,7 +24,15 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
     async eval(msg: Message, argv: string[]): Promise<Response> {
         if (sentByAdmin(msg)) {
             await msg.channel.sendTyping();
-            let code = msg.content.slice(msg.content.indexOf(' ') + 1);
+            let index = msg.content.indexOf(' ');
+            let index2 = msg.content.indexOf('\n');
+            if (index === -1 || index2 < index) {
+                index = index2;
+            }
+            if (index === -1) {
+                throw new BotError(`No separating whitespace detected`);
+            }
+            let code = msg.content.slice(msg.content.indexOf('\n') + 1);
             if (!code.includes(';') && !code.includes('\n')) {
                 code = 'return ' + code;
             }
