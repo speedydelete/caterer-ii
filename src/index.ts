@@ -23,6 +23,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
 
     async eval(msg: Message, argv: string[]): Promise<Response> {
         if (sentByAdmin(msg)) {
+            throw new BotError(JSON.stringify(msg.content));
             await msg.channel.sendTyping();
             let index = msg.content.indexOf(' ');
             let index2 = msg.content.indexOf('\n');
