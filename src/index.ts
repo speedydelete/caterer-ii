@@ -271,7 +271,9 @@ async function runCommand(msg: Message): Promise<void> {
             argv.push(currentArg);
         }
         try {
-            throw new Error(JSON.stringify([cmd, data]));
+            if (cmd === 'eval') {
+                throw new Error(JSON.stringify([cmd, data]));
+            }
             // let value = await COMMANDS[cmd](msg, argv);
             // if (value) {
             //     let out: Message;
