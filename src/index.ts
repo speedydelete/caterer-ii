@@ -211,122 +211,122 @@ async function runCommand(msg: Message): Promise<void> {
         data = '';
     }
     cmd = cmd.toLowerCase();
-    throw new Error(JSON.stringify([cmd, data]));
-    // if (cmd in COMMANDS) {
-    //     runningCommands.add(msg.id);
-    //     let argv: string[] = [cmd];
-    //     let currentArg = '';
-    //     let quoteMode: 'none' | 'single' | 'double' = 'none';
-    //     for (let i = 0; i < data.length; i++) {
-    //         let char = data[i];
-    //         if (char === '\\' && quoteMode !== 'single') {
-    //             if (i === data.length - 1) {
-    //                 currentArg += char;
-    //                 continue;
-    //             }
-    //             char = data[i++];
-    //             if (char in ESCAPES) {
-    //                 currentArg += ESCAPES[char];
-    //             } else if (char === 'x') {
-    //                 currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 3), 16));
-    //                 i += 2;
-    //             } else if (char === 'u') {
-    //                 currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 5), 16));
-    //                 i += 4;
-    //             } else if (char === 'U') {
-    //                 currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 6), 16));
-    //                 i += 5;
-    //             } else if ('0123456789'.includes(char)) {
-    //                 currentArg += String.fromCharCode(parseInt(data.slice(i, i + 3), 8));
-    //                 i += 2;
-    //             } else {
-    //                 currentArg += char;
-    //             }
-    //         } else if (char === "'") {
-    //             if (quoteMode === 'none') {
-    //                 quoteMode = 'single';
-    //             } else if (quoteMode === 'single') {
-    //                 quoteMode = 'none';
-    //             } else {
-    //                 currentArg += char;
-    //             }
-    //         } else if (char === '"') {
-    //             if (quoteMode === 'none') {
-    //                 quoteMode = 'double';
-    //             } else if (quoteMode === 'single') {
-    //                 currentArg += char;
-    //             } else {
-    //                 quoteMode = 'none';
-    //             }
-    //         } else if (char === '\n' && MULTILINE_CMDS.includes(cmd)) {
-    //             argv.push(currentArg, '\n');
-    //             currentArg = '';
-    //         } else if ((char === ' ' || char === '\n') && quoteMode === 'none') {
-    //             argv.push(currentArg);
-    //             currentArg = '';
-    //         } else {
-    //             currentArg += char;
-    //         }
-    //     }
-    //     if (currentArg.length > 0) {
-    //         argv.push(currentArg);
-    //     }
-    //     try {
-    //         let value = await COMMANDS[cmd](msg, argv);
-    //         if (value) {
-    //             let out: Message;
-    //             let newDeleters: string[] = [msg.author.id];
-    //             if (Array.isArray(value)) {
-    //                 newDeleters.push(...value[1]);
-    //                 value = value[0];
-    //             }
-    //             if (typeof value === 'string') {
-    //                 out = await msg.reply({content: value, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}});
-    //             } else if (value instanceof _Message) {
-    //                 out = value;
-    //             } else {
-    //                 (value as MessageReplyOptions).allowedMentions = {repliedUser: !noReplyPings.includes(msg.author.id), parse: []};
-    //                 out = await msg.reply(value);
-    //             }
-    //             previousMsgs.push([msg.id, out]);
-    //             if (previousMsgs.length > 4096) {
-    //                 previousMsgs.shift();
-    //             }
-    //             for (let id of newDeleters) {
-    //                 deleters.push([id, out.id]);
-    //             }
-    //             if (deleters.length > 65536) {
-    //                 deleters.shift();
-    //             }
-    //         }
-    //     } catch (error) {
-    //         if (error instanceof BotError || error instanceof lifeweb.RuleError || error instanceof lifewebRPF.RPFError || (error instanceof Error && (INTENTIONAL_ERRORS.includes(error.message) || error.message.startsWith('Invalid symmetry: ')))) {
-    //             previousMsgs.push([msg.id, await msg.reply({content: 'Error: ' + error.message, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
-    //         } else if (error instanceof Error && error.message === 'Worker exited with code 1!') {
-    //             previousMsgs.push([msg.id, await msg.reply({content: `Error: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
-    //         } else if (error instanceof DiscordAPIError && error.message.match(/Must be (2|4)000 or fewer in length/)) {
-    //             previousMsgs.push([msg.id, await msg.reply({content: 'Error: Message too long!', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
-    //         } else {
-    //             let str: string;
-    //             if (error && typeof error === 'object' && 'stack' in error) {
-    //                 str = String(error.stack);
-    //                 if (str.length > 1900) {
-    //                     str = str.slice(0, 1900) + '... (truncated)';
-    //                 }
-    //             } else {
-    //                 str = String(error);
-    //             }
-    //             console.log(str);
-    //             let content = '```' + str + '```';
-    //             if (msg.author.id !== '1253852708826386518') {
-    //                 content = '<@1253852708826386518>\n' + content;
-    //             }
-    //             previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: ['users']}})]);
-    //         }
-    //     } finally {
-    //         runningCommands.delete(msg.id);
-    //     }
-    // }
+    if (cmd in COMMANDS) {
+        runningCommands.add(msg.id);
+        let argv: string[] = [cmd];
+        let currentArg = '';
+        let quoteMode: 'none' | 'single' | 'double' = 'none';
+        for (let i = 0; i < data.length; i++) {
+            let char = data[i];
+            if (char === '\\' && quoteMode !== 'single') {
+                if (i === data.length - 1) {
+                    currentArg += char;
+                    continue;
+                }
+                char = data[i++];
+                if (char in ESCAPES) {
+                    currentArg += ESCAPES[char];
+                } else if (char === 'x') {
+                    currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 3), 16));
+                    i += 2;
+                } else if (char === 'u') {
+                    currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 5), 16));
+                    i += 4;
+                } else if (char === 'U') {
+                    currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 6), 16));
+                    i += 5;
+                } else if ('0123456789'.includes(char)) {
+                    currentArg += String.fromCharCode(parseInt(data.slice(i, i + 3), 8));
+                    i += 2;
+                } else {
+                    currentArg += char;
+                }
+            } else if (char === "'") {
+                if (quoteMode === 'none') {
+                    quoteMode = 'single';
+                } else if (quoteMode === 'single') {
+                    quoteMode = 'none';
+                } else {
+                    currentArg += char;
+                }
+            } else if (char === '"') {
+                if (quoteMode === 'none') {
+                    quoteMode = 'double';
+                } else if (quoteMode === 'single') {
+                    currentArg += char;
+                } else {
+                    quoteMode = 'none';
+                }
+            } else if (char === '\n' && MULTILINE_CMDS.includes(cmd)) {
+                argv.push(currentArg, '\n');
+                currentArg = '';
+            } else if ((char === ' ' || char === '\n') && quoteMode === 'none') {
+                argv.push(currentArg);
+                currentArg = '';
+            } else {
+                currentArg += char;
+            }
+        }
+        if (currentArg.length > 0) {
+            argv.push(currentArg);
+        }
+        try {
+            throw new Error(JSON.stringify([cmd, data]));
+            // let value = await COMMANDS[cmd](msg, argv);
+            // if (value) {
+            //     let out: Message;
+            //     let newDeleters: string[] = [msg.author.id];
+            //     if (Array.isArray(value)) {
+            //         newDeleters.push(...value[1]);
+            //         value = value[0];
+            //     }
+            //     if (typeof value === 'string') {
+            //         out = await msg.reply({content: value, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}});
+            //     } else if (value instanceof _Message) {
+            //         out = value;
+            //     } else {
+            //         (value as MessageReplyOptions).allowedMentions = {repliedUser: !noReplyPings.includes(msg.author.id), parse: []};
+            //         out = await msg.reply(value);
+            //     }
+            //     previousMsgs.push([msg.id, out]);
+            //     if (previousMsgs.length > 4096) {
+            //         previousMsgs.shift();
+            //     }
+            //     for (let id of newDeleters) {
+            //         deleters.push([id, out.id]);
+            //     }
+            //     if (deleters.length > 65536) {
+            //         deleters.shift();
+            //     }
+            // }
+        } catch (error) {
+            if (error instanceof BotError || error instanceof lifeweb.RuleError || error instanceof lifewebRPF.RPFError || (error instanceof Error && (INTENTIONAL_ERRORS.includes(error.message) || error.message.startsWith('Invalid symmetry: ')))) {
+                previousMsgs.push([msg.id, await msg.reply({content: 'Error: ' + error.message, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+            } else if (error instanceof Error && error.message === 'Worker exited with code 1!') {
+                previousMsgs.push([msg.id, await msg.reply({content: `Error: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+            } else if (error instanceof DiscordAPIError && error.message.match(/Must be (2|4)000 or fewer in length/)) {
+                previousMsgs.push([msg.id, await msg.reply({content: 'Error: Message too long!', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+            } else {
+                let str: string;
+                if (error && typeof error === 'object' && 'stack' in error) {
+                    str = String(error.stack);
+                    if (str.length > 1900) {
+                        str = str.slice(0, 1900) + '... (truncated)';
+                    }
+                } else {
+                    str = String(error);
+                }
+                console.log(str);
+                let content = '```' + str + '```';
+                if (msg.author.id !== '1253852708826386518') {
+                    content = '<@1253852708826386518>\n' + content;
+                }
+                previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: ['users']}})]);
+            }
+        } finally {
+            runningCommands.delete(msg.id);
+        }
+    }
 }
 
 
