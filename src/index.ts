@@ -198,17 +198,17 @@ async function runCommand(msg: Message): Promise<void> {
         return;
     }
     let cmd: string;
-    if (data.includes(' ')) {
-        let index = data.indexOf(' ');
-        cmd = data.slice(0, index);
-        data = data.slice(index + 1);
-    } else if (data.includes('\n')) {
-        let index = data.indexOf('\n');
-        cmd = data.slice(0, index);
-        data = data.slice(index + 1);
-    } else {
+    let index = data.indexOf(' ');
+    let index2 = data.indexOf('\n');
+    if (index === -1 || index2 < index) {
+        index = index2;
+    }
+    if (index === -1) {
         cmd = data;
         data = '';
+    } else {
+        cmd = data.slice(0, index);
+        data = data.slice(index + 1);
     }
     cmd = cmd.toLowerCase();
     if (cmd in COMMANDS) {
@@ -271,36 +271,33 @@ async function runCommand(msg: Message): Promise<void> {
             argv.push(currentArg);
         }
         try {
-            if (cmd === 'eval') {
-                throw new Error(JSON.stringify([cmd, data]));
+            let value = await COMMANDS[cmd](msg, argv);
+            if (value) {
+                let out: Message;
+                let newDeleters: string[] = [msg.author.id];
+                if (Array.isArray(value)) {
+                    newDeleters.push(...value[1]);
+                    value = value[0];
+                }
+                if (typeof value === 'string') {
+                    out = await msg.reply({content: value, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}});
+                } else if (value instanceof _Message) {
+                    out = value;
+                } else {
+                    (value as MessageReplyOptions).allowedMentions = {repliedUser: !noReplyPings.includes(msg.author.id), parse: []};
+                    out = await msg.reply(value);
+                }
+                previousMsgs.push([msg.id, out]);
+                if (previousMsgs.length > 4096) {
+                    previousMsgs.shift();
+                }
+                for (let id of newDeleters) {
+                    deleters.push([id, out.id]);
+                }
+                if (deleters.length > 65536) {
+                    deleters.shift();
+                }
             }
-            // let value = await COMMANDS[cmd](msg, argv);
-            // if (value) {
-            //     let out: Message;
-            //     let newDeleters: string[] = [msg.author.id];
-            //     if (Array.isArray(value)) {
-            //         newDeleters.push(...value[1]);
-            //         value = value[0];
-            //     }
-            //     if (typeof value === 'string') {
-            //         out = await msg.reply({content: value, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}});
-            //     } else if (value instanceof _Message) {
-            //         out = value;
-            //     } else {
-            //         (value as MessageReplyOptions).allowedMentions = {repliedUser: !noReplyPings.includes(msg.author.id), parse: []};
-            //         out = await msg.reply(value);
-            //     }
-            //     previousMsgs.push([msg.id, out]);
-            //     if (previousMsgs.length > 4096) {
-            //         previousMsgs.shift();
-            //     }
-            //     for (let id of newDeleters) {
-            //         deleters.push([id, out.id]);
-            //     }
-            //     if (deleters.length > 65536) {
-            //         deleters.shift();
-            //     }
-            // }
         } catch (error) {
             if (error instanceof BotError || error instanceof lifeweb.RuleError || error instanceof lifewebRPF.RPFError || (error instanceof Error && (INTENTIONAL_ERRORS.includes(error.message) || error.message.startsWith('Invalid symmetry: ')))) {
                 previousMsgs.push([msg.id, await msg.reply({content: 'Error: ' + error.message, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
