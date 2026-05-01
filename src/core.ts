@@ -196,6 +196,7 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         outputTime = true;
         argv = argv.slice(1);
     }
+    p.shrinkToFit();
     let data = await createWorkerJob('sim', {argv, value: serialize(p)}, noTimeout);
     if (!data) {
         return 'Error: Timed out!';
