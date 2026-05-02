@@ -708,7 +708,7 @@ type Job =
         | {id: number, type: 'sim', argv: string[], value: string}
         | {id: number, type: 'identify' | 'basic_identify', value: string, limit: number}
         | {id: number, type: 'minmax', value: string, gens: number}
-        | {id: number, type: 'identify_conduit', value: string, maxTime: number, maxRT: number, sepGens: number};
+        | {id: number, type: 'identify_conduit', value: string, maxTime: number, maxRT: number, sepGens: number, identifyGens: number};
 
 parentPort.on('message', async (data: Job) => {
     if (!parentPort) {
@@ -726,7 +726,7 @@ parentPort.on('message', async (data: Job) => {
             parentPort.postMessage({id, ok: true, data: findMinmax(deserialize(data.value), data.gens)})
         } else if (data.type === 'identify_conduit') {
             try {
-                parentPort.postMessage({id, ok: true, data: identifyConduit(deserialize(data.value) as MAPPattern, data.maxTime, data.maxTime, data.sepGens, 256)});
+                parentPort.postMessage({id, ok: true, data: identifyConduit(deserialize(data.value) as MAPPattern, data.maxTime, data.maxTime, data.sepGens, data.identifyGens)});
             } catch (error) {
                 if (error instanceof Error && (error.message === 'Oscillators are not supported' || error.message === 'Spaceships are not supported' || error.message === `More than 1 start object! (If there isn't, there is a bug, please tell speedydelete)` || error.message === 'No start object!')) {
                     throw new BotError(error.message);

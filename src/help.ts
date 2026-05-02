@@ -95,7 +95,7 @@ const HELP: {[key: string]: Help} = {
             {
                 name: 'generations',
                 optional: true,
-                desc: 'Number of generations to run the identifier for (default 256).'
+                desc: 'Number of generations to run the identifier for (default 1024).'
             },
         ],
     },
@@ -106,7 +106,7 @@ const HELP: {[key: string]: Help} = {
             {
                 name: 'generations',
                 optional: true,
-                desc: 'Number of generations to run the identifier for (default 256).'
+                desc: 'Number of generations to run the identifier for (default 1024).'
             },
         ],
         aliases: ['basicidentify'],
@@ -124,7 +124,20 @@ const HELP: {[key: string]: Help} = {
 
     identify_conduit: {
         desc: 'Identify a conduit (only works for B3/S23)',
-        args: [],
+        args: [
+            {
+                name: 'sep_gens',
+                desc: 'Number of generations to run object separation for (default 0).',
+            },
+            {
+                name: 'max_time',
+                desc: 'Maximum time the conduit can take to work (default 512), also the maximum repeat time.',
+            },
+            {
+                name: 'identify_gens',
+                desc: 'Number of generations to identify for (default 256).',
+            },
+        ],
         aliases: ['identifyconduit'],
     },
 
