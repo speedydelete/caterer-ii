@@ -94,9 +94,9 @@ export async function findRLEFromMessage(msg: Message): Promise<{msg: Message, p
     }
     if (msg.reference && msg.reference.type === 1) {
         let msg2 = await msg.fetchReference();
-        let out = findRLEFromText(msg2.content);
+        let out = await findRLEFromMessage(msg2);
         if (out) {
-            return {msg, p: out};
+            return out;
         }
     }
     if (!msg.author.bot && msg.attachments.size > 0) {
