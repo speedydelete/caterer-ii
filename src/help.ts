@@ -126,6 +126,10 @@ const HELP: {[key: string]: Help} = {
         desc: 'Identify a conduit (only works for B3/S23)',
         args: [
             {
+                name: 'min_time',
+                desc: 'Minimum number of generations before it can take it as a conduit',
+            },
+            {
                 name: 'sep_gens',
                 desc: 'Number of generations to run object separation for (default 0).',
             },

@@ -5,6 +5,7 @@ import {EmbedBuilder} from 'discord.js';
 import {RuleError, Pattern, MAPPattern, TorusDataPattern, TorusCoordPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, removeHIfPossible, createPattern} from '../lifeweb/lib/index.js';
 import {RPFPattern, rpfToString} from '../lifeweb/lib/rpf.js';
 import {BotError, Message, Response, writeFile, names, aliases, simStats, findRLE, sentByAdmin} from './util.js';
+import type {Job} from './worker.js';
 
 
 type WorkerResult = {id: number, ok: true} & (
@@ -13,7 +14,7 @@ type WorkerResult = {id: number, ok: true} & (
     | {type: 'basic_identify', data: PatternType}
 ) | {id: number, ok: false, error: string, intentional: boolean, type: string};
 
-interface Job {
+interface JobData {
     resolve: (data: any) => void;
     reject: (reason?: any) => void;
     timeout: NodeJS.Timeout;
@@ -23,7 +24,7 @@ let worker: Worker;
 
 let workerAlive = false;
 
-let jobs = new Map<number, Job>();
+let jobs = new Map<number, JobData>();
 let nextID = 0;
 
 function workerOnMessage(msg: WorkerResult): void {
@@ -99,7 +100,7 @@ function createWorkerJob(type: 'sim', data: {argv: string[], value: string}, noT
 function createWorkerJob(type: 'identify', data: {value: string, limit: number}, noTimeout?: boolean): Promise<Identified | null>;
 function createWorkerJob(type: 'basic_identify', data: {value: string, limit: number}, noTimeout?: boolean): Promise<PatternType | null>;
 function createWorkerJob(type: 'minmax', data: {value: string, gens: number}, noTimeout?: boolean): Promise<[string, string] | null>;
-function createWorkerJob(type: 'identify_conduit', data: {value: string, maxTime: number, maxRT: number, sepGens: number, identifyGens: number}, noTimeout?: boolean): Promise<false | Conduit | null>;
+function createWorkerJob(type: 'identify_conduit', data: {value: string, minTime: number, maxTime: number, maxRT: number, sepGens: number, identifyGens: number}, noTimeout?: boolean): Promise<false | Conduit | null>;
 function createWorkerJob(type: 'sim' | 'identify' | 'basic_identify' | 'minmax' | 'identify_conduit', data: any, noTimeout?: boolean): Promise<any> {
     return new Promise((resolve, reject) => {
         let id = nextID++;
@@ -111,7 +112,7 @@ function createWorkerJob(type: 'sim' | 'identify' | 'basic_identify' | 'minmax' 
             }
         }, 30000);
         jobs.set(id, {resolve, reject, timeout});
-        worker.postMessage({id, type, ...data});
+        worker.postMessage({id, type, ...data} satisfies Job);
     });
 }
 
@@ -407,9 +408,10 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
             throw new BotError(`You must be an admin to use notimeout!`);
         }
     }
-    let sepGens = argv[1] ? parseInt(argv[1]) : 0;
-    let maxTime = argv[2] ? parseInt(argv[2]) : 512;
-    let identifyGens = argv[3] ? parseInt(argv[3]) : 256;
+    let minTime = argv[1] ? parseInt(argv[1]) : 0;
+    let sepGens = argv[2] ? parseInt(argv[2]) : 0;
+    let maxTime = argv[3] ? parseInt(argv[3]) : 512;
+    let identifyGens = argv[4] ? parseInt(argv[4]) : 256;
     let rleData = await findRLE(msg);
     if (!rleData) {
         throw new BotError('Cannot find RLE');
@@ -418,7 +420,7 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
     if (p.rule.str.includes('History') || p.rule.str.includes('Super')) {
         p.setData(p.height, p.width, p.getData().map(x => x % 2));
     }
-    let data = await createWorkerJob('identify_conduit', {value: serialize(p), maxTime, maxRT: maxTime, sepGens, identifyGens}, noTimeout);
+    let data = await createWorkerJob('identify_conduit', {value: serialize(p), minTime, maxTime, maxRT: maxTime, sepGens, identifyGens}, noTimeout);
     if (data === null) {
         throw new BotError('Timed out!');
     }
