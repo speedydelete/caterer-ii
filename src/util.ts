@@ -93,12 +93,11 @@ export async function findRLEFromMessage(msg: Message): Promise<{msg: Message, p
         return {msg, p: out};
     }
     if (msg.reference && msg.reference.type === 1) {
-        throw new Error('fetching forward');
-        // let msg2 = await msg.fetchReference();
-        // let out = findRLEFromText(msg2.content);
-        // if (out) {
-        //     return {msg, p: out};
-        // }
+        let msg2 = await msg.fetchReference();
+        let out = findRLEFromText(msg2.content);
+        if (out) {
+            return {msg, p: out};
+        }
     }
     if (!msg.author.bot && msg.attachments.size > 0) {
         for (let [_, attachment] of msg.attachments) {
