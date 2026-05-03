@@ -2,7 +2,7 @@
 import {join} from 'node:path';
 import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
-import {RuleError, Pattern, MAPPattern, TorusDataPattern, TorusCoordPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, removeHIfPossible, createPattern} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, MAPPattern, TorusDataPattern, TorusCoordPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, createPattern} from '../lifeweb/lib/index.js';
 import {RPFPattern, rpfToString} from '../lifeweb/lib/rpf.js';
 import {BotError, Message, Response, writeFile, names, aliases, simStats, findRLE, sentByAdmin} from './util.js';
 import type {Job} from './worker.js';
@@ -427,7 +427,7 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
     if (data === false) {
         return 'Error: Not a conduit!';
     }
-    let title = removeHIfPossible(getConduitName(data)).replaceAll('_', '\\_').replaceAll('*', '\\*');
+    let title = getConduitName(data, true).replaceAll('_', '\\_').replaceAll('*', '\\*');
     let out: string[] = [];
     let inputTimeStr = data.inputTime ? ` at generation ${data.inputTime}` : '';
     if (data.input in CONDUIT_OBJECTS) {
