@@ -80,18 +80,12 @@ export async function cmdPopulation(msg: Message, argv: string[]): Promise<Respo
 
 
 export async function cmdMAPToINT(msg: Message, argv: string[]): Promise<Response> {
-    if (!argv[1].startsWith('MAP')) {
-        throw new BotError('Invalid MAP rule!');
-    }
-    let [b, s] = arrayToTransitions(parseMAP(argv[1].slice(3)), TRANSITIONS);
+    let [b, s] = arrayToTransitions(parseMAP(argv[1])[0], TRANSITIONS);
     return `B${unparseTransitions(b, VALID_TRANSITIONS)}/S${unparseTransitions(s, VALID_TRANSITIONS)}`;
 }
 
 export async function cmdMAPToHexINT(msg: Message, argv: string[]): Promise<Response> {
-    if (!argv[1].startsWith('MAP')) {
-        throw new BotError('Invalid MAP rule!');
-    }
-    let [b, s] = arrayToTransitions(parseMAP(argv[1].slice(3)), HEX_TRANSITIONS);
+    let [b, s] = arrayToTransitions(parseMAP(argv[1])[0], HEX_TRANSITIONS);
     return `B${unparseTransitions(b, VALID_HEX_TRANSITIONS, true)}/S${unparseTransitions(s, VALID_HEX_TRANSITIONS, true)}H`;
 }
 
@@ -100,7 +94,7 @@ export async function cmdINTToMAP(msg: Message, argv: string[]): Promise<Respons
     if (!(p instanceof MAPPattern || p instanceof MAPB0Pattern)) {
         throw new BotError('Rule must be in B/S notation!');
     }
-    return 'MAP' + unparseMAP(p instanceof MAPPattern ? p.trs : p.evenTrs.map(x => 1 - x));
+    return unparseMAP(p instanceof MAPPattern ? p.trs : p.evenTrs.map(x => 1 - x), p.rule.states);
 }
 
 
@@ -155,6 +149,6 @@ export async function cmdCheckerboardDual(msg: Message, argv: string[]): Promise
         let [oddB, oddS] = arrayToTransitions(odd, TRANSITIONS);
         return `Even: B${unparseTransitions(evenB, VALID_TRANSITIONS)}/S${unparseTransitions(evenS, VALID_TRANSITIONS)}\nOdd: B${unparseTransitions(oddB, VALID_TRANSITIONS)}/S${unparseTransitions(oddS, VALID_TRANSITIONS)}`;
     } else {
-        return `Even: MAP${unparseMAP(even)}\nOdd: MAP${unparseMAP(odd)}`;
+        return `Even: ${unparseMAP(even, p.rule.states)}\nOdd: ${unparseMAP(odd, p.rule.states)}`;
     }
 }
