@@ -558,6 +558,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     if (data.partial) {
         data = await data.fetch();
     }
+    console.log('updating', data.emoji);
     if (typeof data.emoji === 'string') {
         if (!starReactions.has(data.emoji)) {
             console.log(data.emoji, starReactions);
