@@ -95,6 +95,25 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
         }
     },
 
+    async say(msg: Message, argv: string[]): Promise<Response> {
+        if (!sentByAdmin(msg)) {
+            return 'You are not an admin!';
+        }
+        if (!(argv[1] in config.serverNames)) {
+            throw new BotError(`Invalid server: '${argv[1]}'`);
+        }
+        let guild = client.guilds.cache.get(config.serverNames[argv[1]]);
+        if (!guild) {
+            throw new BotError(`Invalid server: '${argv[1]}'`);
+        }
+        for (let channel of guild.channels.cache.values()) {
+            if (channel.name === argv[2] && channel.isSendable()) {
+                await channel.send(argv.slice(2).join(' '));
+                return;
+            }
+        }
+    },
+
     'sim': cmdSim,
 
     'identify': cmdIdentify,

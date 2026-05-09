@@ -18,6 +18,7 @@ export interface Config {
     admins: string[];
     accepterers: string[];
     wrapperToken: string;
+    serverNames: {[key: string]: string};
     sssssChannel: string;
     starboardChannel: string;
     starThreshold: number;
