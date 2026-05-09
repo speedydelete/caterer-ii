@@ -544,14 +544,12 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
             }
         }
         if (react) {
-            console.log('start', out[emoji]);
             if (!(emoji in out)) {
                 out[emoji] = new Set();
             }
             for (let user of await react.users.fetch()) {
                 out[emoji].add(user[1].id);
             }
-            console.log('end', out[emoji]);
         }
     }
 }
@@ -598,7 +596,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
             }
         }
     }
-    getReactions(msg, board.emojis, reacts);
+    await getReactions(msg, board.emojis, reacts);
     let senderId: string;
     if (msg.author) {
         senderId = msg.author.id;
