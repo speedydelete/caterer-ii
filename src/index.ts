@@ -97,7 +97,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
 
     async say(msg: Message, argv: string[]): Promise<Response> {
         if (!sentByAdmin(msg)) {
-            return 'You are not an admin!';
+            return;
         }
         if (!(argv[1] in config.serverNames)) {
             throw new BotError(`Invalid server: '${argv[1]}'`);
