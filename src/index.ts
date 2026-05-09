@@ -557,10 +557,12 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
 async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
     if (typeof data.emoji === 'string') {
         if (!starReactions.has(data.emoji)) {
+            console.log(data.emoji, starReactions);
             return;
         }
     } else if (typeof data.emoji === 'object' && data.emoji.id) {
         if (!starReactions.has(data.emoji.id)) {
+            console.log(data.emoji, starReactions);
             return;
         }
     } else {
