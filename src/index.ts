@@ -555,8 +555,9 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
 }
 
 async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
-    // @ts-ignore
-    console.log('UPDATING STARBOARD', data.emoij);
+    if (data.partial) {
+        data = await data.fetch();
+    }
     if (typeof data.emoji === 'string') {
         if (!starReactions.has(data.emoji)) {
             console.log(data.emoji, starReactions);
@@ -569,9 +570,6 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         }
     } else {
         return;
-    }
-    if (data.partial) {
-        data = await data.fetch();
     }
     let msg = data.message;
     if (msg.partial) {
