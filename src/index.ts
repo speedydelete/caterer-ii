@@ -570,7 +570,6 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         return;
     }
     let boardName: string;
-    console.log(msg.guildId, msg.guildId && msg.guildId in config.starboardServers);
     if (msg.guildId && msg.guildId in config.starboardServers) {
         boardName = config.starboardServers[msg.guildId];
     } else {
@@ -580,6 +579,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     if (msg.createdTimestamp < board.startTime) {
         return;
     }
+    console.log('hi');
     let channel = starboardChannels[board.channel];
     let reacts: {[key: string]: Set<string>} = {};
     if (msg.channel.id === board.channel) {
