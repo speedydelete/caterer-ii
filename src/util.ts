@@ -19,6 +19,15 @@ export interface Config {
     accepterers: string[];
     wrapperToken: string;
     serverNames: {[key: string]: string};
+    starboards: {[key: string]: {
+        channel: string;
+        threshold: number;
+        negativeThreshold?: number;
+        emojis: {[key: string]: number};
+        boardHighEmoji: string;
+        boardEmojis: [number, string][];
+    }};
+    starboardServers: {[key: string]: string};
     sssssChannel: string;
     starboardChannel: string;
     starThreshold: number;
