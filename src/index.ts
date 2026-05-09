@@ -537,10 +537,8 @@ let starboard: {[key: string]: Map<string, [string, string]>} = Object.fromEntri
 async function getReactions(msg: _Message, emojis: {[key: string]: number}, out: {[key: string]: Set<string>}): Promise<void> {
     for (let emoji in emojis) {
         let react = msg.reactions.cache.get(emoji);
-        console.log(emoji, react);
         if (!react) {
             let react2 = msg.reactions.resolve(emoji);
-            console.log('2', emoji, react2);
             if (react2) {
                 react = react2;
             }
@@ -598,6 +596,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
             }
         }
     }
+    getReactions(msg, board.emojis, reacts);
     let senderId: string;
     if (msg.author) {
         senderId = msg.author.id;
