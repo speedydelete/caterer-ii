@@ -108,7 +108,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
         }
         for (let channel of guild.channels.cache.values()) {
             if (channel.name === argv[2] && channel.isSendable()) {
-                await channel.send(argv.slice(2).join(' '));
+                await channel.send(argv.slice(3).join(' '));
                 return;
             }
         }
