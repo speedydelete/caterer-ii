@@ -126,7 +126,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
         } else {
             throw new BotError(`Cannot send in channel`);
         }
-        if (deleteAfter) {
+        if (deleteAfter && msg.deletable) {
             await msg.delete();
         }
     },
@@ -146,7 +146,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
             let msg = await channel.messages.fetch(argv[3]);
             msg.edit(argv.slice(4).join(' '));
         }
-        if (deleteAfter) {
+        if (deleteAfter && msg.deletable) {
             await msg.delete();
         }
     },
@@ -185,7 +185,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
             out = emoji;
         }
         await toReact.react(out);
-        if (deleteAfter) {
+        if (deleteAfter && msg.deletable) {
            await msg.delete();
         }
     },
