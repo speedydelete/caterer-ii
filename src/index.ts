@@ -2,7 +2,7 @@
 import * as lifeweb from '../lifeweb/lib/index.js';
 import * as lifewebRPF from '../lifeweb/lib/rpf.js';
 import {inspect} from 'node:util';
-import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReaction, PartialMessageReaction, MessageReplyOptions, TextChannel, Partials} from 'discord.js';
+import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReaction, PartialMessageReaction, MessageReplyOptions, Guild, TextChannel, TextBasedChannel, Partials} from 'discord.js';
 import {BotError, Response, Message, readFile, writeFile, config, sentByAdmin, aliases, noReplyPings, findRLEFromText, findRLE} from './util.js';
 import {cmdHelp} from './help.js';
 import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax, cmdIdentifyConduit} from './core.js';
@@ -13,6 +13,23 @@ import {check5S} from './notifier.js';
 
 
 const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\n';
+
+
+function getChannel(guildName: string, channelName: string): TextBasedChannel & {guild: Guild} {
+    if (!(guildName in config.serverNames)) {
+        throw new BotError(`Invalid server: '${guildName}'`);
+    }
+    let guild = client.guilds.cache.get(config.serverNames[guildName]);
+    if (!guild) {
+        throw new BotError(`Invalid server: '${guildName}'`);
+    }
+    for (let channel of guild.channels.cache.values()) {
+        if (channel.name === channelName && channel.isTextBased()) {
+            return channel;
+        }
+    }
+    throw new BotError(`Nonexistent channel: '${channelName}'`);
+}
 
 
 const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Response>} = {
@@ -99,18 +116,77 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
         if (!sentByAdmin(msg)) {
             return;
         }
-        if (!(argv[1] in config.serverNames)) {
-            throw new BotError(`Invalid server: '${argv[1]}'`);
+        let deleteAfter = argv[1] === '-iq';
+        if (deleteAfter) {
+            argv = argv.slice(1);
         }
-        let guild = client.guilds.cache.get(config.serverNames[argv[1]]);
-        if (!guild) {
-            throw new BotError(`Invalid server: '${argv[1]}'`);
+        let channel = getChannel(argv[1], argv[2]);
+        if (channel.isSendable()) {
+            await channel.send(argv.slice(3).join(' '));
+        } else {
+            throw new BotError(`Cannot send in channel`);
         }
-        for (let channel of guild.channels.cache.values()) {
-            if (channel.name === argv[2] && channel.isSendable()) {
-                await channel.send(argv.slice(3).join(' '));
-                return;
+        if (deleteAfter) {
+            await msg.delete();
+        }
+    },
+
+    async edit(msg: Message, argv: string[]): Promise<Response> {
+        if (!sentByAdmin(msg)) {
+            return;
+        }
+        let deleteAfter = argv[1] === '-iq';
+        if (deleteAfter) {
+            argv = argv.slice(1);
+        }
+        if (msg.reference) {
+            (await msg.fetchReference()).edit(argv.slice(1).join(' '));
+        } else {
+            let channel = getChannel(argv[1], argv[2]);
+            let msg = await channel.messages.fetch(argv[3]);
+            msg.edit(argv.slice(4).join(' '));
+        }
+        if (deleteAfter) {
+            await msg.delete();
+        }
+    },
+
+    async react(msg: Message, argv: string[]): Promise<Response> {
+        if (!sentByAdmin(msg)) {
+            return;
+        }
+        let deleteAfter = argv[1] === '-iq';
+        if (deleteAfter) {
+            argv = argv.slice(1);
+        }
+        let toReact: Message;
+        let emoji: string;
+        if (msg.reference) {
+            toReact = await msg.fetchReference();
+            emoji = argv[1];
+        } else {
+            let channel = getChannel(argv[1], argv[2]);
+            toReact = await channel.messages.fetch(argv[3]) as Message;
+            emoji = argv[4];
+        }
+        let out: string;
+        let match: RegExpMatchArray | null;
+        if (match = emoji.match(/^<(a?):([a-zA-Z0-9_]+):(\d+)>$/)) {
+            out = match[3];
+        } else if (match = emoji.match(/^:([a-zA-Z0-9_]+):$/)) {
+            let name = match[1];
+            let emoji = client.emojis.cache.find(e => e.name === name);
+            if (emoji) {
+                out = emoji.id;
+            } else {
+                throw new BotError(`Cannot find emoji: '${emoji}'`);
             }
+        } else {
+            out = emoji;
+        }
+        await toReact.react(out);
+        if (deleteAfter) {
+           await msg.delete();
         }
     },
 
