@@ -555,6 +555,8 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
 }
 
 async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
+    // @ts-ignore
+    console.log('UPDATING STARBOARD', data.emoij);
     if (typeof data.emoji === 'string') {
         if (!starReactions.has(data.emoji)) {
             console.log(data.emoji, starReactions);
