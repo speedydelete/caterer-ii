@@ -537,10 +537,8 @@ let starboard: {[key: string]: Map<string, [string, string]>} = Object.fromEntri
 async function getReactions(msg: _Message, emojis: {[key: string]: number}, out: {[key: string]: Set<string>}): Promise<void> {
     for (let emoji in emojis) {
         let react = msg.reactions.cache.get(emoji);
-        console.log('1', emoji, react);
         if (!react) {
             let react2 = msg.reactions.resolve(emoji);
-            console.log('2', emoji, react);
             if (react2) {
                 react = react2;
             }
@@ -549,11 +547,9 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
             if (!(emoji in out)) {
                 out[emoji] = new Set();
             }
-            let users = await react.users.fetch();
             for (let user of await react.users.fetch()) {
                 out[emoji].add(user[1].id);
             }
-            console.log(out[emoji]);
         }
     }
 }
@@ -609,7 +605,6 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     }
     let entry = starboard[boardName].get(msg.id);
     if (entry) {
-        console.log(entry[0], entry[1]);
         getReactions(await channel.messages.fetch(entry[0]), board.emojis, reacts);
         getReactions(await channel.messages.fetch(entry[1]), board.emojis, reacts);
     }
