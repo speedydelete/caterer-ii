@@ -614,7 +614,13 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     }
     let count = 0;
     for (let emoji in reacts) {
-        count += board.emojis[emoji] * Array.from(reacts[emoji]).filter(x => x !== senderId).length;
+        let users: number;
+        if (!board.allowSelf) {
+            users = Array.from(reacts[emoji]).filter(x => x !== senderId).length;
+        } else {
+            users = reacts[emoji].size;
+        }
+        count += board.emojis[emoji] * users;
     }
     if (count >= board.threshold || (board.negativeThreshold !== undefined && count <= board.negativeThreshold)) {
         let text = board.boardLowEmoji;

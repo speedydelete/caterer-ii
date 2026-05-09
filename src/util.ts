@@ -25,6 +25,7 @@ export interface Config {
         channel: string;
         threshold: number;
         negativeThreshold?: number;
+        allowSelf: boolean;
         startTime: number;
         emojis: {[key: string]: number};
         boardLowEmoji: string;
