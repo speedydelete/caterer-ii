@@ -559,6 +559,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         data = await data.fetch();
     }
     if ((data.emoji.name && !starReactions.has(data.emoji.name)) && (data.emoji.id && !starReactions.has(data.emoji.id))) {
+        console.log(data.emoji.name, data.emoji.id, starReactions);
         return;
     }
     let msg = data.message;
