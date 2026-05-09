@@ -173,7 +173,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
         let match: RegExpMatchArray | null;
         if (match = emoji.match(/^<(a?):([a-zA-Z0-9_]+):(\d+)>$/)) {
             out = match[3];
-        } else if (match = emoji.match(/^:([a-zA-Z0-9_]+):$/)) {
+        } else if (match = emoji.match(/^:?([a-zA-Z0-9_]+):?$/)) {
             let name = match[1];
             let emoji = client.emojis.cache.find(e => e.name === name);
             if (emoji) {
