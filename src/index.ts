@@ -544,12 +544,14 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
             }
         }
         if (react) {
+            console.log('start', out[emoji]);
             if (!(emoji in out)) {
                 out[emoji] = new Set();
             }
             for (let user of await react.users.fetch()) {
                 out[emoji].add(user[1].id);
             }
+            console.log('end', out[emoji]);
         }
     }
 }
