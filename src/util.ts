@@ -18,8 +18,10 @@ export interface Config {
     admins: string[];
     accepterers: string[];
     wrapperToken: string;
+    initTime: number;
     serverNames: {[key: string]: string};
     starboards: {[key: string]: {
+        server: string;
         channel: string;
         threshold: number;
         negativeThreshold?: number;
@@ -30,9 +32,6 @@ export interface Config {
     }};
     starboardServers: {[key: string]: string};
     sssssChannel: string;
-    starboardChannel: string;
-    starThreshold: number;
-    initTime: number;
 }
 
 

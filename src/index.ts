@@ -441,13 +441,19 @@ let client = new Client({
     ],
 });
 
-let starboardChannel: TextChannel;
 let sssssChannel: TextChannel;
+let starboardChannels: {[key: string]: TextChannel} = {};
+let starReactions = new Set<string>();
 
 client.once('clientReady', async () => {
     console.log('Logged in');
-    starboardChannel = await client.channels.fetch(config.starboardChannel) as TextChannel;
     sssssChannel = await client.channels.fetch(config.sssssChannel) as TextChannel;
+    for (let x of Object.values(config.starboards)) {
+        starboardChannels[x.channel] = await (await client.guilds.fetch(x.server)).channels.fetch(x.channel) as TextChannel;
+        for (let emoji in x.emojis) {
+            starReactions.add(emoji);
+        }
+    }
 });
 
 client.on('messageCreate', runCommand);
@@ -505,7 +511,7 @@ client.on('messageReactionAdd', async data => {
             return;
         }
     }
-    if (msg.channel.id === config.starboardChannel) {
+    if (msg.channel.id in starboardChannels) {
         return;
     }
     if (msg.author?.id === client.user?.id && msg.reference) {
@@ -526,118 +532,137 @@ client.on('messageReactionAdd', async data => {
 });
 
 
-let starboard: Map<string, [string, string]> = new Map(JSON.parse(await readFile('data/starboard.json')));
+// let starboard: {[key: string]: Map<string, [string, string]>} = Object.fromEntries(Object.entries(JSON.parse(await readFile('data/starboard.json'))).map(x => [x[0], new Map(x[1] as [string, [string, string]][])]));
 
-async function getStarReactions(msg: _Message): Promise<string[]> {
-    let react = msg.reactions.cache.get('⭐');
-    if (!react) {
-        let react2 = msg.reactions.resolve('⭐');
-        if (react2) {
-            react = react2;
-        }
-    }
-    if (react) {
-        return (await react.users.fetch()).map(x => x.id);
-    } else {
-        return [];
-    }
-}
+// async function getReactions(msg: _Message, emojis: string[], out: {[key: string]: string[]}): Promise<void> {
+//     for (let emoji in emojis) {
+//         let react = msg.reactions.cache.get(emoji);
+//         if (!react) {
+//             let react2 = msg.reactions.resolve(emoji);
+//             if (react2) {
+//                 react = react2;
+//             }
+//         }
+//         if (react) {
+//             out.push([emoji, (await react.users.fetch()).map(x => x.id)]);
+//         }
+//     }
+//     return out;
+// }
 
-async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
-    if (data.emoji.name !== '⭐') {
-        return;
-    }
-    if (data.partial) {
-        data = await data.fetch();
-    }
-    if (data.count === null) {
-        return;
-    }
-    let msg = data.message;
-    if (msg.createdTimestamp < config.initTime || !(msg.guildId === '357922255553953794' || msg.guildId === '1417233330679844937')) {
-        return;
-    }
-    let users = (await data.users.fetch()).map(x => x.id);
-    if (msg.channel.id === config.starboardChannel) {
-        if (msg.reference) {
-            msg = await msg.fetchReference();
-            users.push(...(await getStarReactions(msg)));
-        } else {
-            msg = Array.from((await msg.channel.messages.fetch({limit: 1, after: msg.id})).values())[0];
-            if (msg.reference) {
-                msg = await msg.fetchReference();
-                users.push(...(await getStarReactions(msg)));
-            } else {
-                return;
-            }
-        }
-    }
-    let senderId: string;
-    if (msg.author) {
-        senderId = msg.author.id;
-    } else {
-        return;
-    }
-    let entry = starboard.get(msg.id);
-    if (entry) {
-        users.push(...(await getStarReactions(await starboardChannel.messages.fetch(entry[0]))));
-        users.push(...(await getStarReactions(await starboardChannel.messages.fetch(entry[1]))));
-    }
-    let users2 = Array.from(new Set(users)).filter(x => x !== senderId);
-    if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
-        let msg2 = await msg.fetchReference();
-        users2 = users2.filter(x => x !== msg2.author.id);
-    }
-    let count = users2.length;
-    if (count >= config.starThreshold) {
-        let text: string;
-        if (count < Math.floor(config.starThreshold * 2)) {
-            text = '⭐';
-        } else if (count < Math.floor(config.starThreshold * 3)) {
-            text = '🌟';
-        } else if (count < Math.floor(config.starThreshold * 4)) {
-            text = '💫';
-        } else {
-            text = '✨';
-        }
-        text += ` **${count}** `;
-        if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
-            let msg2 = await msg.fetchReference();
-            let data = findRLEFromText(msg2.content);
-            if (data) {
-                text += `Pattern by <@${msg2.author.id}> in \`${data.rule.str}\``;
-            } else {
-                text += `Pattern by <@${msg2.author.id}>`;
-            }
-        } else {
-            text += `<@${msg.author?.id}>`;
-        }
-        text += ` (https://discord.com/channels/${msg.guildId}/${msg.channelId}/${msg.id})`;
-        if (entry) {
-            (await starboardChannel.messages.fetch(entry[0])).edit({content: text, allowedMentions: {parse: []}});
-        } else {
-            let msg0 = await starboardChannel.send({content: text, allowedMentions: {parse: []}});
-            let msg1 = await msg.forward(starboardChannel);
-            starboard.set(msg.id, [msg0.id, msg1.id]);
-            await writeFile('data/starboard.json', JSON.stringify(Array.from(starboard.entries())));
-        }
-    } else if (entry) {
-        starboard.delete(msg.id);
-        await starboardChannel.messages.delete(entry[0]);
-        await starboardChannel.messages.delete(entry[1]);
-    }
-}
+// async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
+//     if (typeof data.emoji === 'string') {
+//         if (!starReactions.has(data.emoji)) {
+//             return;
+//         }
+//     } else if (typeof data.emoji === 'object' && data.emoji.id) {
+//         if (!starReactions.has(data.emoji.id)) {
+//             return;
+//         }
+//     } else {
+//         return;
+//     }
+//     if (data.partial) {
+//         data = await data.fetch();
+//     }
+//     let msg = data.message;
+//     if (msg.partial) {
+//         msg = await msg.fetch();
+//     }
+//     if (msg.createdTimestamp < config.initTime) {
+//         return;
+//     }
+//     let boardName: string;
+//     if (msg.guildId && msg.guildId in config.starboardServers) {
+//         boardName = config.starboardServers[msg.guildId];
+//     } else {
+//         return;
+//     }
+//     let board = config.starboards[boardName];
+//     if (msg.createdTimestamp < board.startTime) {
+//         return;
+//     }
+//     let reacts: 
+//     if (msg.channel.id === board.channel) {
+//         if (msg.reference) {
+//             msg = await msg.fetchReference();
+//             users.push(...(await getStarReactions(msg)));
+//         } else {
+//             msg = Array.from((await msg.channel.messages.fetch({limit: 1, after: msg.id})).values())[0];
+//             if (msg.reference) {
+//                 msg = await msg.fetchReference();
+//                 users.push(...(await getStarReactions(msg)));
+//             } else {
+//                 return;
+//             }
+//         }
+//     }
+//     let senderId: string;
+//     if (msg.author) {
+//         senderId = msg.author.id;
+//     } else {
+//         return;
+//     }
+//     let entry = starboard.get(msg.id);
+//     if (entry) {
+//         users.push(...(await getStarReactions(await starboardChannel.messages.fetch(entry[0]))));
+//         users.push(...(await getStarReactions(await starboardChannel.messages.fetch(entry[1]))));
+//     }
+//     let users2 = Array.from(new Set(users)).filter(x => x !== senderId);
+//     if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
+//         let msg2 = await msg.fetchReference();
+//         users2 = users2.filter(x => x !== msg2.author.id);
+//     }
+//     let count = users2.length;
+//     if (count >= config.starThreshold) {
+//         let text: string;
+//         if (count < Math.floor(config.starThreshold * 2)) {
+//             text = '⭐';
+//         } else if (count < Math.floor(config.starThreshold * 3)) {
+//             text = '🌟';
+//         } else if (count < Math.floor(config.starThreshold * 4)) {
+//             text = '💫';
+//         } else {
+//             text = '✨';
+//         }
+//         text += ` **${count}** `;
+//         if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
+//             let msg2 = await msg.fetchReference();
+//             let data = findRLEFromText(msg2.content);
+//             if (data) {
+//                 text += `Pattern by <@${msg2.author.id}> in \`${data.rule.str}\``;
+//             } else {
+//                 text += `Pattern by <@${msg2.author.id}>`;
+//             }
+//         } else {
+//             text += `<@${msg.author?.id}>`;
+//         }
+//         text += ` (https://discord.com/channels/${msg.guildId}/${msg.channelId}/${msg.id})`;
+//         if (entry) {
+//             (await starboardChannel.messages.fetch(entry[0])).edit({content: text, allowedMentions: {parse: []}});
+//         } else {
+//             let msg0 = await starboardChannel.send({content: text, allowedMentions: {parse: []}});
+//             let msg1 = await msg.forward(starboardChannel);
+//             starboard.set(msg.id, [msg0.id, msg1.id]);
+//             await writeFile('data/starboard.json', JSON.stringify(Array.from(starboard.entries())));
+//         }
+//     } else if (entry) {
+//         starboard.delete(msg.id);
+//         await starboardChannel.messages.delete(entry[0]);
+//         await starboardChannel.messages.delete(entry[1]);
+//     }
+// }
 
-client.on('messageReactionAdd', updateStarboard);
-client.on('messageReactionRemove', updateStarboard);
-client.on('messageReactionRemoveAll', async msg => {
-    let entry = starboard.get(msg.id);
-    if (entry) {
-        starboard.delete(msg.id);
-        await starboardChannel.messages.delete(entry[0]);
-        await starboardChannel.messages.delete(entry[1]);
-    }
-});
+// client.on('messageReactionAdd', updateStarboard);
+// client.on('messageReactionRemove', updateStarboard);
+// client.on('messageReactionRemoveAll', async msg => {
+//     let entry = starboard.get(msg.id);
+//     if (entry) {
+//         starboard.delete(msg.id);
+//         await starboardChannel.messages.delete(entry[0]);
+//         await starboardChannel.messages.delete(entry[1]);
+//     }
+// });
 
 
 setInterval(async () => {
