@@ -606,8 +606,10 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     }
     let entry = starboard[boardName].get(msg.id);
     if (entry) {
+        console.log(entry[0], entry[1]);
         getReactions(await channel.messages.fetch(entry[0]), board.emojis, reacts);
         getReactions(await channel.messages.fetch(entry[1]), board.emojis, reacts);
+        console.log('hi 3');
     }
     console.log(reacts);
     if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
