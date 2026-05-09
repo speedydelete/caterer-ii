@@ -557,7 +557,8 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
 async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
     if (data.partial) {
         data = await data.fetch();
-    }    if ((data.emoji.name && !starReactions.has(data.emoji.name)) && (data.emoji.id && !starReactions.has(data.emoji.id))) {
+    }
+    if ((data.emoji.name && !starReactions.has(data.emoji.name)) && (data.emoji.id && !starReactions.has(data.emoji.id))) {
         return;
     }
     let msg = data.message;
