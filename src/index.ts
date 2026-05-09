@@ -577,6 +577,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         return;
     }
     let boardName: string;
+    console.log(msg.guildId, msg.guildId && msg.guildId in config.starboardServers);
     if (msg.guildId && msg.guildId in config.starboardServers) {
         boardName = config.starboardServers[msg.guildId];
     } else {
