@@ -23,8 +23,9 @@ export interface Config {
         channel: string;
         threshold: number;
         negativeThreshold?: number;
+        startTime: number;
         emojis: {[key: string]: number};
-        boardHighEmoji: string;
+        boardLowEmoji: string;
         boardEmojis: [number, string][];
     }};
     starboardServers: {[key: string]: string};
