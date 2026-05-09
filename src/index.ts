@@ -566,7 +566,6 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         msg = await msg.fetch();
     }
     if (msg.createdTimestamp < config.initTime) {
-        console.log(msg.createdTimestamp, config.initTime);
         return;
     }
     let boardName: string;
@@ -598,6 +597,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
             }
         }
     }
+    console.log('hi 2');
     let senderId: string;
     if (msg.author) {
         senderId = msg.author.id;
@@ -609,6 +609,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         getReactions(await channel.messages.fetch(entry[0]), board.emojis, reacts);
         getReactions(await channel.messages.fetch(entry[1]), board.emojis, reacts);
     }
+    console.log(reacts);
     if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
         let msg2 = await msg.fetchReference();
         senderId = msg2.author.id;
