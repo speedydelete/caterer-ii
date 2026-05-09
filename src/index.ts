@@ -549,6 +549,8 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
             if (!(emoji in out)) {
                 out[emoji] = new Set();
             }
+            let users = await react.users.fetch();
+            console.log(users);
             for (let user of await react.users.fetch()) {
                 out[emoji].add(user[1].id);
             }
