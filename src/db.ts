@@ -107,9 +107,9 @@ export async function cmdName(msg: Message, argv: string[]): Promise<Response> {
             throw new BotError('Pattern is not named');
         }
     }
-    if (!Array.from(newName).every(x => NAME_CHARS.includes(x))) {
-        throw new BotError('Invalid name!');
-    }
+    // if (!Array.from(newName).every(x => NAME_CHARS.includes(x))) {
+    //     throw new BotError('Invalid name!');
+    // }
     if (names.has(apgcode)) {
         if (!sentByAccepterer(msg)) {
             throw new BotError('Pattern is already named and you are not an accepterer');
