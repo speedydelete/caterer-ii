@@ -613,15 +613,29 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         let msg2 = await msg.fetchReference();
         senderId = msg2.author.id;
     }
-    let count = 0;
+    let userReacts: {[key: string]: string} = {};
     for (let emoji in reacts) {
-        let users: number;
-        if (!board.allowSelf) {
-            users = Array.from(reacts[emoji]).filter(x => x !== senderId).length;
-        } else {
-            users = reacts[emoji].size;
+        for (let user of Array.from(reacts[emoji])) {
+            if (!board.allowSelf && user === senderId) {
+                continue;
+            } else if (user in userReacts) {
+                let oldScore = board.emojis[userReacts[user]];
+                let newScore = board.emojis[emoji];
+                if (Math.abs(newScore) > Math.abs(oldScore)) {
+                    userReacts[user] = emoji;
+                } else if (Math.abs(newScore) === Math.abs(oldScore) && newScore > oldScore) {
+                    userReacts[user] = emoji;
+                } else {
+                    continue;
+                }
+            } else {
+                userReacts[user] = emoji;
+            }
         }
-        count += board.emojis[emoji] * users;
+    }
+    let count = 0;
+    for (let emoji of Object.values(userReacts)) {
+        count += board.emojis[emoji];
     }
     if (count >= board.threshold || (board.negativeThreshold !== undefined && count <= board.negativeThreshold)) {
         let text = board.boardLowEmoji;
