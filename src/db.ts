@@ -217,7 +217,7 @@ export async function cmdAlias(msg: Message, argv: string[]): Promise<Response> 
         }
     }
     if (isValidRule) {
-        return 'Did not add alias because it is a valid rule';
+        throw new BotError('Did not add alias because it is a valid rule');
     }
     let rule = data.slice(1).join('\n');
     if (rule === '') {
