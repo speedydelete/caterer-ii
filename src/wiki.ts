@@ -88,6 +88,7 @@ export async function cmdWiki(msg: Message, argv: string[]): Promise<Response> {
             id = data[0].pageid;
         }
     }
+    throw new Error(String(id));
     let resp = await fetch(`https://conwaylife.com/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&pageids=${id}&format=json`);
     if (!resp.ok) {
         throw new BotError(`Server returned ${resp.status} ${resp.statusText}`);
@@ -108,7 +109,7 @@ export async function cmdWiki(msg: Message, argv: string[]): Promise<Response> {
         if (!match) {
             break;
         }
-        title = match[1].trim();
+        // title = match[1].trim();
         resp = await fetch(`https://conwaylife.com/w/api.php?action=query&titles=${encodeURIComponent(title)}&format=json`);
         if (!resp.ok) {
             throw new BotError(`Server returned ${resp.status} ${resp.statusText}`);
