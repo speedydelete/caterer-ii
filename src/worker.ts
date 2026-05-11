@@ -579,8 +579,8 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         }
         startX += xOffset;
         startY += yOffset;
-        let pHeight = Math.ceil(p.height);
-        let pWidth = Math.ceil(p.width);
+        let pHeight = p.height;
+        let pWidth = p.width;
         let endX = startX + pWidth;
         let endY = startY + pHeight;
         let pData = p.getData();
