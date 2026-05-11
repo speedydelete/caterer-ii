@@ -581,10 +581,10 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
             startX = p.xOffset - minX;
             startY = p.yOffset - minY;
         }
-        startX = Math.round(startX + xOffset);
-        startY = Math.round(startY + yOffset);
-        let pHeight = Math.round(p.height);
-        let pWidth = Math.round(p.width);
+        startX = Math.floor(startX + xOffset);
+        startY = Math.floor(startY + yOffset);
+        let pHeight = Math.floor(p.height);
+        let pWidth = Math.floor(p.width);
         let endX = startX + pWidth;
         let endY = startY + pHeight;
         let pData = p.getData();
