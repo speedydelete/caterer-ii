@@ -467,6 +467,10 @@ function parseSim(argv: string[], rle: string): SimData {
     maxX++;
     minY--;
     maxY++;
+    minX = Math.floor(minX);
+    maxX = Math.floor(maxX);
+    minY = Math.floor(minY);
+    maxY = Math.floor(maxY);
     let width = maxX - minX;
     let height = maxY - minY;
     if (p instanceof CoordPattern) {
@@ -577,8 +581,8 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
             startX = p.xOffset - minX;
             startY = p.yOffset - minY;
         }
-        startX += xOffset;
-        startY += yOffset;
+        startX = Math.round(startX + xOffset);
+        startY = Math.round(startY + yOffset);
         let pHeight = p.height;
         let pWidth = p.width;
         let endX = startX + pWidth;
