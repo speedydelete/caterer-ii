@@ -583,8 +583,8 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         }
         startX = Math.round(startX + xOffset);
         startY = Math.round(startY + yOffset);
-        let pHeight = p.height;
-        let pWidth = p.width;
+        let pHeight = Math.round(p.height);
+        let pWidth = Math.round(p.width);
         let endX = startX + pWidth;
         let endY = startY + pHeight;
         let pData = p.getData();
