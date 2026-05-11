@@ -436,6 +436,10 @@ function parseSim(argv: string[], rle: string): SimData {
     for (let {p} of frames) {
         if (p instanceof CoordPattern) {
             let data = p.getMinMaxCoords();
+            data.minX -= p.xOffset;
+            data.minY -= p.yOffset;
+            data.maxX -= p.xOffset;
+            data.maxY -= p.yOffset;
             if (data.minX < minX) {
                 minX = data.minX;
             }
