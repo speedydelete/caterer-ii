@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
 import {RuleError, Pattern, CoordPattern, MAPPattern, DataHistoryPattern, CoordHistoryPattern, DataSuperPattern, CoordSuperPattern, InvestigatorPattern, TreePattern, findMinmax, findType, getDescription, identify, identifyConduit, createPattern, parse} from '../lifeweb/lib/index.js';
-import {parseRPF, RPFPattern} from '../lifeweb/lib/rpf.js';
+import {RPFFile} from '../lifeweb/lib/rpf.js';
 import {BotError, aliases} from './util.js';
 
 
@@ -11,7 +11,7 @@ function deserialize(value: string): Pattern {
     if (value.startsWith('rle\n')) {
         return parse(value.slice(4), aliases);
     } else {
-        return parseRPF(value.slice(4), '/').data['main'];
+        return RPFFile.fromString(value.slice(4), '/').data['main'];
     }
 }
 

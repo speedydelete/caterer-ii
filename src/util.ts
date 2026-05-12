@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import {join} from 'node:path';
 import {DiscordAPIError, Message as _Message, OmitPartialGroupDMChannel} from 'discord.js';
 import {Pattern, parse} from '../lifeweb/lib/index.js';
-import {parseRPF} from '../lifeweb/lib/rpf.js';
+import {RPFFile} from '../lifeweb/lib/rpf.js';
 
 
 export class BotError extends Error {}
@@ -84,7 +84,7 @@ export function findRLEFromText(data: string): Pattern | undefined {
             return;
         }
         data = data.slice(0, index);
-        let rpf = parseRPF(data, '/');
+        let rpf = RPFFile.fromString(data, '/');
         if (!rpf.data['main']) {
             throw new BotError(`No 'main' object in RPF!`);
         }
@@ -121,7 +121,7 @@ export async function findRLEFromMessage(msg: Message): Promise<{msg: Message, p
                 }
             } else if (file.endsWith('.rpf')) {
                 let data = await (await fetch(attachment.url)).text();
-                let rpf = parseRPF(data, '/');
+                let rpf = RPFFile.fromString(data, '/');
                 if (!rpf.data['main']) {
                     throw new BotError(`No 'main' object in RPF!`);
                 }
