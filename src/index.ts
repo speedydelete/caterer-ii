@@ -644,7 +644,11 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
                 text = emoji;
             }
         }
-        text += ` **${count}** `;
+        let countStr = count.toFixed(3);
+        while (countStr.endsWith('0') || countStr.endsWith('.')) {
+            countStr = countStr.slice(0, -1);
+        }
+        text += ` **${countStr}** `;
         if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
             let msg2 = await msg.fetchReference();
             let data = findRLEFromText(msg2.content);
