@@ -565,7 +565,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     if (msg.partial) {
         msg = await msg.fetch();
     }
-    if (msg.createdTimestamp < config.initTime) {
+    if (msg.createdTimestamp < config.initTime || msg.system || msg.flags.has('Ephemeral')) {
         return;
     }
     let boardName: string;
