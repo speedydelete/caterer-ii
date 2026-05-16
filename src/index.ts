@@ -644,10 +644,13 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
         let index = countStr.indexOf('.');
         if (index !== -1) {
             let end = countStr.slice(index + 1);
-            while (end.startsWith('0') && end.length > 1) {
+            while (end.startsWith('0')) {
                 end = end.slice(0, -1);
             }
             countStr = countStr.slice(0, index + 1) + end;
+            if (countStr.endsWith('.')) {
+                countStr = countStr.slice(0, -1);
+            }
         }
         text += ` **${countStr}** `;
         if (msg.author?.id === client.user.id && msg.attachments.size === 1) {
