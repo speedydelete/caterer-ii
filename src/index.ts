@@ -550,6 +550,9 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
             for (let user of await react.users.fetch()) {
                 out[emoji].add(user[1].id);
             }
+            for (let user of await react.users.fetch({type: 1})) {
+                out[emoji].add(user[1].id);
+            }
         }
     }
 }
