@@ -2,7 +2,7 @@
 import * as lifeweb from '../lifeweb/lib/index.js';
 import * as lifewebRPF from '../lifeweb/lib/rpf.js';
 import {inspect} from 'node:util';
-import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReaction, PartialMessageReaction, MessageReplyOptions, Guild, TextChannel, TextBasedChannel, Partials} from 'discord.js';
+import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, PartialMessage, MessageReaction, PartialMessageReaction, MessageReplyOptions, Guild, TextChannel, TextBasedChannel, Partials} from 'discord.js';
 import {BotError, Response, Message, readFile, writeFile, config, sentByAdmin, aliases, noReplyPings, findRLEFromText, findRLE} from './util.js';
 import {cmdHelp} from './help.js';
 import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax, cmdIdentifyConduit} from './core.js';
@@ -439,7 +439,7 @@ let client = new Client({
         Partials.User,
         Partials.ThreadMember,
     ],
-});
+}) as Client<true>;
 
 let sssssChannel: TextChannel;
 let starboardChannels: {[key: string]: TextChannel} = {};
@@ -554,14 +554,10 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
     }
 }
 
-async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
-    if (data.partial) {
-        data = await data.fetch();
-    }
-    if ((data.emoji.name && !starReactions.has(data.emoji.name)) && (data.emoji.id && !starReactions.has(data.emoji.id))) {
-        return;
-    }
-    let msg = data.message;
+
+let updatingStarboardFor = new Set<string>();
+
+async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     if (msg.partial) {
         msg = await msg.fetch();
     }
@@ -609,7 +605,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         getReactions(await channel.messages.fetch(entry[1]), board.emojis, reacts);
     }
     console.log(board.emojis, reacts);
-    if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
+    if (msg.author?.id === client.user.id && msg.attachments.size === 1) {
         let msg2 = await msg.fetchReference();
         senderId = msg2.author.id;
     }
@@ -649,7 +645,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
             countStr = countStr.slice(0, -1);
         }
         text += ` **${countStr}** `;
-        if (msg.author?.id === data.client.user.id && msg.attachments.size === 1) {
+        if (msg.author?.id === client.user.id && msg.attachments.size === 1) {
             let msg2 = await msg.fetchReference();
             let data = findRLEFromText(msg2.content);
             if (data) {
@@ -673,6 +669,30 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         starboard[boardName].delete(msg.id);
         await channel.messages.delete(entry[0]);
         await channel.messages.delete(entry[1]);
+    }
+}
+
+async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
+    let id: string | undefined;
+    try {
+        if (data.partial) {
+            data = await data.fetch();
+        }
+        if ((data.emoji.name && !starReactions.has(data.emoji.name)) && (data.emoji.id && !starReactions.has(data.emoji.id))) {
+            return;
+        }
+        let msg = data.message;
+        if (updatingStarboardFor.has(msg.id)) {
+            setTimeout(() => updateStarboard(data), 250);
+        }
+        updatingStarboardFor.add(msg.id);
+        id = msg.id;
+        await _updateStarboard(msg);
+        updatingStarboardFor.delete(msg.id);
+    } catch (error) {
+        if (id !== undefined) {
+            updatingStarboardFor.delete(id);
+        }
     }
 }
 
