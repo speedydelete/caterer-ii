@@ -641,8 +641,13 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
             }
         }
         let countStr = count.toFixed(3);
-        while (countStr.endsWith('0') || countStr.endsWith('.')) {
-            countStr = countStr.slice(0, -1);
+        let index = countStr.indexOf('.');
+        if (index !== -1) {
+            let end = countStr.slice(index + 1);
+            while (end.startsWith('0') && end.length > 1) {
+                end = end.slice(0, -1);
+            }
+            countStr = countStr.slice(0, index + 1) + end;
         }
         text += ` **${countStr}** `;
         if (msg.author?.id === client.user.id && msg.attachments.size === 1) {
