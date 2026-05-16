@@ -636,7 +636,7 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     for (let [emoji, users] of Object.entries(reacts)) {
         log += `\n    ${client.emojis.cache.get(emoji)?.name}: ${Array.from(users).map(x => client.users.cache.get(x)?.username).join(', ')}`;
     }
-    log += `Resolved reactions:`;
+    log += `\nResolved reactions:`;
     for (let [user, emoji] of Object.entries(userReacts)) {
         log += `\n    ${client.users.cache.get(user)?.username} reacted with :${client.emojis.cache.get(emoji)?.name}:`;
     }
