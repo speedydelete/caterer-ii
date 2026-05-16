@@ -327,8 +327,8 @@ export async function cmdIdentify(msg: Message, argv: string[]): Promise<Respons
     let limit = 1024;
     if (argv[1]) {
         let parsed = Number(argv[1]);
-        if (!Number.isNaN(parsed)) {
-            limit = parsed;
+        if (Number.isNaN(parsed)) {
+            throw new BotError(`Invalid number: '${argv[1]}'`);
         }
     }
     let data = await findRLE(msg);
