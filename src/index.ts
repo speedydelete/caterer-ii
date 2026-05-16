@@ -604,7 +604,6 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
         getReactions(await channel.messages.fetch(entry[0]), board.emojis, reacts);
         getReactions(await channel.messages.fetch(entry[1]), board.emojis, reacts);
     }
-    console.log(board.emojis, reacts);
     if (msg.author?.id === client.user.id && msg.attachments.size === 1) {
         let msg2 = await msg.fetchReference();
         senderId = msg2.author.id;
