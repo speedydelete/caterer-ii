@@ -632,6 +632,7 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     for (let emoji of Object.values(userReacts)) {
         count += board.emojis[emoji];
     }
+    console.log(reacts, userReacts, count);
     if (count >= board.threshold || (board.negativeThreshold !== undefined && count <= board.negativeThreshold)) {
         let text = board.boardLowEmoji;
         for (let [threshold, emoji] of board.boardEmojis) {
