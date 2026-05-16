@@ -99,9 +99,11 @@ export async function cmdINTToMAP(msg: Message, argv: string[]): Promise<Respons
 
 
 function getClass(p: Pattern): string {
-    if ('p' in p && (p.p instanceof DataPattern || p.p instanceof CoordPattern)) {
+    if ('p' in p && p.p instanceof Pattern) {
         return `${p.constructor.name}<${p.p.constructor.name}>`;
-    } else if ('patterns' in p && Array.isArray(p.patterns) && p.patterns.every(x => x instanceof DataPattern || x instanceof CoordPattern)) {
+    } else if ('pattern' in p && p.pattern instanceof Pattern) {
+        return `${p.constructor.name}<${p.pattern.constructor.name}>`;
+    } else if ('patterns' in p && Array.isArray(p.patterns) && p.patterns.every(x => x instanceof Pattern)) {
         return `${p.constructor.name}<[${p.patterns.map(x => getClass(x)).join(', ')}]>`;
     } else {
         return p.constructor.name;
