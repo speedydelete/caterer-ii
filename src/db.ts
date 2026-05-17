@@ -1,20 +1,9 @@
 
-import {RuleError, findType, getApgcode, createPattern, parseSpeed} from '../lifeweb/lib/index.js';
 import {EmbedBuilder} from 'discord.js';
+import {RuleError, findType, getApgcode, createPattern, parseSpeed} from '../lifeweb/lib/index.js';
+import {Type, TYPE_NAMES} from '../sssss/lib/index.js';
 import {BotError, Message, Response, readFile, writeFile, aliases, names, simStats, sentByAccepterer, findRLE} from './util.js';
 
-
-export const TYPE_NAMES: {[key: string]: string} = {
-    'int': 'INT',
-    'intb0': 'INT B0',
-    'ot': 'OT',
-    'otb0': 'OT B0',
-    'intgen': 'INT Generations',
-    'otgen': 'OT Generations',
-    'intb1e': 'INT B1e',
-    'intnos': 'INT Statorless',
-    'int1dt': 'INT 1 Death Transition',
-};
 
 export async function cmdSssss(msg: Message, argv: string[]): Promise<Response> {
     await msg.channel.sendTyping();
@@ -62,7 +51,7 @@ export async function cmdSssssInfo(msg: Message, argv: string[]): Promise<Respon
     let type = argv[1] ? argv[1].toLowerCase() : 'int';
     let resp = await fetch(`https://speedydelete.com/5s/api/getcounts?type=${type}`);
     if (resp.ok) {
-        return (await resp.text()).replaceAll('This rulespace', `The ${TYPE_NAMES[type]} rulespace`);
+        return (await resp.text()).replaceAll('This rulespace', `The ${TYPE_NAMES[type as Type]} rulespace`);
     } else {
         throw new BotError(`Server returned ${resp.status} ${resp.statusText}`);
     }

@@ -1,6 +1,7 @@
 
 import {TextChannel} from 'discord.js';
-import {TYPE_NAMES} from './db.js';
+import {parseSpeed} from '../lifeweb/lib/index.js';
+import {Type, TYPE_NAMES, shipIsOptimal} from '../sssss/lib/index.js';
 
 
 const LIMIT = 1997;
@@ -37,28 +38,30 @@ function splitMessages(...data: (string | string[])[]): string[] {
     return out;
 }
 
-function formatNewShips(category: 'speed' | 'period', type: string, data: [string, number][], bold: number): string[] {
+function formatNewShips(category: 'speed' | 'period', type: Type, data: [string, number][]): string[] {
     let out: string[] = [];
     for (let [speed, cells] of data) {
-        if (cells === bold) {
+        let {dx, dy, period} = parseSpeed(speed);
+        if (shipIsOptimal(type, {pop: cells, dx, dy, period, rle: '', rule: ''})) {
             out.push(`**${speed} (${cells} cell${cells === 1 ? '' : 's'})**`);
         } else {
             out.push(`${speed} (${cells} cell${cells === 1 ? '' : 's'})`);
         }
     }
-    return splitMessages(`${data.length === 1 ? 'New' : data.length + ' new'} ${category}${data.length === 1 ? '' : 's'} in ${type}: `, out);
+    return splitMessages(`${data.length === 1 ? 'New' : data.length + ' new'} ${category}${data.length === 1 ? '' : 's'} in ${TYPE_NAMES[type]}: `, out);
 }
 
-function formatImprovedShips(category: 'speed' | 'period', type: string, data: [string, number, number][], bold: number): string[] {
+function formatImprovedShips(category: 'speed' | 'period', type: Type, data: [string, number, number][]): string[] {
     let out: string[] = [];
     for (let [speed, newCells, oldCells] of data) {
-        if (newCells === bold) {
+        let {dx, dy, period} = parseSpeed(speed);
+        if (shipIsOptimal(type, {pop: newCells, dx, dy, period, rle: '', rule: ''})) {
             out.push(`**${speed} (${oldCells} to ${newCells} cell${newCells === 1 ? '' : 's'})**`);
         } else {
             out.push(`${speed} (${oldCells} to ${newCells} cell${newCells === 1 ? '' : 's'})`);
         }
     }
-    return splitMessages(`${data.length === 1 ? 'Improved' : data.length + ' improved'} ${category}${data.length === 1 ? '' : 's'} in ${type}: `, out);
+    return splitMessages(`${data.length === 1 ? 'Improved' : data.length + ' improved'} ${category}${data.length === 1 ? '' : 's'} in ${TYPE_NAMES[type]}: `, out);
 }
 
 
@@ -70,16 +73,16 @@ export async function check5S(channel: TextChannel): Promise<void> {
         await channel.send(`<@1253852708826386518> ${resp.status} ${resp.statusText} while fetching new ships`);
         return;
     }
-    let data = await resp.json() as {newShips: [string, string, number][], improvedShips: [string, string, number, number][], newPeriods: [string, string, number][], improvedPeriods: [string, string, number, number][]};
+    let data = await resp.json() as {newShips: [Type, string, number][], improvedShips: [Type, string, number, number][], newPeriods: [Type, string, number][], improvedPeriods: [Type, string, number, number][]};
     if (data.newShips.length === 0 && data.improvedShips.length === 0 && data.newPeriods.length === 0 && data.improvedPeriods.length === 0) {
         return;
     }
-    let groups: {[key: string]: ShipGroup} = {};
+    let groups: {[key in Type]?: ShipGroup} = {};
     for (let key of ['newShips', 'improvedShips', 'newPeriods', 'improvedPeriods'] as const) {
         for (let ship of data[key]) {
             let data: ShipGroup;
             if (ship[0] in groups) {
-                data = groups[ship[0]];
+                data = groups[ship[0]] as ShipGroup;
             } else {
                 data = {newShips: [], newPeriods: [], improvedShips: [], improvedPeriods: []};
                 groups[ship[0]] = data;
@@ -89,22 +92,20 @@ export async function check5S(channel: TextChannel): Promise<void> {
         }
     }
     let msgs: string[] = [];
-    for (let key of Object.keys(groups).sort()) {
-        let data = groups[key];
-        if (key in TYPE_NAMES) {
-            key = TYPE_NAMES[key];
-        }
+    for (let _key of Object.keys(groups).sort()) {
+        let key = _key as Type;
+        let data = groups[key] as ShipGroup;
         if (data.newShips.length > 0) {
-            msgs.push(...formatNewShips('speed', key, data.newShips, 3));
+            msgs.push(...formatNewShips('speed', key, data.newShips));
         }
         if (data.newPeriods.length > 0) {
-            msgs.push(...formatNewShips('period', key, data.newPeriods, key.includes('B0') ? 1 : 2));
+            msgs.push(...formatNewShips('period', key, data.newPeriods));
         }
         if (data.improvedShips.length > 0) {
-            msgs.push(...formatImprovedShips('speed', key, data.improvedShips, 3));
+            msgs.push(...formatImprovedShips('speed', key, data.improvedShips));
         }
         if (data.improvedPeriods.length > 0) {
-            msgs.push(...formatImprovedShips('period', key, data.improvedPeriods, key.includes('B0') ? 1 : 2));
+            msgs.push(...formatImprovedShips('period', key, data.improvedPeriods));
         }
     }
     for (let msg of msgs) {

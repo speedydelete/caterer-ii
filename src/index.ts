@@ -564,9 +564,6 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     if (msg.partial) {
         msg = await msg.fetch();
     }
-    if (msg.createdTimestamp < config.initTime || msg.system || msg.flags.has('Ephemeral')) {
-        return;
-    }
     let boardName: string;
     if (msg.guildId && msg.guildId in config.starboardServers) {
         boardName = config.starboardServers[msg.guildId];
@@ -574,7 +571,14 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
         return;
     }
     let board = config.starboards[boardName];
-    if (msg.createdTimestamp < board.startTime) {
+    while (msg.reference && msg.reference.type === 1 && msg.channelId !== board.channel) {
+        let msg2 = await msg.fetchReference();
+        if (!msg2) {
+            break;
+        }
+        msg = msg2;
+    }
+    if (msg.createdTimestamp < board.startTime || msg.createdTimestamp < config.initTime || msg.system || msg.flags.has('Ephemeral')) {
         return;
     }
     let channel = starboardChannels[board.channel];
