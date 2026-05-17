@@ -734,22 +734,22 @@ client.on('messageReactionRemoveAll', async msg => {
 });
 
 
-// setInterval(async () => {
-//     try {
-//         await check5S(sssssChannel);
-//     } catch (error) {
-//         let str: string;
-//         if (error && typeof error === 'object' && 'stack' in error) {
-//             str = String(error.stack);
-//             if (str.length > 1900) {
-//                 str = str.slice(0, 1900) + '... (truncated)';
-//             }
-//         } else {
-//             str = String(error);
-//         }
-//         await sssssChannel.send('<@1253852708826386518>\n```' + str + '```');
-//     }
-// }, 300000);
+setInterval(async () => {
+    try {
+        await check5S(sssssChannel);
+    } catch (error) {
+        let str: string;
+        if (error && typeof error === 'object' && 'stack' in error) {
+            str = String(error.stack);
+            if (str.length > 1900) {
+                str = str.slice(0, 1900) + '... (truncated)';
+            }
+        } else {
+            str = String(error);
+        }
+        await sssssChannel.send('<@1253852708826386518>\n```' + str + '```');
+    }
+}, 300000);
 
 
 client.login(config.token);
