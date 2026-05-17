@@ -73,12 +73,12 @@ export async function check5S(channel: TextChannel): Promise<void> {
         await channel.send(`<@1253852708826386518> ${resp.status} ${resp.statusText} while fetching new ships`);
         return;
     }
-    let data = await resp.json() as {newShips: [Type, string, number][], improvedShips: [Type, string, number, number][], newPeriods: [Type, string, number][], improvedPeriods: [Type, string, number, number][]};
-    if (data.newShips.length === 0 && data.improvedShips.length === 0 && data.newPeriods.length === 0 && data.improvedPeriods.length === 0) {
+    let data = await resp.json() as {newSpeeds: [Type, string, number][], improvedSpeeds: [Type, string, number, number][], newPeriods: [Type, string, number][], improvedPeriods: [Type, string, number, number][]};
+    if (data.newSpeeds.length === 0 && data.improvedSpeeds.length === 0 && data.newPeriods.length === 0 && data.improvedPeriods.length === 0) {
         return;
     }
     let groups: {[key in Type]?: ShipGroup} = {};
-    for (let key of ['newShips', 'improvedShips', 'newPeriods', 'improvedPeriods'] as const) {
+    for (let key of ['newSpeeds', 'improvedSpeeds', 'newPeriods', 'improvedPeriods'] as const) {
         for (let ship of data[key]) {
             let data: ShipGroup;
             if (ship[0] in groups) {
