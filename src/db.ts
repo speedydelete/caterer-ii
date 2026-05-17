@@ -10,9 +10,10 @@ export const TYPE_NAMES: {[key: string]: string} = {
     'ot': 'OT',
     'otb0': 'OT B0',
     'intgen': 'INT Generations',
-    'intgenb0': 'INT Generations B0',
     'otgen': 'OT Generations',
-    'otgenb0': 'OT Generations B0',
+    'intb1e': 'INT B1e',
+    'intnos': 'INT Statorless',
+    'int1dt': 'INT 1 Death Transition',
 };
 
 export async function cmdSssss(msg: Message, argv: string[]): Promise<Response> {
