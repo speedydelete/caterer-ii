@@ -34,9 +34,9 @@ function getChannel(guildName: string, channelName: string): TextBasedChannel & 
 
 const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Response>} = {
 
-    help: cmdHelp,
-    about: cmdHelp,
-    info: cmdHelp,
+    help: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
+    about: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
+    info: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
 
     async eval(msg: Message, argv: string[]): Promise<Response> {
         if (sentByAdmin(msg)) {

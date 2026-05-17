@@ -477,14 +477,16 @@ for (let cmd in HELP) {
     }
 }
 
-export async function cmdHelp(msg: Message, argv: string[]): Promise<Response> {
+export async function cmdHelp(msg: Message, argv: string[], commands: {[key: string]: unknown}): Promise<Response> {
     if (argv.length > 1) {
-        let cmd = argv.slice(1).join(' ');
+        let cmd = argv.slice(1).join(' ').toLowerCase();
         if (cmd.startsWith('!')) {
             cmd = cmd.slice(1);
         }
         if (cmd in helpMsgs) {
             return helpMsgs[cmd];
+        } else if (cmd in commands) {
+            throw new BotError(`Command !${cmd} present, but has no help entry`);
         } else {
             throw new BotError(`No command called !${cmd}`);
         }
