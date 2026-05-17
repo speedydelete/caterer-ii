@@ -330,6 +330,7 @@ export async function cmdIdentify(msg: Message, argv: string[]): Promise<Respons
         if (Number.isNaN(parsed)) {
             throw new BotError(`Invalid number: '${argv[1]}'`);
         }
+        limit = parsed;
     }
     let data = await findRLE(msg);
     if (!data) {
