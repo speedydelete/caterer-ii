@@ -65,7 +65,7 @@ function formatImprovedShips(category: 'speed' | 'period', type: Type, data: [st
 }
 
 
-type ShipGroup = {newShips: [string, number][], newPeriods: [string, number][], improvedShips: [string, number, number][], improvedPeriods: [string, number, number][]};
+type ShipGroup = {newSpeeds: [string, number][], newPeriods: [string, number][], improvedSpeeds: [string, number, number][], improvedPeriods: [string, number, number][]};
 
 export async function check5S(channel: TextChannel): Promise<void> {
     let resp = await fetch('https://speedydelete.com/5s/api/getnewships');
@@ -77,14 +77,14 @@ export async function check5S(channel: TextChannel): Promise<void> {
     if (data.newSpeeds.length === 0 && data.improvedSpeeds.length === 0 && data.newPeriods.length === 0 && data.improvedPeriods.length === 0) {
         return;
     }
-    let groups: {[key in Type]?: ShipGroup} = {};
+    let groups: {[K in Type]?: ShipGroup} = {};
     for (let key of ['newSpeeds', 'improvedSpeeds', 'newPeriods', 'improvedPeriods'] as const) {
         for (let ship of data[key]) {
             let data: ShipGroup;
             if (ship[0] in groups) {
                 data = groups[ship[0]] as ShipGroup;
             } else {
-                data = {newShips: [], newPeriods: [], improvedShips: [], improvedPeriods: []};
+                data = {newSpeeds: [], newPeriods: [], improvedSpeeds: [], improvedPeriods: []};
                 groups[ship[0]] = data;
             }
             // @ts-ignore
@@ -95,14 +95,14 @@ export async function check5S(channel: TextChannel): Promise<void> {
     for (let _key of Object.keys(groups).sort()) {
         let key = _key as Type;
         let data = groups[key] as ShipGroup;
-        if (data.newShips.length > 0) {
-            msgs.push(...formatNewShips('speed', key, data.newShips));
+        if (data.newSpeeds.length > 0) {
+            msgs.push(...formatNewShips('speed', key, data.newSpeeds));
         }
         if (data.newPeriods.length > 0) {
             msgs.push(...formatNewShips('period', key, data.newPeriods));
         }
-        if (data.improvedShips.length > 0) {
-            msgs.push(...formatImprovedShips('speed', key, data.improvedShips));
+        if (data.improvedSpeeds.length > 0) {
+            msgs.push(...formatImprovedShips('speed', key, data.improvedSpeeds));
         }
         if (data.improvedPeriods.length > 0) {
             msgs.push(...formatImprovedShips('period', key, data.improvedPeriods));
