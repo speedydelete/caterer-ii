@@ -1,6 +1,6 @@
 
 import {EmbedBuilder} from 'discord.js';
-import {RuleError, Pattern, DataPattern, CoordPattern, TRANSITIONS, VALID_TRANSITIONS, HEX_TRANSITIONS, VALID_HEX_TRANSITIONS, unparseTransitions, arrayToTransitions, parseMAP, unparseMAP, MAPPattern, MAPB0Pattern, DataHistoryPattern, CoordHistoryPattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, INT, HEX_INT, unparseTransitions, arrayToTransitions, parseMAP, unparseMAP, MAPPattern, MAPB0Pattern, DataHistoryPattern, CoordHistoryPattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal} from '../lifeweb/lib/index.js';
 import {BotError, Message, Response, aliases, findRLE} from './util.js';
 
 
@@ -80,13 +80,13 @@ export async function cmdPopulation(msg: Message, argv: string[]): Promise<Respo
 
 
 export async function cmdMAPToINT(msg: Message, argv: string[]): Promise<Response> {
-    let [b, s] = arrayToTransitions(parseMAP(argv[1])[0], TRANSITIONS);
-    return `B${unparseTransitions(b, VALID_TRANSITIONS)}/S${unparseTransitions(s, VALID_TRANSITIONS)}`;
+    let [b, s] = arrayToTransitions(parseMAP(argv[1])[0], INT);
+    return `B${unparseTransitions(b, INT)}/S${unparseTransitions(s, INT)}`;
 }
 
 export async function cmdMAPToHexINT(msg: Message, argv: string[]): Promise<Response> {
-    let [b, s] = arrayToTransitions(parseMAP(argv[1])[0], HEX_TRANSITIONS);
-    return `B${unparseTransitions(b, VALID_HEX_TRANSITIONS, true)}/S${unparseTransitions(s, VALID_HEX_TRANSITIONS, true)}H`;
+    let [b, s] = arrayToTransitions(parseMAP(argv[1])[0], INT);
+    return `B${unparseTransitions(b, INT)}/S${unparseTransitions(s, INT)}H`;
 }
 
 export async function cmdINTToMAP(msg: Message, argv: string[]): Promise<Response> {
@@ -147,9 +147,9 @@ export async function cmdCheckerboardDual(msg: Message, argv: string[]): Promise
         odd[i ^ 0b101010101] = trs[i] ^ 1;
     }
     if (p.rule.symmetry === 'D8') {
-        let [evenB, evenS] = arrayToTransitions(even, TRANSITIONS);
-        let [oddB, oddS] = arrayToTransitions(odd, TRANSITIONS);
-        return `Even: B${unparseTransitions(evenB, VALID_TRANSITIONS)}/S${unparseTransitions(evenS, VALID_TRANSITIONS)}\nOdd: B${unparseTransitions(oddB, VALID_TRANSITIONS)}/S${unparseTransitions(oddS, VALID_TRANSITIONS)}`;
+        let [evenB, evenS] = arrayToTransitions(even, INT);
+        let [oddB, oddS] = arrayToTransitions(odd, INT);
+        return `Even: B${unparseTransitions(evenB, INT)}/S${unparseTransitions(evenS, INT)}\nOdd: B${unparseTransitions(oddB, INT)}/S${unparseTransitions(oddS, INT)}`;
     } else {
         return `Even: ${unparseMAP(even, p.rule.states)}\nOdd: ${unparseMAP(odd, p.rule.states)}`;
     }
