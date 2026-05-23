@@ -38,32 +38,28 @@ function splitMessages(...data: (string | string[])[]): string[] {
     return out;
 }
 
-function formatNewShips(category: 'speed' | 'period', type: Type, data: [string, number][]): string[] {
+function formatShips(category: 'speed' | 'period', type: Type, data: [string, number][] | [string, number, number][]): string[] {
     let out: string[] = [];
-    for (let [speed, cells] of data) {
+    for (let value of data) {
+        let speed = value[0];
         let {dx, dy, period} = parseSpeed(speed);
-        if (shipIsOptimal(type, {pop: cells, dx, dy, period, rle: '', rule: ''})) {
-            out.push(`**${speed} (${cells} cell${cells === 1 ? '' : 's'})**`);
+        let str = '';
+        if (data.length > 20 && period > 100) {
+            str = speed;
         } else {
-            out.push(`${speed} (${cells} cell${cells === 1 ? '' : 's'})`);
+            if (value.length === 3) {
+                str = `${speed} (${value[1]} to ${value[2]} cells)`;
+            } else {
+                str = `${speed} (${value[1]} cell${value[1] === 1 ? '' : 's'})`;
+            }
         }
+        if (shipIsOptimal(type, {pop: value[2] ?? value[1], dx, dy, period, rle: '', rule: ''})) {
+            str = `**${str}**`;
+        }
+        out.push(str);
     }
     return splitMessages(`${data.length === 1 ? 'New' : data.length + ' new'} ${category}${data.length === 1 ? '' : 's'} in ${TYPE_NAMES[type]}: `, out);
 }
-
-function formatImprovedShips(category: 'speed' | 'period', type: Type, data: [string, number, number][]): string[] {
-    let out: string[] = [];
-    for (let [speed, newCells, oldCells] of data) {
-        let {dx, dy, period} = parseSpeed(speed);
-        if (shipIsOptimal(type, {pop: newCells, dx, dy, period, rle: '', rule: ''})) {
-            out.push(`**${speed} (${oldCells} to ${newCells} cell${newCells === 1 ? '' : 's'})**`);
-        } else {
-            out.push(`${speed} (${oldCells} to ${newCells} cell${newCells === 1 ? '' : 's'})`);
-        }
-    }
-    return splitMessages(`${data.length === 1 ? 'Improved' : data.length + ' improved'} ${category}${data.length === 1 ? '' : 's'} in ${TYPE_NAMES[type]}: `, out);
-}
-
 
 type ShipGroup = {newSpeeds: [string, number][], newPeriods: [string, number][], improvedSpeeds: [string, number, number][], improvedPeriods: [string, number, number][]};
 
@@ -96,16 +92,16 @@ export async function check5S(channel: TextChannel): Promise<void> {
         let key = _key as Type;
         let data = groups[key] as ShipGroup;
         if (data.newSpeeds.length > 0) {
-            msgs.push(...formatNewShips('speed', key, data.newSpeeds));
+            msgs.push(...formatShips('speed', key, data.newSpeeds));
         }
         if (data.newPeriods.length > 0) {
-            msgs.push(...formatNewShips('period', key, data.newPeriods));
+            msgs.push(...formatShips('period', key, data.newPeriods));
         }
         if (data.improvedSpeeds.length > 0) {
-            msgs.push(...formatImprovedShips('speed', key, data.improvedSpeeds));
+            msgs.push(...formatShips('speed', key, data.improvedSpeeds));
         }
         if (data.improvedPeriods.length > 0) {
-            msgs.push(...formatImprovedShips('period', key, data.improvedPeriods));
+            msgs.push(...formatShips('period', key, data.improvedPeriods));
         }
     }
     for (let msg of msgs) {
