@@ -15,7 +15,11 @@ import {check5S} from './notifier.js';
 const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\n';
 
 
-function getChannel(guildName: string, channelName: string): TextBasedChannel & {guild: Guild} {
+function getChannel(msg: Message, args: string[]): [TextBasedChannel & {guild: Guild}, string] {
+    let guildName = args[0];
+    if (guildName === 'here') {
+        return [msg.channel as TextBasedChannel & {guild: Guild}, args.slice(1).join(' ')];
+    }
     if (!(guildName in config.serverNames)) {
         throw new BotError(`Invalid server: '${guildName}'`);
     }
@@ -23,9 +27,10 @@ function getChannel(guildName: string, channelName: string): TextBasedChannel & 
     if (!guild) {
         throw new BotError(`Invalid server: '${guildName}'`);
     }
+    let channelName = args[1];
     for (let channel of guild.channels.cache.values()) {
         if (channel.name === channelName && channel.isTextBased()) {
-            return channel;
+            return [channel, args.slice(2).join('')];
         }
     }
     throw new BotError(`Nonexistent channel: '${channelName}'`);
@@ -120,11 +125,16 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
         if (deleteAfter) {
             argv = argv.slice(1);
         }
-        let channel = getChannel(argv[1], argv[2]);
-        if (channel.isSendable()) {
-            await channel.send(argv.slice(3).join(' '));
+        if (msg.reference && msg.reference.type === 0) {
+            let reply = await msg.fetchReference();
+            await reply.reply(argv.slice(1).join(' '));
         } else {
-            throw new BotError(`Cannot send in channel`);
+            let [channel, args] = getChannel(msg, argv.slice(1));
+            if (channel.isSendable()) {
+                await channel.send(args);
+            } else {
+                throw new BotError(`Cannot send in channel`);
+            }
         }
         if (deleteAfter && msg.deletable) {
             await msg.delete();
@@ -142,9 +152,9 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
         if (msg.reference) {
             (await msg.fetchReference()).edit(argv.slice(1).join(' '));
         } else {
-            let channel = getChannel(argv[1], argv[2]);
-            let msg = await channel.messages.fetch(argv[3]);
-            msg.edit(argv.slice(4).join(' '));
+            let [channel, toSend] = getChannel(msg, argv.slice(1));
+            let toEdit = await channel.messages.fetch(argv[3]);
+            toEdit.edit(toSend);
         }
         if (deleteAfter && msg.deletable) {
             await msg.delete();
@@ -165,8 +175,8 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
             toReact = await msg.fetchReference();
             emoji = argv[1];
         } else {
-            let channel = getChannel(argv[1], argv[2]);
-            toReact = await channel.messages.fetch(argv[3]) as Message;
+            let [channel, msgId] = getChannel(msg, argv.slice(1));
+            toReact = await channel.messages.fetch(msgId) as Message;
             emoji = argv[4];
         }
         let out: string;
