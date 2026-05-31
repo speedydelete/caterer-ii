@@ -48,7 +48,7 @@ function formatShips(category: 'speed' | 'period', type: Type, data: [string, nu
             str = speed;
         } else {
             if (value.length === 3) {
-                str = `${speed} (${value[1]} to ${value[2]} cells)`;
+                str = `${speed} (${value[2]} to ${value[1]} cells)`;
             } else {
                 str = `${speed} (${value[1]} cell${value[1] === 1 ? '' : 's'})`;
             }
@@ -58,7 +58,7 @@ function formatShips(category: 'speed' | 'period', type: Type, data: [string, nu
         }
         out.push(str);
     }
-    return splitMessages(`${data.length === 1 ? 'New' : data.length + ' new'} ${category}${data.length === 1 ? '' : 's'} in ${TYPE_NAMES[type]}: `, out);
+    return splitMessages(`${data.length === 1 ? (data[0].length === 3 ? 'Improved' : 'New') : data.length + (data[0].length === 3 ? ' new' : ' improved')} ${category}${data.length === 1 ? '' : 's'} in ${TYPE_NAMES[type]}: `, out);
 }
 
 type ShipGroup = {newSpeeds: [string, number][], newPeriods: [string, number][], improvedSpeeds: [string, number, number][], improvedPeriods: [string, number, number][]};
