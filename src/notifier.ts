@@ -38,7 +38,7 @@ function splitMessages(...data: (string | string[])[]): string[] {
     return out;
 }
 
-function formatShips(category: 'speed' | 'period', type: Type, data: [string, number][] | [string, number, number][]): string[] {
+function formatShips(category: 'speed' | 'period', changeType: 'new' | 'improved', type: Type, data: [string, number][] | [string, number, number][]): string[] {
     let out: string[] = [];
     for (let value of data) {
         let speed = value[0];
@@ -58,7 +58,7 @@ function formatShips(category: 'speed' | 'period', type: Type, data: [string, nu
         }
         out.push(str);
     }
-    return splitMessages(`${data.length === 1 ? (data[0].length === 3 ? 'Improved' : 'New') : data.length + (data[0].length === 3 ? ' new' : ' improved')} ${category}${data.length === 1 ? '' : 's'} in ${TYPE_NAMES[type]}: `, out);
+    return splitMessages(`${data.length === 1 ? changeType[0].toUpperCase() + changeType.slice(1) : data.length + ' ' + changeType} ${category}${data.length === 1 ? '' : 's'} in ${TYPE_NAMES[type]}: `, out);
 }
 
 type ShipGroup = {newSpeeds: [string, number][], newPeriods: [string, number][], improvedSpeeds: [string, number, number][], improvedPeriods: [string, number, number][]};
@@ -92,16 +92,16 @@ export async function check5S(channel: TextChannel): Promise<void> {
         let key = _key as Type;
         let data = groups[key] as ShipGroup;
         if (data.newSpeeds.length > 0) {
-            msgs.push(...formatShips('speed', key, data.newSpeeds));
+            msgs.push(...formatShips('speed', 'new', key, data.newSpeeds));
         }
         if (data.newPeriods.length > 0) {
-            msgs.push(...formatShips('period', key, data.newPeriods));
+            msgs.push(...formatShips('period', 'new', key, data.newPeriods));
         }
         if (data.improvedSpeeds.length > 0) {
-            msgs.push(...formatShips('speed', key, data.improvedSpeeds));
+            msgs.push(...formatShips('speed', 'improved', key, data.improvedSpeeds));
         }
         if (data.improvedPeriods.length > 0) {
-            msgs.push(...formatShips('period', key, data.improvedPeriods));
+            msgs.push(...formatShips('period', 'improved', key, data.improvedPeriods));
         }
     }
     for (let msg of msgs) {
