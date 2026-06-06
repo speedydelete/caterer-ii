@@ -1,6 +1,6 @@
 pushd lifeweb
 git pull
-./node_modules/.bin/tsc
+./build
 popd
 git pull
-./node_modules/.bin/tsc
+./node_modules/.bin/tsc -b
