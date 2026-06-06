@@ -2,7 +2,7 @@
 import * as fs from 'node:fs/promises';
 import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
-import {RuleError, Pattern, CoordPattern, MAPPattern, DataHistoryPattern, CoordHistoryPattern, DataSuperPattern, CoordSuperPattern, InvestigatorPattern, TreePattern, findMinmax, findType, getDescription, identify, identifyConduit, createPattern, parse} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, CoordPattern, MAPPattern, DataHistoryPattern, CoordHistoryPattern, DataSuperPattern, CoordSuperPattern, InvestigatorPattern, TreePattern, findMinmax, identifyPeriodic, getDescription, identify, identifyConduit, createPattern, parse} from '../lifeweb/lib/index.js';
 import {RPFFile} from '../lifeweb/lib/rpf.js';
 import {BotError, aliases} from './util.js';
 
@@ -222,7 +222,7 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             }
         } else if (part[0] === 'identify') {
             part = part.slice(1);
-            let type = findType(p, 120000, true);
+            let type = identifyPeriodic(p, 120000, true);
             data.text = getDescription(type);
             for (let i = 0; i < type.stabilizedAt + type.period - (type.disp && type.disp[0] === 0 && type.disp[1] === 0 ? 1 : 0); i++) {
                 p.runGeneration();
@@ -729,7 +729,7 @@ parentPort.on('message', async (data: Job) => {
         } else if (data.type === 'identify') {
             parentPort.postMessage({id, ok: true, data: identify(deserialize(data.value), data.limit)});
         } else if (data.type === 'basic_identify') {
-            parentPort.postMessage({id, ok: true, data: findType(deserialize(data.value), data.limit)});
+            parentPort.postMessage({id, ok: true, data: identifyPeriodic(deserialize(data.value), data.limit)});
         } else if (data.type === 'minmax') {
             parentPort.postMessage({id, ok: true, data: findMinmax(deserialize(data.value), data.gens)})
         } else if (data.type === 'identify_conduit') {
