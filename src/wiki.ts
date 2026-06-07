@@ -89,7 +89,7 @@ export async function cmdWiki(msg: Message, argv: string[]): Promise<Response> {
         }
     }
     if (id === undefined) {
-        
+
     }
     let resp = await fetch(`https://conwaylife.com/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&pageids=${id}&format=json`);
     if (!resp.ok) {

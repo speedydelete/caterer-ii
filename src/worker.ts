@@ -2,7 +2,7 @@
 import * as fs from 'node:fs/promises';
 import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
-import {RuleError, Pattern, CoordPattern, MAPPattern, DataHistoryPattern, CoordHistoryPattern, DataSuperPattern, CoordSuperPattern, InvestigatorPattern, TreePattern, findMinmax, identifyPeriodic, getDescription, identify, identifyConduit, createPattern, parse} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, MAPPattern, HistoryPattern, SuperPattern, InvestigatorPattern, TreePattern, findMinmax, identifyPeriodic, getDescription, identify, identifyConduit, createPattern, parse} from '../lifeweb/lib/index.js';
 import {RPFFile} from '../lifeweb/lib/rpf.js';
 import {BotError, aliases} from './util.js';
 
@@ -107,14 +107,12 @@ interface PartRunnerData {
 
 function getFrame(p: Pattern, {time, bb, origin}: PartRunnerData): Frame {
     let out: Pattern;
-    if (!bb) {
-        out = p.copy();
-    } else if (p instanceof CoordPattern) {
-        out = p.copyPart(bb[0], bb[1], bb[2], bb[3]);
-    } else {
+    if (bb) {
         let x = bb[0] - p.xOffset;
         let y = bb[1] - p.yOffset;
         out = p.copyPart(Math.max(x, 0), Math.max(y, 0), bb[3], bb[2]);
+    } else {
+        out = p.copy();
     }
     if (origin) {
         out.xOffset -= origin[0];
@@ -434,53 +432,25 @@ function parseSim(argv: string[], rle: string): SimData {
     let minY = Infinity;
     let maxY = -Infinity;
     for (let {p} of frames) {
-        if (p instanceof CoordPattern) {
-            let data = p.getMinMaxCoords();
-            data.minX -= p.xOffset;
-            data.minY -= p.yOffset;
-            data.maxX -= p.xOffset;
-            data.maxY -= p.yOffset;
-            if (data.minX < minX) {
-                minX = data.minX;
-            }
-            if (data.maxX > maxX) {
-                maxX = data.maxX;
-            }
-            if (data.minY < minY) {
-                minY = data.minY;
-            }
-            if (data.maxY > maxY) {
-                maxY = data.maxY;
-            }
-        } else {
-            if (p.xOffset < minX) {
-                minX = p.xOffset;
-            }
-            if (p.xOffset + p.width > maxX) {
-                maxX = p.xOffset + p.width;
-            }
-            if (p.yOffset < minY) {
-                minY = p.yOffset;
-            }
-            if (p.yOffset + p.height > maxY) {
-                maxY = p.yOffset + p.height;
-            }
+        if (p.xOffset < minX) {
+            minX = p.xOffset;
+        }
+        if (p.xOffset + p.width > maxX) {
+            maxX = p.xOffset + p.width;
+        }
+        if (p.yOffset < minY) {
+            minY = p.yOffset;
+        }
+        if (p.yOffset + p.height > maxY) {
+            maxY = p.yOffset + p.height;
         }
     }
-    minX--;
-    maxX++;
-    minY--;
-    maxY++;
-    minX = Math.floor(minX);
-    maxX = Math.floor(maxX);
-    minY = Math.floor(minY);
-    maxY = Math.floor(maxY);
+    minX = Math.floor(minX - 1);
+    maxX = Math.floor(maxX + 1);
+    minY = Math.floor(minY - 1);
+    maxY = Math.floor(maxY + 1);
     let width = maxX - minX;
     let height = maxY - minY;
-    if (p instanceof CoordPattern) {
-        width++;
-        height++;
-    }
     let defaultTime = Math.ceil(Math.min(1, Math.max(1/50, 4 / frames.length)) * 100);
     return {frames: frames.map(({p, time}) => ({p, time: Math.max(time ?? defaultTime, 2)})), gifSize, minX, minY, width, height, useAdvancedColors: data.useAdvancedColors, customColors: data.customColors, text: data.text};
 }
@@ -521,7 +491,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
     }
     let clsP = p;
     for (let i = 0; i < 10; i++) {
-        if (clsP instanceof DataHistoryPattern || clsP instanceof CoordHistoryPattern || clsP instanceof DataSuperPattern || clsP instanceof CoordSuperPattern || clsP instanceof InvestigatorPattern) {
+        if (clsP instanceof HistoryPattern || clsP instanceof SuperPattern || clsP instanceof InvestigatorPattern) {
             break;
         } else if ('pattern' in clsP && clsP.pattern && typeof clsP.pattern === 'object' && clsP.pattern.constructor.name.includes('Pattern')) {
             clsP = clsP.pattern as Pattern;
@@ -550,12 +520,12 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
             gct[i++] = r;
             gct[i++] = g;
             gct[i++] = b;
-        } else if (clsP instanceof DataHistoryPattern || clsP instanceof CoordHistoryPattern) {
+        } else if (clsP instanceof HistoryPattern) {
             let [r, g, b] = HISTORY_COLORS[value - 1];
             gct[i++] = r;
             gct[i++] = g;
             gct[i++] = b;
-        } else if (clsP instanceof DataSuperPattern || clsP instanceof CoordSuperPattern) {
+        } else if (clsP instanceof SuperPattern) {
             let [r, g, b] = SUPER_COLORS[value - 1];
             gct[i++] = r;
             gct[i++] = g;
@@ -575,18 +545,8 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
     gifData.push(new Uint8Array([0x21, 0xff, 0x0b, 0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30, 0x03, 0x01, 0x00, 0x00, 0x00]));
     let history = new Uint8Array(width * height);
     for (let {p, time} of frames) {
-        let startX: number;
-        let startY: number;
-        if (p instanceof CoordPattern) {
-            let data = p.getMinMaxCoords();
-            startX = data.minX - minX;
-            startY = data.minY - minY;
-        } else {
-            startX = p.xOffset - minX;
-            startY = p.yOffset - minY;
-        }
-        startX = Math.floor(startX + xOffset);
-        startY = Math.floor(startY + yOffset);
+        let startX = Math.floor(p.xOffset - minX + xOffset);
+        let startY = Math.floor(p.yOffset - minY + yOffset);
         let pHeight = Math.floor(p.height);
         let pWidth = Math.floor(p.width);
         let endX = startX + pWidth;
@@ -712,7 +672,7 @@ if (!parentPort) {
     throw new Error('No parent port');
 }
 
-export type Job = 
+export type Job =
         | {id: number, type: 'sim', argv: string[], value: string}
         | {id: number, type: 'identify' | 'basic_identify', value: string, limit: number}
         | {id: number, type: 'minmax', value: string, gens: number}

@@ -214,7 +214,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
     'apgdecode': cmdApgdecode,
     'population': cmdPopulation,
     'pop': cmdPopulation,
-    
+
     'map_to_int': cmdMAPToINT,
     'maptoint': cmdMAPToINT,
     'map_to_hex_int': cmdMAPToHexINT,
@@ -274,8 +274,6 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
 let previousMsgs: [string, Message][] = [];
 let deleters: [string, string][] = [];
 let runningCommands = new Set<string>();
-
-const INTENTIONAL_ERRORS: string[] = ['Pattern too big for torus!'];
 
 const ESCAPES: {[key: string]: string} = {
     'a': '\x07',
@@ -404,7 +402,7 @@ async function runCommand(msg: Message): Promise<void> {
                 }
             }
         } catch (error) {
-            if (error instanceof BotError || error instanceof lifeweb.RuleError || error instanceof lifewebRPF.RPFError || (error instanceof Error && (INTENTIONAL_ERRORS.includes(error.message) || error.message.startsWith('Invalid symmetry: ')))) {
+            if (error instanceof BotError || error instanceof lifeweb.LifewebError) {
                 previousMsgs.push([msg.id, await msg.reply({content: 'Error: ' + error.message, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             } else if (error instanceof Error && error.message === 'Worker exited with code 1!') {
                 previousMsgs.push([msg.id, await msg.reply({content: `Error: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);

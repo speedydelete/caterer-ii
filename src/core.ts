@@ -2,7 +2,7 @@
 import {join} from 'node:path';
 import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
-import {RuleError, Pattern, MAPPattern, TorusDataPattern, TorusCoordPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, createPattern} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, TorusPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, createPattern} from '../lifeweb/lib/index.js';
 import {RPFPattern} from '../lifeweb/lib/rpf.js';
 import {BotError, Message, Response, writeFile, names, aliases, simStats, findRLE, sentByAdmin} from './util.js';
 import type {Job} from './worker.js';
@@ -164,12 +164,9 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         let rule = argv[2];
         argv = argv.slice(2);
         p = createPattern(rule, aliases);
-        if (p instanceof TorusDataPattern && (p.height < height || p.width < width)) {
+        if (p instanceof TorusPattern && (p.height < height || p.width < width)) {
             height = p.height;
             width = p.width;
-        } else if (p instanceof TorusCoordPattern && (p.torusHeight < height || p.torusWidth < width)) {
-            height = p.torusHeight;
-            width = p.torusWidth;
         }
         let size = height * width;
         let data = new Uint8Array(size);
