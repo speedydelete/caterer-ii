@@ -259,7 +259,7 @@ function embedIdentified(original: Pattern, type: PatternType | Identified, isOu
         out += `**Max:** ${type.minmax[1]}\n`;
     }
     if ('symmetry' in type) {
-        out += `**Symmetry:** ${type.symmetry} (${ALTERNATE_SYMMETRIES[type.symmetry].replaceAll('\\', '\\\\')})\n`;
+        out += `**Symmetry:** ${type.symmetry.replaceAll('*', '\\*')} (${ALTERNATE_SYMMETRIES[type.symmetry].replaceAll('\\', '\\\\').replaceAll('_', '\\_')})\n`;
     }
     if (type.period > 1) {
         if ('heat' in type && type.heat !== undefined) {
@@ -288,7 +288,7 @@ function embedIdentified(original: Pattern, type: PatternType | Identified, isOu
         } else {
             out += apgcode;
         }
-        out += '](https://catagolue.hatsya.com/object/' + apgcode + '/' + toCatagolueRule(type.phases[0].rule.str) + ')';
+        out += '](https://catagolue.hatsya.com/object/' + apgcode.replaceAll('_', '\\_') + '/' + toCatagolueRule(type.phases[0].rule.str) + ')';
     }
     let title = 'desc' in type ? type.desc : getDescription(type);
     let name: string | undefined = undefined;
