@@ -107,7 +107,6 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
                     for (let j = 0; j < step; j++) {
                         runGeneration(p);
                     }
-                    throw new Error(p.getData().join(' ') + '\n\n' + Array.from((p as Separator).groups).join(' '));
                     frames.push(getFrame(p, data));
                 }
                 part = part.slice(remove);
