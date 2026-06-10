@@ -572,6 +572,9 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     if (msg.partial) {
         msg = await msg.fetch();
     }
+    if (msg.poll !== null) {
+        return;
+    }
     let boardName: string;
     if (msg.guildId && msg.guildId in config.starboardServers) {
         boardName = config.starboardServers[msg.guildId];
