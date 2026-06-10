@@ -491,7 +491,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
     }
     let clsP = p;
     for (let i = 0; i < 10; i++) {
-        if (clsP instanceof HistoryPattern || clsP instanceof SuperPattern || clsP instanceof InvestigatorPattern) {
+        if (clsP instanceof HistoryPattern || clsP instanceof SuperPattern || clsP instanceof InvestigatorPattern || clsP instanceof Separator || clsP instanceof INTSeparator) {
             break;
         } else if ('pattern' in clsP && clsP.pattern && typeof clsP.pattern === 'object' && clsP.pattern.constructor.name.includes('Pattern')) {
             clsP = clsP.pattern as Pattern;
