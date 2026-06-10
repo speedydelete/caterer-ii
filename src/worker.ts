@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
 import {RuleError, Pattern, MAPPattern, HistoryPattern, SuperPattern, InvestigatorPattern, TreePattern, findMinmax, identifyPeriodic, getDescription, identify, identifyConduit, INTSeparator, Separator, createPattern, parse} from '../lifeweb/lib/index.js';
-import {RPFFile} from '../lifeweb/lib/rpf.js';
+import {RPFFile} from '../lifeweb/lib/editor/rpf.js';
 import {BotError, aliases} from './util.js';
 
 

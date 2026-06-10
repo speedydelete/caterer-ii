@@ -1,6 +1,6 @@
 
 import * as lifeweb from '../lifeweb/lib/index.js';
-import * as lifewebRPF from '../lifeweb/lib/rpf.js';
+import * as lifewebRPF from '../lifeweb/lib/editor/rpf.js';
 import {inspect} from 'node:util';
 import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, PartialMessage, MessageReaction, PartialMessageReaction, MessageReplyOptions, Guild, TextChannel, TextBasedChannel, Partials} from 'discord.js';
 import {BotError, Response, Message, readFile, writeFile, config, sentByAdmin, aliases, noReplyPings, findRLEFromText, findRLE} from './util.js';
