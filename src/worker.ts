@@ -502,44 +502,35 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         }
     }
     for (let value = 1; value < colors; value++) {
+        let r: number;
+        let g: number;
+        let b: number;
         if (customColors[value]) {
-            let [r, g, b] = customColors[value];
-            gct[i++] = r;
-            gct[i++] = g;
-            gct[i++] = b;
+            [r, g, b] = customColors[value];
+        } else if (clsP instanceof Separator || clsP instanceof INTSeparator) {
+            [r, g, b] = SUPER_COLORS[value - 1];
         } else if (value >= p.rule.states) {
-            gct[i++] = gct[0];
-            gct[i++] = gct[1];
-            gct[i++] = gct[2];
+            [r, g, b] = gct;
         } else if (p.rule.states === 2) {
-            gct[i++] = 0xff;
-            gct[i++] = 0xff;
-            gct[i++] = 0xff;
+            r = 0xff;
+            g = 0xff;
+            b = 0xff;
         } else if (clsP instanceof TreePattern && clsP.atRule.colors && clsP.atRule.colors[value]) {
-            let [r, g, b] = clsP.atRule.colors[value];
-            gct[i++] = r;
-            gct[i++] = g;
-            gct[i++] = b;
+            [r, g, b] = clsP.atRule.colors[value];
         } else if (clsP instanceof HistoryPattern) {
-            let [r, g, b] = HISTORY_COLORS[value - 1];
-            gct[i++] = r;
-            gct[i++] = g;
-            gct[i++] = b;
-        } else if (clsP instanceof SuperPattern || clsP instanceof Separator || clsP instanceof INTSeparator) {
-            let [r, g, b] = SUPER_COLORS[value - 1];
-            gct[i++] = r;
-            gct[i++] = g;
-            gct[i++] = b;
+            [r, g, b] = HISTORY_COLORS[value - 1];
+        } else if (clsP instanceof SuperPattern) {
+            [r, g, b] = SUPER_COLORS[value - 1];
         } else if (clsP instanceof InvestigatorPattern) {
-            let [r, g, b] = INVESTIGATOR_COLORS[value - 1];
-            gct[i++] = r;
-            gct[i++] = g;
-            gct[i++] = b;
+            [r, g, b] = INVESTIGATOR_COLORS[value - 1];
         } else {
-            gct[i++] = 0xff;
-            gct[i++] = 0xff - Math.max(0, Math.ceil((value - 1) / (p.rule.states - 2) * 256) - 1);
-            gct[i++] = 0;
+            r = 0xff;
+            g = 0xff - Math.max(0, Math.ceil((value - 1) / (p.rule.states - 2) * 256) - 1);
+            b = 0;
         }
+        gct[i++] = r;
+        gct[i++] = g;
+        gct[i++] = b;
     }
     gifData.push(gct);
     gifData.push(new Uint8Array([0x21, 0xff, 0x0b, 0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30, 0x03, 0x01, 0x00, 0x00, 0x00]));
@@ -551,7 +542,12 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         let pWidth = Math.floor(p.width);
         let endX = startX + pWidth;
         let endY = startY + pHeight;
-        let pData = p.getData();
+        let pData: Uint8Array | Uint32Array;
+        if (p instanceof Separator || p instanceof INTSeparator) {
+            pData = p.groups;
+        } else {
+            pData = p.getData();
+        }
         let index = 0;
         gifData.push(new Uint8Array([0x21, 0xf9, 0x04, 0x00, time & 255, (time >> 8) & 255, 0xff, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, width & 255, (width >> 8) & 255, height & 255, (height >> 8) & 255, 0x00]));
         let data: number[] = [];
