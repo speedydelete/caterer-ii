@@ -90,7 +90,10 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
                     }
                 }
                 for (let i = 0; i < Math.ceil(part[0] / step); i++) {
-                    p.run(step);
+                    for (let j = 0; j < step; j++) {
+                        p.runGeneration();
+                        p.shrinkToFit();
+                    }
                     frames.push(getFrame(p, data));
                 }
                 part = part.slice(remove);
@@ -116,7 +119,10 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             if (frames.length === 1) {
                 frames = [];
             }
-            p.run(part[1]);
+            for (let j = 0; j < part[1]; j++) {
+                p.runGeneration();
+                p.shrinkToFit();
+            }
             part = part.slice(2);
         } else if (part[0] === 'stable') {
             part = part.slice(1);
@@ -128,6 +134,7 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             let pops: number[] = [];
             for (let i = 0; i < 120000; i++) {
                 p.runGeneration();
+                p.shrinkToFit();
                 frames.push(getFrame(p, data));
                 let pop = p.population;
                 if (pop === 0) {
@@ -173,6 +180,7 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             data.text = getDescription(type);
             for (let i = 0; i < type.stabilizedAt + type.period - (type.disp && type.disp[0] === 0 && type.disp[1] === 0 ? 1 : 0); i++) {
                 p.runGeneration();
+                p.shrinkToFit();
                 frames.push(getFrame(p, data));
             }
             if (typeof part[0] === 'string' && part[0].match(/^x[0-9]+$/)) {
@@ -180,6 +188,7 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
                 if (type.period > 0) {
                     for (let i = 0; i < (amount - 1) * type.period; i++) {
                         p.runGeneration();
+                        p.shrinkToFit();
                         frames.push(getFrame(p, data));
                     }
                 }
