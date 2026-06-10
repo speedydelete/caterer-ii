@@ -82,6 +82,7 @@ function runGeneration(p: Pattern): void {
         p.runGeneration();
     }
     p.shrinkToFit();
+    console.log(p.toRLE());
 }
 
 function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: PartRunnerData): void {
