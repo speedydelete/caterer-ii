@@ -120,12 +120,11 @@ function createWorkerJob(type: 'sim' | 'identify' | 'basic_identify' | 'minmax' 
 let simCounter = 0;
 
 function serialize(value: Pattern): string {
-    throw new Error(value.constructor.name);
-    // if (value instanceof RPFPattern) {
-    //     return 'rpf\n' + value.toRPFFile().toString();
-    // } else {
-    //     return 'rle\n' + value.toRLE();
-    // }
+    if (value instanceof RPFPattern) {
+        return 'rpf\n' + value.toRPFFile().toString();
+    } else {
+        return 'rle\n' + value.toRLE();
+    }
 }
 
 export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
