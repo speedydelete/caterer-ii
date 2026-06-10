@@ -2,7 +2,7 @@
 import * as fs from 'node:fs/promises';
 import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
-import {RuleError, Pattern, MAPPattern, HistoryPattern, SuperPattern, InvestigatorPattern, TreePattern, findMinmax, identifyPeriodic, getDescription, identify, identifyConduit, createPattern, parse} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, MAPPattern, HistoryPattern, SuperPattern, InvestigatorPattern, TreePattern, findMinmax, identifyPeriodic, getDescription, identify, identifyConduit, INTSeparator, Separator, createPattern, parse} from '../lifeweb/lib/index.js';
 import {RPFFile} from '../lifeweb/lib/rpf.js';
 import {BotError, aliases} from './util.js';
 
@@ -107,7 +107,7 @@ interface PartRunnerData {
 
 function getFrame(p: Pattern, {time, bb, origin}: PartRunnerData): Frame {
     let out: Pattern;
-    if (bb) {
+    if (bb && !(p instanceof INTSeparator || p instanceof Separator)) {
         let x = bb[0] - p.xOffset;
         let y = bb[1] - p.yOffset;
         out = p.copyPart(Math.max(x, 0), Math.max(y, 0), bb[3], bb[2]);
@@ -525,7 +525,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
             gct[i++] = r;
             gct[i++] = g;
             gct[i++] = b;
-        } else if (clsP instanceof SuperPattern) {
+        } else if (clsP instanceof SuperPattern || clsP instanceof Separator || clsP instanceof INTSeparator) {
             let [r, g, b] = SUPER_COLORS[value - 1];
             gct[i++] = r;
             gct[i++] = g;
