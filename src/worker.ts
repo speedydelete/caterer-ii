@@ -82,7 +82,6 @@ function runGeneration(p: Pattern): void {
         p.runGeneration();
     }
     p.shrinkToFit();
-    console.log(`x = ${p.xOffset}, y = ${p.yOffset}`);
 }
 
 function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: PartRunnerData): void {
