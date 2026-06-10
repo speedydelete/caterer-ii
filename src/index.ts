@@ -572,7 +572,7 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     if (msg.partial) {
         msg = await msg.fetch();
     }
-    if (msg.poll !== null) {
+    if (msg.system || msg.poll || msg.activity) {
         return;
     }
     let boardName: string;
