@@ -502,7 +502,7 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
         }
     }
     if (eval('true')) {
-        throw new Error(clsP.constructor.name);''
+        throw new Error(p.constructor.name + ' -> ' + clsP.constructor.name);''
     }
     for (let value = 1; value < colors; value++) {
         let r: number;
