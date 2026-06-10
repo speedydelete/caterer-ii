@@ -471,6 +471,9 @@ async function runSim(argv: string[], rle: string): Promise<[number, string | un
     }
     let p = frames[0].p;
     let colorCount = Math.max(p.rule.states, ...Object.keys(customColors).map(x => Number(x)));
+    if (p instanceof Separator || p instanceof INTSeparator) {
+        colorCount = 256;
+    }
     let bitWidth = Math.max(2, Math.ceil(Math.log2(colorCount)));
     let colors = 2**bitWidth;
     let clearCode = 1 << bitWidth;
