@@ -62,7 +62,7 @@ function getFrame(p: Pattern, {time, bb, origin}: PartRunnerData): Frame {
         out = p.copyPart(Math.max(x, 0), Math.max(y, 0), bb[3], bb[2]);
     } else {
         out = p.copy();
-        throw new Error(Array.from((out as Separator).groups).join(' '));
+        throw new Error(Array.from((p as Separator).groups).join(' ') + '\n\n' + Array.from((out as Separator).groups).join(' '));
     }
     if (origin) {
         out.xOffset -= origin[0];
