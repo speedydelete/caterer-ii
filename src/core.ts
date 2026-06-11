@@ -284,9 +284,9 @@ function embedIdentified(original: Pattern, type: PatternType | Identified, isOu
             apgcode = 'ov_' + apgcode.slice(1, apgcode.indexOf('_'));
         }
         if (apgcode.length > 31) {
-            out += (apgcode.slice(0, 14) + '...' + apgcode.slice(-14)).replaceAll('_', '\\_');
+            out += apgcode.slice(0, 14) + '...' + apgcode.slice(-14);
         } else {
-            out += apgcode.replaceAll('_', '\\_');
+            out += apgcode;
         }
         out += '](https://catagolue.hatsya.com/object/' + apgcode + '/' + toCatagolueRule(type.phases[0].rule.str) + ')';
     }
