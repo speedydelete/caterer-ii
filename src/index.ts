@@ -30,7 +30,7 @@ function getChannel(msg: Message, args: string[]): [TextBasedChannel & {guild: G
     let channelName = args[1];
     for (let channel of guild.channels.cache.values()) {
         if (channel.name === channelName && channel.isTextBased()) {
-            return [channel, args.slice(2).join('')];
+            return [channel, args.slice(2).join(' ')];
         }
     }
     throw new BotError(`Nonexistent channel: '${channelName}'`);
