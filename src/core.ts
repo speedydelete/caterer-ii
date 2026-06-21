@@ -1,5 +1,6 @@
 
 import {join} from 'node:path';
+import * as fs from 'node:fs/promises';
 import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
 import {RuleError, Pattern, TorusPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, createPattern} from '../lifeweb/lib/index.js';
@@ -222,11 +223,14 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
     } else if (desc) {
         content = desc;
     }
-    return [await replyTo.reply({
+    let out = [await replyTo.reply({
         content,
         files: ['sim.gif'],
         allowedMentions: {repliedUser: false},
-    }), [replyTo.author.id]];
+    }), [replyTo.author.id]] as [Message, [string]];
+    await fs.rm('sim_base.gif');
+    await fs.rm('sim.gif');
+    return out;
 }
 
 
