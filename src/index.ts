@@ -566,8 +566,6 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
 }
 
 
-let updatingStarboardFor = new Set<string>();
-
 async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     if (msg.partial) {
         msg = await msg.fetch();
@@ -707,8 +705,10 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     }
 }
 
+let updatingStarboardFor = new Set<string>();
+
 async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
-    let id: string | undefined;
+    let currentID: string | undefined;
     try {
         if (data.partial) {
             data = await data.fetch();
@@ -718,15 +718,15 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         }
         let msg = data.message;
         if (updatingStarboardFor.has(msg.id)) {
-            setTimeout(() => updateStarboard(data), 250);
+            setTimeout(() => updateStarboard(data), 2000);
         }
         updatingStarboardFor.add(msg.id);
-        id = msg.id;
+        currentID = msg.id;
         await _updateStarboard(msg);
         updatingStarboardFor.delete(msg.id);
     } catch (error) {
-        if (id !== undefined) {
-            updatingStarboardFor.delete(id);
+        if (currentID !== undefined) {
+            updatingStarboardFor.delete(currentID);
         }
     }
 }
@@ -744,7 +744,6 @@ client.on('messageReactionRemoveAll', async msg => {
             await channel.messages.delete(entry[0]);
             await channel.messages.delete(entry[1]);
         }
-
     }
 });
 
