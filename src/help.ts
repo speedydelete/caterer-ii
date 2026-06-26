@@ -433,8 +433,7 @@ Commands:
 * Configuration: \`!noreplypings\`, \`!yesreplypings\`
 * Other: \`!wiki\`, \`!help\`, \`!eval\`, \`!ping\`
 
-This bot pernamently stores your user ID when you use \`!noreplypings\`, and deletes it when you use \`!yesreplypings\`. Data is temporarily stored when commands are executed, but it is deleted after the command has finished.
-So, to delete all pernamently stored data, use \`!yesreplypings\`.
+This bot pernamently stores your user ID when you use \`!noreplypings\`, and deletes it when you use \`!yesreplypings\`. So, to delete all your personal information that is stored by the bot, use \`!yesreplypings\`.
 
 You can use Bash-style quoting and escaping in commands.
 

@@ -747,6 +747,20 @@ client.on('messageReactionRemoveAll', async msg => {
     }
 });
 
+client.on('messageDelete', async msg => {
+    if (msg.guildId && msg.guildId in config.starboardServers) {
+        let boardName = config.starboardServers[msg.guildId];
+        let entry = starboard[boardName].get(msg.id);
+        if (entry) {
+            let board = config.starboards[boardName];
+            let channel = starboardChannels[board.channel];
+            starboard[boardName].delete(msg.id);
+            await channel.messages.delete(entry[0]);
+            await channel.messages.delete(entry[1]);
+        }
+    }
+});
+
 
 setInterval(async () => {
     try {
