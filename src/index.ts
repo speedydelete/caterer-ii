@@ -629,6 +629,8 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
         for (let user of Array.from(reacts[emoji])) {
             if (!board.allowSelf && user === senderId) {
                 continue;
+            } else if (user === '237844886030778368') {
+                continue;
             } else if (user in userReacts) {
                 let oldScore = board.emojis[userReacts[user]];
                 let newScore = board.emojis[emoji];
