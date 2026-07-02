@@ -127,7 +127,7 @@ export async function cmdRuleInfo(msg: Message, argv: string[]): Promise<Respons
 }
 
 export async function cmdNormalizeRule(msg: Message, argv: string[]): Promise<Response> {
-    return createPattern(argv.slice(1).join(' ')).rule.str;
+    return createPattern(argv.slice(1).join(' '), aliases).rule.str;
 }
 
 export async function cmdBlackWhiteReverse(msg: Message, argv: string[]): Promise<Response> {
