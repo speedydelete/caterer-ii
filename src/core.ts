@@ -228,8 +228,12 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         files: ['sim.gif'],
         allowedMentions: {repliedUser: false},
     }), [replyTo.author.id]] as [Message, [string]];
-    await fs.rm('sim_base.gif');
-    await fs.rm('sim.gif');
+    try {
+        await fs.rm('sim_base.gif');
+    } catch {}
+    try {
+        await fs.rm('sim.gif');
+    } catch {}
     return out;
 }
 
