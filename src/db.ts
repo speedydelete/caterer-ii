@@ -244,18 +244,22 @@ export async function cmdUnalias(msg: Message, argv: string[]): Promise<Response
 }
 
 export async function cmdLookupAlias(msg: Message, argv: string[]): Promise<Response> {
-    let alias = argv.slice(1).join(' ').toLowerCase().trim();
+    let alias = argv.slice(1).join(' ').trim();
+    // let alias = argv.slice(1).join(' ').toLowerCase().trim();
     if (alias.length === 0) {
         throw new Error('No alias provided!');
     }
     if (!(alias in aliases)) {
+    // if (!Reflect.has(aliases, alias)) {
         return 'Alias does not exist';
     }
     let out: string[] = [alias];
     let key = alias.toLowerCase();
-    while (key in aliases) {
+    // while (!(key in aliases)) {
+    while (Reflect.has(aliases, key)) {
         alias = aliases[key];
-        key = alias.toLowerCase();
+        // key = alias.toLowerCase();
+        key = alias;
         try {
             createPattern(alias);
         } catch (error) {

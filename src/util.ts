@@ -48,7 +48,8 @@ export async function writeFile(path: string, data: Parameters<typeof fs.writeFi
 
 
 export let config: Config = JSON.parse(await readFile('config.json'));
-export let aliases = Object.assign(Object.create(null), JSON.parse(await readFile('data/aliases.json'))) as {[key: string]: string};
+// export let aliases = Object.assign(Object.create(null), JSON.parse(await readFile('data/aliases.json'))) as {[key: string]: string};
+export let aliases = JSON.parse(await readFile('data/aliases.json')) as {[key: string]: string};
 export let noReplyPings = JSON.parse(await readFile('data/no_reply_pings.json')) as string[];
 export let names = new Map((await readFile('data/names.txt')).split('\n').map(x => x.split(' ')).map(x => [x[0], x.slice(1).join(' ')]));
 export let simStats = JSON.parse(await readFile('data/sim_stats.json')) as {[key: string]: number};
