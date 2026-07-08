@@ -248,12 +248,12 @@ export async function cmdLookupAlias(msg: Message, argv: string[]): Promise<Resp
     if (alias.length === 0) {
         throw new Error('No alias provided!');
     }
-    if (!Reflect.has(aliases, alias)) {
+    if (!(alias in aliases)) {
         return 'Alias does not exist';
     }
     let out: string[] = [alias];
     let key = alias.toLowerCase();
-    while (Reflect.has(aliases, key)) {
+    while (key in aliases) {
         alias = aliases[key];
         key = alias.toLowerCase();
         try {
