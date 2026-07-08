@@ -221,7 +221,7 @@ export async function cmdAlias(msg: Message, argv: string[]): Promise<Response> 
             throw new BotError('Cannot alias to an empty rule.\n\nThe proper syntax is:\n```\n!alias <alias>\n<rule>\n```');
         }
     }
-    if (Reflect.has(aliases, alias) && !sentByAccepterer(msg)) {
+    if (alias in aliases && !sentByAccepterer(msg)) {
         throw new BotError('Alias is already used');
     }
     aliases[alias] = rule;
