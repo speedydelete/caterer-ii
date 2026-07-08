@@ -37,6 +37,7 @@ function getChannel(msg: Message, args: string[]): [TextBasedChannel & {guild: G
 }
 
 
+// const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Response>} = Object.assign(Object.create(null), {
 const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Response>} = {
 
     help: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
@@ -303,8 +304,9 @@ async function runCommand(msg: Message): Promise<void> {
         cmd = data.slice(0, index);
         data = data.slice(index + 1);
     }
-    cmd = cmd.toLowerCase().replaceAll('_', '');
+    // cmd = cmd.toLowerCase().replaceAll('_', '');
     if (Reflect.has(COMMANDS, cmd)) {
+    // if (cmd in COMMANDS) {
         runningCommands.add(msg.id);
         let argv: string[] = [cmd];
         let currentArg = '';
