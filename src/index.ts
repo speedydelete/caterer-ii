@@ -185,9 +185,9 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
             out = match[3];
         } else if (match = emoji.match(/^:?([a-zA-Z0-9_]+):?$/)) {
             let name = match[1];
-            let emoji = client.emojis.cache.find(e => e.name === name);
-            if (emoji) {
-                out = emoji.id;
+            let resolved = client.emojis.cache.find(e => e.name === name);
+            if (resolved) {
+                out = resolved.id;
             } else {
                 throw new BotError(`Cannot find emoji: '${emoji}'`);
             }
@@ -195,6 +195,14 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
             out = emoji;
         }
         await toReact.react(out);
+        setTimeout(async () => {
+            let reaction = toReact.reactions.cache.get(out);
+            if (reaction) {
+                try {
+                    await reaction.users.remove(client.user.id)
+                } catch {}
+            }
+        });
         if (deleteAfter && msg.deletable) {
            await msg.delete();
         }
@@ -203,10 +211,8 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
     'sim': cmdSim,
 
     'identify': cmdIdentify,
-    'basic_identify': cmdBasicIdentify,
     'basicidentify': cmdBasicIdentify,
     'minmax': cmdMinmax,
-    'identify_conduit': cmdIdentifyConduit,
     'identifyconduit': cmdIdentifyConduit,
 
     'hashsoup': cmdHashsoup,
@@ -215,54 +221,38 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
     'population': cmdPopulation,
     'pop': cmdPopulation,
 
-    'map_to_int': cmdMAPToINT,
     'maptoint': cmdMAPToINT,
-    'map_to_hex_int': cmdMAPToHexINT,
     'maptohexint': cmdMAPToHexINT,
-    'int_to_map': cmdINTToMAP,
     'inttomap': cmdINTToMAP,
 
-    'rule_info': cmdRuleInfo,
     'ruleinfo': cmdRuleInfo,
-    'normalize_rule': cmdNormalizeRule,
     'normalizerule': cmdNormalizeRule,
-    'black_white_reverse': cmdBlackWhiteReverse,
-    'black_white_reversal': cmdBlackWhiteReverse,
     'blackwhitereverse': cmdBlackWhiteReverse,
     'blackwhitereversal': cmdBlackWhiteReverse,
     'bwreverse': cmdBlackWhiteReverse,
     'bwreversal': cmdBlackWhiteReverse,
-    'checkerboard_dual': cmdCheckerboardDual,
     'checkerboarddual': cmdCheckerboardDual,
-    'cb_dual': cmdCheckerboardDual,
     'cbdual': cmdCheckerboardDual,
 
     'sssss': cmdSssss,
     '5s': cmdSssss,
     'sssssinfo': cmdSssssInfo,
-    '5s_info': cmdSssssInfo,
     '5sinfo': cmdSssssInfo,
 
     'dyk': cmdDyk,
 
     'name': cmdName,
     'rename': cmdRename,
-    'delete_name': cmdDeleteName,
     'deletename': cmdDeleteName,
 
-    'sim_stats': cmdSimStats,
     'simstats': cmdSimStats,
-    'save_sim_stats': cmdSaveSimStats,
     'savesimstats': cmdSaveSimStats,
 
     'alias': cmdAlias,
     'upload': cmdAlias,
     'unalias': cmdUnalias,
-    'delete_alias': cmdUnalias,
     'deletealias': cmdUnalias,
-    'lookup_alias': cmdLookupAlias,
     'lookupalias': cmdLookupAlias,
-    'list_aliases': cmdListAliases,
     'listaliases': cmdListAliases,
     'aliases': cmdListAliases,
 
@@ -313,8 +303,8 @@ async function runCommand(msg: Message): Promise<void> {
         cmd = data.slice(0, index);
         data = data.slice(index + 1);
     }
-    cmd = cmd.toLowerCase();
-    if (cmd in COMMANDS) {
+    cmd = cmd.toLowerCase().replaceAll('_', '');
+    if (Reflect.has(COMMANDS, cmd)) {
         runningCommands.add(msg.id);
         let argv: string[] = [cmd];
         let currentArg = '';
