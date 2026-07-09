@@ -37,7 +37,7 @@ async function startBot(): Promise<void> {
     if (process) {
         throw new BotError('Bot is running!');
     }
-    process = spawn(`node ${import.meta.dirname}/index.js`);
+    process = spawn('node', [`${import.meta.dirname}/index.js`]);
     let {promise, resolve} = Promise.withResolvers<void>();
     process.on('spawn', resolve);
     process.on('exit', async () => {
