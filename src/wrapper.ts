@@ -1,7 +1,8 @@
 
-import {Client, GatewayIntentBits} from 'discord.js';
-import {config, sentByAdmin} from './util.js';
-import {execSync} from 'node:child_process';
+import {ChildProcess, spawn, execSync} from 'node:child_process';
+import {Client, GatewayIntentBits, TextChannel} from 'discord.js';
+
+import {BotError, config, sentByAdmin} from './util.js';
 
 
 let client = new Client({intents: [
@@ -11,7 +12,65 @@ let client = new Client({intents: [
     GatewayIntentBits.GuildMessageReactions,
 ]});
 
-client.once('clientReady', () => console.log('Logged in'));
+
+let messageChannel: TextChannel;
+
+client.once('clientReady', async () => {
+    console.log('Logged in');
+    let server = await client.guilds.fetch(config.wrapperInfoChannel[0]);
+    messageChannel = server.channels.cache.get(config.wrapperInfoChannel[1]) as TextChannel;
+});
+
+
+let process: ChildProcess | undefined;
+
+
+function getDay() {
+    return Math.floor(Date.now() / 1000 / 86400);
+}
+
+let lastRestartDay = getDay();
+let restartsToday = 0;
+
+async function startBot(): Promise<void> {
+    if (process) {
+        throw new BotError('Bot is running!');
+    }
+    process = spawn(`node ${import.meta.dirname}/index.js`);
+    let {promise, resolve} = Promise.withResolvers<void>();
+    process.on('spawn', resolve);
+    process.on('exit', async () => {
+        await messageChannel.send('Bot exited, restarting');
+        setTimeout(async () => {
+            let currentDay = getDay();
+            if (lastRestartDay === currentDay) {
+                restartsToday++;
+            } else {
+                restartsToday = 1;
+            }
+            if (restartsToday > config.wrapperMaxRestartsPerDay) {
+                await messageChannel.send('Maximum restarts exceeded');
+            }
+            await startBot();
+        }, 5000);
+    });
+    return promise;
+}
+
+async function stopBot(): Promise<void> {
+    if (!process) {
+        throw new BotError('Bot is not running!');
+    }
+    process.removeAllListeners('exit');
+    let {promise, resolve} = Promise.withResolvers<void>();
+    process.on('exit', () => {
+        process = undefined;
+        resolve();
+    });
+    process.kill(9);
+    return promise;
+}
+
 
 client.on('messageCreate', async msg => {
     if (msg.author.bot || !sentByAdmin(msg) || !msg.content.startsWith('!!')) {
@@ -19,20 +78,20 @@ client.on('messageCreate', async msg => {
     }
     try {
         if (msg.content === '!!start') {
-            execSync('systemctl start caterer');
+            await startBot();
             await msg.reply('Started!');
         } else if (msg.content === '!!stop') {
-            execSync('systemctl stop caterer');
+            await stopBot();
             await msg.reply('Stopped!');
         } else if (msg.content === '!!restart') {
-            execSync('systemctl stop caterer');
-            execSync('systemctl start caterer');
+            await stopBot();
+            await startBot();
             await msg.reply('Restarted!');
         } else if (msg.content === '!!update') {
             await msg.reply('Updating...');
-            execSync('systemctl stop caterer');
+            await stopBot();
             execSync(import.meta.dirname + '/../update2.sh');
-            execSync('systemctl start caterer');
+            await startBot();
             await msg.channel.send('Update complete!');
         }
     } catch (error) {

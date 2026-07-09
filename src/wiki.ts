@@ -1,6 +1,7 @@
 
 import * as fs from 'node:fs/promises';
 import {EmbedBuilder} from 'discord.js';
+
 import {BotError, Message, Response} from './util.js';
 
 
@@ -169,7 +170,7 @@ export async function cmdWiki(msg: Message, argv: string[]): Promise<Response> {
     text = text.replaceAll('~', '\\~');
     text = text.replaceAll('`', '\\`');
     text = text.replaceAll('|', '\\|');
-    text = text.replaceAll('#', '\\#');
+    text = text.replaceAll('\n#', '\n\\#');
     text = text.replaceAll(/(?<=\n): /g, '     ');
     text = text.replaceAll(/'''''(.*?)'''''/g, '***$1***');
     text = text.replaceAll(/'''(.*?)'''/g, '**$1**');

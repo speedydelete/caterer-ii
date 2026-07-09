@@ -7,7 +7,6 @@
         "the accepterer role"
     ],
     "wrapperToken": "the wrapper token",
-    "sssssChannel": "the 5s notifier channel",
-    "starboard": "the starboard channel",
-    "starThreshold": "the starboard threshold"
+    "wrapperInfoChannel": ["guild id", "channel id"],
+    "sssssChannel": "the 5s notifier channel"
 }

@@ -1,3 +1,4 @@
+set -eu -o pipefail
 pushd lifeweb
 git pull
 ./build

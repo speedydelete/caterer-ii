@@ -14,25 +14,27 @@ export type Message = OmitPartialGroupDMChannel<_Message>;
 export type Response = undefined | void | Parameters<Message['reply']>[0] | Message | [Parameters<Message['reply']>[0] | Message, string[]];
 
 export interface Config {
-    token: string;
-    admins: string[];
-    accepterers: string[];
-    wrapperToken: string;
-    initTime: number;
-    serverNames: {[key: string]: string};
-    starboards: {[key: string]: {
-        server: string;
-        channel: string;
-        threshold: number;
-        negativeThreshold?: number;
-        allowSelf: boolean;
-        startTime: number;
-        emojis: {[key: string]: number};
-        boardLowEmoji: string;
-        boardEmojis: [number, string][];
+    readonly token: string;
+    readonly admins: string[];
+    readonly accepterers: string[];
+    readonly wrapperToken: string;
+    readonly wrapperInfoChannel: [string, string];
+    readonly wrapperMaxRestartsPerDay: number;
+    readonly initTime: number;
+    readonly serverNames: {[key: string]: string};
+    readonly starboards: {[key: string]: {
+        readonly server: string;
+        readonly channel: string;
+        readonly threshold: number;
+        readonly negativeThreshold?: number;
+        readonly allowSelf: boolean;
+        readonly startTime: number;
+        readonly emojis: {[key: string]: number};
+        readonly boardLowEmoji: string;
+        readonly boardEmojis: [number, string][];
     }};
-    starboardServers: {[key: string]: string};
-    sssssChannel: string;
+    readonly starboardServers: {[key: string]: string};
+    readonly sssssChannel: string;
 }
 
 
@@ -47,7 +49,7 @@ export async function writeFile(path: string, data: Parameters<typeof fs.writeFi
 }
 
 
-export let config: Config = JSON.parse(await readFile('config.json'));
+export const config: Config = Object.freeze(JSON.parse(await readFile('config.json')));
 export let aliases = Object.assign(Object.create(null), JSON.parse(await readFile('data/aliases.json'))) as {[key: string]: string};
 export let noReplyPings = JSON.parse(await readFile('data/no_reply_pings.json')) as string[];
 export let names = new Map((await readFile('data/names.txt')).split('\n').map(x => x.split(' ')).map(x => [x[0], x.slice(1).join(' ')]));

@@ -1,5 +1,6 @@
 
 import {EmbedBuilder} from 'discord.js';
+
 import {RuleError, Pattern, INT, unparseTransitions, arrayToTransitions, parseMAP, unparseMAP, MAPPattern, MAPB0Pattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal} from '../lifeweb/lib/index.js';
 import {BotError, Message, Response, aliases, findRLE} from './util.js';
 
