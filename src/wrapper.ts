@@ -41,6 +41,7 @@ async function startBot(): Promise<void> {
     let {promise, resolve} = Promise.withResolvers<void>();
     process.on('spawn', resolve);
     process.on('exit', async () => {
+        process = undefined;
         await messageChannel.send('Bot exited, restarting');
         setTimeout(async () => {
             let currentDay = getDay();
