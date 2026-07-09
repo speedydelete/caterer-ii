@@ -196,45 +196,48 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         argv = argv.slice(1);
     }
     p.shrinkToFit();
-    let data = await createWorkerJob('sim', {argv, value: serialize(p)}, noTimeout);
-    if (!data) {
-        return 'Error: Timed out!';
-    }
-    let [parseTime, desc] = data;
-    let rule = p.rule.str;
-    if (rule in simStats) {
-        simStats[rule]++;
-    } else {
-        simStats[rule] = 1;
-    }
-    simCounter++;
-    if (simCounter === 4) {
-        simCounter = 0;
-        await writeFile('data/sim_stats.json', JSON.stringify(simStats, undefined, 4));
-    }
-    let content: string | undefined = undefined;
-    if (outputTime) {
-        let total = Math.round(performance.now() - startTime) / 1000;
-        let parse = Math.round(parseTime) / 1000;
-        content = `Took ${total} seconds (${parse} to parse)`;
-        if (desc) {
-            content += '\n' + desc;
+    try {
+        let data = await createWorkerJob('sim', {argv, value: serialize(p)}, noTimeout);
+        if (!data) {
+            return 'Error: Timed out!';
         }
-    } else if (desc) {
-        content = desc;
+        let [parseTime, desc] = data;
+        let rule = p.rule.str;
+        if (rule in simStats) {
+            simStats[rule]++;
+        } else {
+            simStats[rule] = 1;
+        }
+        simCounter++;
+        if (simCounter === 4) {
+            simCounter = 0;
+            await writeFile('data/sim_stats.json', JSON.stringify(simStats, undefined, 4));
+        }
+        let content: string | undefined = undefined;
+        if (outputTime) {
+            let total = Math.round(performance.now() - startTime) / 1000;
+            let parse = Math.round(parseTime) / 1000;
+            content = `Took ${total} seconds (${parse} to parse)`;
+            if (desc) {
+                content += '\n' + desc;
+            }
+        } else if (desc) {
+            content = desc;
+        }
+        let out = [await replyTo.reply({
+            content,
+            files: ['sim.gif'],
+            allowedMentions: {repliedUser: false},
+        }), [replyTo.author.id]] as [Message, [string]];
+        return out;
+    } finally {
+        try {
+            await fs.rm('sim_base.gif');
+        } catch {}
+        try {
+            await fs.rm('sim.gif');
+        } catch {}
     }
-    let out = [await replyTo.reply({
-        content,
-        files: ['sim.gif'],
-        allowedMentions: {repliedUser: false},
-    }), [replyTo.author.id]] as [Message, [string]];
-    try {
-        await fs.rm('sim_base.gif');
-    } catch {}
-    try {
-        await fs.rm('sim.gif');
-    } catch {}
-    return out;
 }
 
 
