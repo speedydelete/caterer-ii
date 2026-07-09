@@ -682,6 +682,6 @@ parentPort.on('message', async (data: Job) => {
 });
 
 process.setUncaughtExceptionCaptureCallback(async error => {
-    await fs.appendFile('/home/opc/worker_logs.txt', error.stack + '\n\n');
+    await fs.appendFile('/home/opc/worker_logs.txt', (error instanceof Error ? error.stack : String(error)) + '\n\n');
     process.exit(1);
 })
