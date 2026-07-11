@@ -20,6 +20,7 @@ client.once('clientReady', async () => {
     let server = await client.guilds.fetch(config.wrapperInfoChannel[0]);
     messageChannel = server.channels.cache.get(config.wrapperInfoChannel[1]) as TextChannel;
     await messageChannel.send('Wrapper started!');
+    setTimeout(startBot, 5000);
 });
 
 
