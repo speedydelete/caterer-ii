@@ -6,7 +6,10 @@ import {Pattern, parse} from '../lifeweb/lib/index.js';
 import {RPFFile} from '../lifeweb/lib/editor/rpf.js';
 
 
-export class BotError extends Error {}
+export class BotError extends Error {
+    name: 'BotError' = 'BotError';
+    [Symbol.toStringTag] = 'BotError';
+}
 
 
 export type Message = OmitPartialGroupDMChannel<_Message>;
