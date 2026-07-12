@@ -1,7 +1,7 @@
 
 import {EmbedBuilder} from 'discord.js';
 
-import {RuleError, Pattern, INT, unparseTransitions, arrayToTransitions, parseMAP, unparseMAP, MAPPattern, MAPB0Pattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, unparseMAP, unparseMAPRuleFull, MAPPattern, MAPB0Pattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal} from '../lifeweb/lib/index.js';
 import {BotError, Message, Response, aliases, findRLE} from './util.js';
 
 
@@ -80,16 +80,6 @@ export async function cmdPopulation(msg: Message, argv: string[]): Promise<Respo
 }
 
 
-export async function cmdMAPToINT(msg: Message, argv: string[]): Promise<Response> {
-    let [b, s] = arrayToTransitions(parseMAP(argv[1])[0], INT);
-    return `B${unparseTransitions(b, INT)}/S${unparseTransitions(s, INT)}`;
-}
-
-export async function cmdMAPToHexINT(msg: Message, argv: string[]): Promise<Response> {
-    let [b, s] = arrayToTransitions(parseMAP(argv[1])[0], INT);
-    return `B${unparseTransitions(b, INT)}/S${unparseTransitions(s, INT)}H`;
-}
-
 export async function cmdINTToMAP(msg: Message, argv: string[]): Promise<Response> {
     let p = createPattern(argv[1], aliases);
     if (!(p instanceof MAPPattern || p instanceof MAPB0Pattern)) {
@@ -147,11 +137,5 @@ export async function cmdCheckerboardDual(msg: Message, argv: string[]): Promise
         even[i ^ 0b010101010] = trs[i];
         odd[i ^ 0b101010101] = trs[i] ^ 1;
     }
-    if (p.rule.symmetry === 'D8') {
-        let [evenB, evenS] = arrayToTransitions(even, INT);
-        let [oddB, oddS] = arrayToTransitions(odd, INT);
-        return `Even: B${unparseTransitions(evenB, INT)}/S${unparseTransitions(evenS, INT)}\nOdd: B${unparseTransitions(oddB, INT)}/S${unparseTransitions(oddS, INT)}`;
-    } else {
-        return `Even: ${unparseMAP(even, p.rule.states)}\nOdd: ${unparseMAP(odd, p.rule.states)}`;
-    }
+    return `Even: ${unparseMAPRuleFull(even, p.rule.states)}\nOdd: ${unparseMAPRuleFull(odd, p.rule.states)}`;
 }
