@@ -200,28 +200,6 @@ const HELP: {[key: string]: Help} = {
         aliases: ['pop'],
     },
 
-    map_to_int: {
-        desc: 'Converts a MAP rule to an INT rule.',
-        args: [
-            {
-                name: 'rule',
-                desc: 'The MAP rule to convert.',
-            },
-        ],
-        aliases: ['maptoint'],
-    },
-
-    map_to_hex_int: {
-        desc: 'Converts a MAP rule to a Hexagonal INT rule.',
-        args: [
-            {
-                name: 'rule',
-                desc: 'The MAP rule to convert.',
-            },
-        ],
-        aliases: ['maptohexint'],
-    },
-
     int_to_map: {
         desc: 'Converts an INT rule to a MAP rule.',
         args: [
