@@ -100,7 +100,7 @@ const HELP: {[key: string]: Help} = {
         ],
     },
 
-    basic_identify: {
+    basicidentify: {
         desc: 'Identify a pattern, but provide less information',
         args: [
             {
@@ -109,7 +109,6 @@ const HELP: {[key: string]: Help} = {
                 desc: 'Number of generations to run the identifier for (default 1024).'
             },
         ],
-        aliases: ['basicidentify'],
     },
 
     minmax: {
@@ -122,7 +121,7 @@ const HELP: {[key: string]: Help} = {
         ],
     },
 
-    identify_conduit: {
+    identifyconduit: {
         desc: 'Identify a conduit (only works for B3/S23)',
         args: [
             {
@@ -142,7 +141,6 @@ const HELP: {[key: string]: Help} = {
                 desc: 'Number of generations to identify for (default 256).',
             },
         ],
-        aliases: ['identifyconduit'],
     },
 
     hashsoup: {
@@ -200,7 +198,7 @@ const HELP: {[key: string]: Help} = {
         aliases: ['pop'],
     },
 
-    int_to_map: {
+    inttomap: {
         desc: 'Converts an INT rule to a MAP rule.',
         args: [
             {
@@ -208,10 +206,9 @@ const HELP: {[key: string]: Help} = {
                 desc: 'The INT rule to convert.',
             },
         ],
-        aliases: ['inttomap'],
     },
 
-    rule_info: {
+    ruleinfo: {
         desc: 'Gets information about a rule.',
         args: [
             {
@@ -219,16 +216,14 @@ const HELP: {[key: string]: Help} = {
                 desc: 'The rule to use.',
             },
         ],
-        aliases: ['ruleinfo'],
     },
 
-    normalize_rule: {
+    normalizerule: {
         desc: 'Normalize a rulestring.',
         args: [],
-        aliases: ['normalizerule'],
     },
 
-    black_white_reverse: {
+    blackwhitereverse: {
         desc: 'Gets the black/white reversal of a rule.',
         args: [
             {
@@ -236,10 +231,10 @@ const HELP: {[key: string]: Help} = {
                 desc: 'The rule to use.',
             },
         ],
-        aliases: ['black_white_reversal', 'blackwhitereverse', 'blackwhitereversal', 'bwreverse', 'bwreversal'],
+        aliases: ['blackwhitereversal', 'bwreverse', 'bwreversal'],
     },
 
-    checkerboard_dual: {
+    checkerboarddual: {
         desc: 'Gets the checkerboard dual of a rule.',
         args: [
             {
@@ -247,7 +242,7 @@ const HELP: {[key: string]: Help} = {
                 desc: 'The rule to use.',
             },
         ],
-        aliases: ['checkerboard_dual', 'checkerboarddual', 'cb_dual', 'cbdual'],
+        aliases: ['cbdual'],
     },
 
     sssss: {
@@ -271,7 +266,7 @@ const HELP: {[key: string]: Help} = {
         aliases: ['5s'],
     },
 
-    sssss_info: {
+    sssssinfo: {
         desc: 'Query the status of a specific rulespace in 5S',
         args: [
             {
@@ -280,7 +275,7 @@ const HELP: {[key: string]: Help} = {
                 desc: 'The rulespace to use: int/intb0/ot/otb0/intgen/otgen, default int.',
             },
         ],
-        aliases: ['sssssinfo', '5s_info', '5sinfo'],
+        aliases: ['5sinfo'],
     },
 
     name: {
@@ -292,7 +287,6 @@ const HELP: {[key: string]: Help} = {
                 desc: 'The new name. If provided, it will set the name. If omitted, it will just show the current name.'
             },
         ],
-        aliases: ['rename'],
     },
 
     rename: {
@@ -306,13 +300,12 @@ const HELP: {[key: string]: Help} = {
         aliases: ['rename'],
     },
 
-    delete_name: {
+    deletename: {
         desc: 'Delete the name of a pattern (accepterers only)',
         args: [],
-        aliases: ['deletename'],
     },
 
-    sim_stats: {
+    simstats: {
         desc: 'Get statistics on the most popular rules used by !sim',
         args: [
             {
@@ -321,13 +314,11 @@ const HELP: {[key: string]: Help} = {
                 desc: 'The page to get data for, defaults to 0.'
             },
         ],
-        aliases: ['simstats'],
     },
 
-    save_sim_stats: {
+    savesimstats: {
         desc: 'Save the !sim stats (accepterer only)',
         args: [],
-        aliases: ['savesimstats'],
     },
 
     alias: {
@@ -357,7 +348,7 @@ const HELP: {[key: string]: Help} = {
         aliases: ['delete_alias', 'deletealias'],
     },
 
-    lookup_alias: {
+    lookupalias: {
         desc: 'Looks up an alias for a rule',
         args: [
             {
@@ -365,13 +356,12 @@ const HELP: {[key: string]: Help} = {
                 desc: 'The alias to look up.',
             },
         ],
-        aliases: ['lookupalias'],
     },
 
-    list_aliases: {
+    listaliases: {
         desc: 'Lists all the aliases',
         args: [],
-        aliases: ['listaliases', 'aliases'],
+        aliases: ['aliases'],
     },
 
     wiki: {
