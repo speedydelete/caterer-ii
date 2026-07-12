@@ -1,7 +1,7 @@
 
 import {EmbedBuilder} from 'discord.js';
 
-import {RuleError, Pattern, unparseMAP, unparseMAPRuleFull, MAPPattern, MAPB0Pattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, unparseMAP, unparseMAPRuleFull, MAPPattern, MAPB0Pattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal, MAPGenPattern} from '../lifeweb/lib/index.js';
 import {BotError, Message, Response, aliases, findRLE} from './util.js';
 
 
@@ -80,12 +80,12 @@ export async function cmdPopulation(msg: Message, argv: string[]): Promise<Respo
 }
 
 
-export async function cmdINTToMAP(msg: Message, argv: string[]): Promise<Response> {
+export async function cmdToMAP(msg: Message, argv: string[]): Promise<Response> {
     let p = createPattern(argv[1], aliases);
-    if (!(p instanceof MAPPattern || p instanceof MAPB0Pattern)) {
+    if (!(p instanceof MAPPattern || p instanceof MAPB0Pattern || p instanceof MAPGenPattern)) {
         throw new BotError('Rule must be in B/S notation!');
     }
-    return unparseMAP(p instanceof MAPPattern ? p.trs : p.evenTrs.map(x => 1 - x), p.rule.states);
+    return unparseMAP(p instanceof MAPB0Pattern ? p.evenTrs.map(x => 1 - x) : p.trs, p.rule.states);
 }
 
 
