@@ -204,7 +204,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
                     await reaction.users.remove(client.user.id)
                 } catch {}
             }
-        });
+        }, 30000);
         if (deleteAfter && msg.deletable) {
            await msg.delete();
         }
