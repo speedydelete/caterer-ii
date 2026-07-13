@@ -42,9 +42,9 @@ export async function cmdApgdecode(msg: Message, argv: string[]): Promise<Respon
         code = code.slice(match[0].length);
     }
     if (!argv[2]) {
-        return lifePattern.loadApgcode(code).toRLE();
+        return lifePattern.loadApgcode(code).shrinkToFit().toRLE();
     } else {
-        return createPattern(argv.slice(2).join(' '), aliases).loadApgcode(code).toRLE();
+        return createPattern(argv.slice(2).join(' '), aliases).loadApgcode(code).shrinkToFit().toRLE();
     }
 }
 
