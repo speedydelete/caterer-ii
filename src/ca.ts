@@ -15,14 +15,7 @@ export async function cmdApgencode(msg: Message, argv: string[]): Promise<Respon
     if (!data) {
         throw new BotError('Cannot find RLE');
     }
-    return data.p.toApgcode().replaceAll('_', '\\_');
-}
-
-export async function cmdCanonicalApgenode(msg: Message, argv: string[]): Promise<Response> {
-    let data = await findRLE(msg);
-    if (!data) {
-        throw new BotError('Cannot find RLE');
-    }
+    let p = data.p.shrinkToFit();
     if (argv[1].startsWith('c')) {
         let gens = 0;
         if (argv[2] !== undefined) {
@@ -31,8 +24,9 @@ export async function cmdCanonicalApgenode(msg: Message, argv: string[]): Promis
                 throw new BotError('Invalid number');
             }
         }
+        return p.toCanonicalApgcode(gens).replaceAll('_', '\\_');
     } else {
-        return data.p.toApgcode();
+        return p.toApgcode().replaceAll('_', '\\_');
     }
 }
 
