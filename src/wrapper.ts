@@ -34,6 +34,8 @@ function getDay() {
 let lastRestartDay = getDay();
 let restartsToday = 0;
 
+let isSupposedToBeOn = true;
+
 async function startBot(): Promise<void> {
     if (process) {
         throw new BotError('Bot is running!');
@@ -45,6 +47,9 @@ async function startBot(): Promise<void> {
         process = undefined;
         await messageChannel.send('Bot exited, restarting');
         setTimeout(async () => {
+            if (!isSupposedToBeOn) {
+                return;
+            }
             let currentDay = getDay();
             if (lastRestartDay === currentDay) {
                 restartsToday++;
@@ -81,9 +86,11 @@ client.on('messageCreate', async msg => {
     }
     try {
         if (msg.content === '!!start') {
+            isSupposedToBeOn = true;
             await startBot();
             await msg.reply('Started!');
         } else if (msg.content === '!!stop') {
+            isSupposedToBeOn = false;
             await stopBot();
             await msg.reply('Stopped!');
         } else if (msg.content === '!!restart') {
