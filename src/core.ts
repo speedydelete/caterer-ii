@@ -323,7 +323,7 @@ function embedIdentified(original: Pattern, type: PatternType | Identified, isOu
 }
 
 export async function cmdIdentify(msg: Message, argv: string[]): Promise<Response> {
-    // await msg.channel.sendTyping();
+    await msg.channel.sendTyping();
     let noTimeout = false;
     if (argv[1] === 'notimeout') {
         if (sentByAdmin(msg)) {
@@ -353,7 +353,7 @@ export async function cmdIdentify(msg: Message, argv: string[]): Promise<Respons
 }
 
 export async function cmdBasicIdentify(msg: Message, argv: string[]): Promise<Response> {
-    // await msg.channel.sendTyping();
+    await msg.channel.sendTyping();
     let noTimeout = false;
     if (argv[1] === 'notimeout') {
         if (sentByAdmin(msg)) {
@@ -382,7 +382,7 @@ export async function cmdBasicIdentify(msg: Message, argv: string[]): Promise<Re
 }
 
 export async function cmdMinmax(msg: Message, argv: string[]): Promise<Response> {
-    // await msg.channel.sendTyping();
+    await msg.channel.sendTyping();
     let noTimeout = false;
     if (argv[1] === 'notimeout') {
         if (sentByAdmin(msg)) {
@@ -408,7 +408,7 @@ export async function cmdMinmax(msg: Message, argv: string[]): Promise<Response>
 }
 
 export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<Response> {
-    // await msg.channel.sendTyping();
+    await msg.channel.sendTyping();
     let noTimeout = false;
     if (argv[1] === 'notimeout') {
         if (sentByAdmin(msg)) {

@@ -47,7 +47,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
 
     async eval(msg: Message, argv: string[]): Promise<Response> {
         if (sentByAdmin(msg)) {
-            // await msg.channel.sendTyping();
+            await msg.channel.sendTyping();
             let index = msg.content.indexOf(' ');
             let index2 = msg.content.indexOf('\n');
             if (index === -1 || (index2 !== -1 && index2 < index)) {
