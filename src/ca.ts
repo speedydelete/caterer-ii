@@ -16,7 +16,7 @@ export async function cmdApgencode(msg: Message, argv: string[]): Promise<Respon
         throw new BotError('Cannot find RLE');
     }
     let p = data.p.shrinkToFit();
-    if (argv[1].startsWith('c')) {
+    if (argv[1] && argv[1].startsWith('c')) {
         let gens = 0;
         if (argv[2] !== undefined) {
             gens = Number(argv[2]);
