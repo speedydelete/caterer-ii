@@ -253,7 +253,7 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         }
         p.setData(height, width, data);
         replyTo = msg;
-        throw new Error('hi 3 ' + weights.join(', '));
+        throw new Error('hi 4 ' + weights.join(', '));
     } else {
         let data = await findRLE(msg);
         if (!data) {
