@@ -40,7 +40,7 @@ async function startBot(): Promise<void> {
     if (process) {
         throw new BotError('Bot is running!');
     }
-    process = spawn('/home/caterer/.nvm/versions/node/v26.5.0/bin/node', [`${import.meta.dirname}/index.js`], {stdio: 'inherit'});
+    process = spawn('/home/caterer/.nvm/versions/node/v26.2.0/bin/node', [`${import.meta.dirname}/index.js`], {stdio: 'inherit'});
     let {promise, resolve} = Promise.withResolvers<void>();
     process.on('spawn', resolve);
     process.on('exit', async () => {
