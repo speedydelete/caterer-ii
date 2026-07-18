@@ -236,6 +236,7 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         argv = argv.slice(2);
         p = createPattern(rule, aliases);
         let weights = parseFill(fill, p);
+        throw new Error(weights.join(', '));
         if (p instanceof TorusPattern && (p.height < height || p.width < width)) {
             height = p.height;
             width = p.width;
