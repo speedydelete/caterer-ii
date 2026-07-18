@@ -198,7 +198,7 @@ function parseFill(fill: string, p: Pattern): number[] {
 
 export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
     let startTime = performance.now();
-    // await msg.channel.sendTyping();
+    await msg.channel.sendTyping();
     let noTimeout = false;
     if (argv[1] === 'notimeout') {
         if (sentByAdmin(msg)) {
