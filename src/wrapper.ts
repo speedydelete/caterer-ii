@@ -105,6 +105,7 @@ client.on('messageCreate', async msg => {
             execSync(import.meta.dirname + '/../update2.sh');
             await startBot();
             await msg.channel.send('Update complete!');
+            await msg.reply(import.meta.dirname + '/../update2.sh');
         }
     } catch (error) {
         let str: string;
