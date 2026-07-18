@@ -80,6 +80,7 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
     },
 
     async pig(msg: Message, argv: string[]): Promise<Response> {
+        throw new Error('hi');
         if (msg.reference) {
             await (await msg.fetchReference()).react('🐷');
         } else {
