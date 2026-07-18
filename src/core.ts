@@ -214,7 +214,7 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         let height = 16;
         let width = 16;
         if (!argv[2]) {
-            throw new BotError('Expected arguments!');
+            throw new BotError('No arguments provided for rand!');
         }
         if (argv[2].match(/^\d+x\d+$/)) {
             let data = argv[2].split('x');
@@ -224,13 +224,16 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         }
         let fill = '50%';
         if (!argv[2]) {
-            throw new BotError('Expected arguments!');
+            throw new BotError('No arguments provided for rand!');
         }
         if (argv[2].includes('%')) {
             fill = argv[2];
             argv = argv.slice(1);
         }
         let rule = argv[2];
+        if (rule === undefined) {
+            throw new BotError('No rule provided for rand!');
+        }
         argv = argv.slice(2);
         p = createPattern(rule, aliases);
         let weights = parseFill(fill, p);
