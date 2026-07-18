@@ -44,9 +44,11 @@ async function startBot(): Promise<void> {
     let {promise, resolve} = Promise.withResolvers<void>();
     process.on('spawn', resolve);
     process.on('exit', async () => {
+        console.log('hiii 1')
         process = undefined;
         await messageChannel.send('Bot exited, restarting');
         setTimeout(async () => {
+            console.log('hiii 2');
             if (!isSupposedToBeOn) {
                 return;
             }
