@@ -245,13 +245,12 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         for (let i = 0; i < size; i++) {
             let value = Math.random();
             for (let state = 0; state < weights.length; state++) {
-                if (value < weights[i]) {
+                if (value < weights[state]) {
                     data[i] = state;
                     break;
                 }
             }
         }
-        throw new Error(data.join(', '));
         p.setData(height, width, data);
         replyTo = msg;
     } else {
