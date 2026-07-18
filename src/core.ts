@@ -192,7 +192,6 @@ function parseFill(fill: string, p: Pattern): number[] {
         total += weights[i] / weightDiv;
         out.push(total);
     }
-    throw new Error(out.join(', '));
     return out;
 }
 
@@ -252,6 +251,7 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
                 }
             }
         }
+        throw new Error(data.join(', '));
         p.setData(height, width, data);
         replyTo = msg;
     } else {
