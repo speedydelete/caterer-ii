@@ -662,7 +662,7 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
         let index = countStr.indexOf('.');
         if (index !== -1) {
             let end = countStr.slice(index + 1);
-            while (end.startsWith('0')) {
+            while (end.endsWith('0')) {
                 end = end.slice(0, -1);
             }
             countStr = countStr.slice(0, index + 1) + end;
