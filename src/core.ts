@@ -145,8 +145,8 @@ function parseFill(fill: string, p: Pattern): number[] {
     if (Number.isNaN(fillPercent)) {
         throw new BotError(`Invalid fill (percentage is not a number): '${originalFill}'`);
     }
-    let weights: number[] = [];
-    for (let i = 0; i < p.rule.states; i++) {
+    let weights: number[] = [0];
+    for (let i = 1; i < p.rule.states; i++) {
         weights.push(1);
     }
     for (let specifier of weightSpec.split(',')) {
