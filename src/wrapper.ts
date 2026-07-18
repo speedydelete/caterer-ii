@@ -103,6 +103,7 @@ client.on('messageCreate', async msg => {
                 await stopBot();
             }
             execSync(import.meta.dirname + '/../update2.sh');
+            await msg.channel.send('hi ' + typeof process);
             await startBot();
             await msg.channel.send('Update complete!');
         }
