@@ -160,7 +160,6 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
             throw new BotError('Expected arguments!');
         }
         if (argv[2].includes('%')) {
-            throw new Error('hi');
             fill = Number(argv[2].slice(0, -1)) / 100;
             argv = argv.slice(1);
         }
