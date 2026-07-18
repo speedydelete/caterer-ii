@@ -147,7 +147,8 @@ function parseFill(fill: string, p: Pattern): number[] {
     }
     let weights: number[] = [0];
     for (let i = 1; i < p.rule.states; i++) {
-        weights.push(0);
+        // for the empty specifier, make them all 1
+        weights.push(weightSpec === '' ? 1 : 0);
     }
     for (let specifier of weightSpec.split(',')) {
         if (specifier === '') {
