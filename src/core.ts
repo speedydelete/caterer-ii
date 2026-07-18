@@ -192,7 +192,6 @@ function parseFill(fill: string, p: Pattern): number[] {
         total += weights[i] / weightDiv;
         out.push(total);
     }
-    throw new Error(out.join(', '));
     return out;
 }
 
