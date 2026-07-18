@@ -2,12 +2,17 @@
     "compilerOptions": {
         "rootDir": "./src",
         "outDir": "./lib",
-        "lib": ["ESNext"],
+        "lib": ["ESNext", "DOM"],
         "target": "ESNext",
         "module": "NodeNext",
+        "types": ["node"],
         "resolveJsonModule": true,
         "strict": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "declaration": true
     },
-    "files": ["./src/index.ts", "./src/wrapper.ts", "src/worker.ts"]
+    "include": ["./src/**/*.ts"],
+    "references": [
+        {"path": "./src"},
+    ]
 }
