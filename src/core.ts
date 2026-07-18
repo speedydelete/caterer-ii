@@ -150,6 +150,9 @@ function parseFill(fill: string, p: Pattern): number[] {
         weights.push(1);
     }
     for (let specifier of weightSpec.split(',')) {
+        if (specifier === '') {
+            continue;
+        }
         let data = specifier.split(':');
         if (data.length !== 2) {
             throw new BotError(`Invalid weight specifier (expected exactly 1 colon): '${specifier}'`);
