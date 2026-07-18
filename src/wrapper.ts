@@ -99,11 +99,11 @@ client.on('messageCreate', async msg => {
             await msg.reply('Restarted!');
         } else if (msg.content === '!!update') {
             await msg.reply('Updating...');
+            await msg.channel.send('hi ' + typeof process);
             if (process) {
                 await stopBot();
             }
-            execSync(import.meta.dirname + '/../update2.sh');
-            await msg.channel.send('hi ' + typeof process);
+            await msg.channel.send('hi 2 ' + typeof process);
             await startBot();
             await msg.channel.send('Update complete!');
         }
