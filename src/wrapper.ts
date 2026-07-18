@@ -98,8 +98,6 @@ client.on('messageCreate', async msg => {
             await startBot();
             await msg.reply('Restarted!');
         } else if (msg.content === '!!update') {
-            await msg.reply(import.meta.dirname + '/../update2.sh');
-            return;
             await msg.reply('Updating...');
             if (process) {
                 await stopBot();
