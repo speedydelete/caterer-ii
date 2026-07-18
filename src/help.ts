@@ -71,7 +71,7 @@ const HELP: {[key: string]: Help} = {
             {
                 name: 'percent',
                 optional: true,
-                desc: 'The percentage to fill the pattern (must end in %, default 50%).',
+                desc: 'The percentage to fill the pattern. Must start with a percent (such as 50%), can optionally be followed by  a comma then state weights, such as "50%,1-2:2,3:3" (sets states 1 and 2 to weight 2 but state 3 to weight 3). Ranges are inclusive, all states by default have weight 1.',
             },
             {
                 name: 'rule',

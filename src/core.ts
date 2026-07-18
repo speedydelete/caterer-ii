@@ -129,6 +129,69 @@ function serialize(value: Pattern): string {
     }
 }
 
+function parseFill(fill: string, p: Pattern): number[] {
+    let originalFill = fill;
+    fill = fill.replaceAll('', '');
+    let weightSpec = '';
+    let index = fill.indexOf(',');
+    if (index !== -1) {
+        weightSpec = fill.slice(index + 1);
+        fill = fill.slice(0, index);
+    }
+    if (!fill.endsWith('%')) {
+        throw new BotError(`Invalid fill (expected %): '${originalFill}'`);
+    }
+    let fillPercent = Number(fill.slice(0, -1)) / 100;
+    if (Number.isNaN(fillPercent)) {
+        throw new BotError(`Invalid fill (percentage is not a number): '${originalFill}'`);
+    }
+    let weights: number[] = [];
+    for (let i = 0; i < p.rule.states; i++) {
+        weights.push(1);
+    }
+    for (let specifier of weightSpec.split(',')) {
+        let data = specifier.split(':');
+        if (data.length !== 2) {
+            throw new BotError(`Invalid weight specifier (expected exactly 1 colon): '${specifier}'`);
+        }
+        let states = data[0];
+        let start: number;
+        let end: number;
+        if (states.includes('-')) {
+            let range = states.split('-');
+            if (range.length !== 2) {
+                throw new BotError(`Invalid weight specifier (expected 0 or 1 dashes): '${specifier}'`);
+            }
+            start = Number(range[0]);
+            if (Number.isNaN(start)) {
+                throw new BotError(`Invalid weight specifier (range start is not a number): '${specifier}'`);
+            }
+            end = Number(range[1]);
+            if (Number.isNaN(end)) {
+                throw new BotError(`Invalid weight specifier (range end is not a number): '${specifier}'`);
+            }
+        } else {
+            start = Number(states);
+            if (Number.isNaN(start)) {
+                throw new BotError(`Invalid weight specifier (state is not a number): '${specifier}'`);
+            }
+            end = start;
+        }
+        let weight = Number(data[1]);
+        for (let i = start; i <= end; i++) {
+            weights[i] = weight;
+        }
+    }
+    let weightDiv = weights.reduce((x, y) => x + y) / fillPercent;
+    let out: number[] = [fillPercent];
+    let total = fillPercent;
+    for (let i = 1; i < p.rule.states; i++) {
+        total += weights[i] / weightDiv;
+        out.push(total);
+    }
+    return out;
+}
+
 export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
     let startTime = performance.now();
     // await msg.channel.sendTyping();
@@ -155,17 +218,18 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
             height = Number(data[1]);
             argv = argv.slice(1);
         }
-        let fill = 0.5;
+        let fill = '50%';
         if (!argv[2]) {
             throw new BotError('Expected arguments!');
         }
         if (argv[2].includes('%')) {
-            fill = Number(argv[2].slice(0, -1)) / 100;
+            fill = argv[2];
             argv = argv.slice(1);
         }
         let rule = argv[2];
         argv = argv.slice(2);
         p = createPattern(rule, aliases);
+        let weights = parseFill(fill, p);
         if (p instanceof TorusPattern && (p.height < height || p.width < width)) {
             height = p.height;
             width = p.width;
@@ -173,11 +237,11 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         let size = height * width;
         let data = new Uint8Array(size);
         for (let i = 0; i < size; i++) {
-            if (Math.random() < fill) {
-                if (p.rule.states === 2) {
-                    data[i] = 1;
-                } else {
-                    data[i] = Math.floor(Math.random() * (p.rule.states - 1)) + 1;
+            let value = Math.random();
+            for (let state = 0; state < weights.length; state++) {
+                if (value < weights[i]) {
+                    data[i] = state;
+                    break;
                 }
             }
         }
