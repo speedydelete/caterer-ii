@@ -100,13 +100,22 @@ client.on('messageCreate', async msg => {
             await startBot();
             await msg.reply('Restarted!');
         } else if (msg.content === '!!update') {
+            console.log('updating');
             await msg.reply('Updating...');
-            await msg.channel.send('hi ' + typeof process);
+            console.log('stopping');
+            console.log('process:', typeof process);
             if (process) {
                 await stopBot();
             }
-            await msg.channel.send('hi 2 ' + typeof process);
+            console.log('stopped');
+            console.log('process:', typeof process);
+            console.log('actually updating');
+            execSync(import.meta.dirname + '/../update2.sh');
+            console.log('starting');
+            console.log('process:', typeof process);
             await startBot();
+            console.log('started');
+            console.log('process:', typeof process);
             await msg.channel.send('Update complete!');
         }
     } catch (error) {
