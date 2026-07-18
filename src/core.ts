@@ -186,12 +186,13 @@ function parseFill(fill: string, p: Pattern): number[] {
         }
     }
     let weightDiv = weights.reduce((x, y) => x + y) / fillPercent;
-    let out: number[] = [fillPercent];
-    let total = fillPercent;
+    let out: number[] = [1 - fillPercent];
+    let total = 1 - fillPercent;
     for (let i = 1; i < p.rule.states; i++) {
         total += weights[i] / weightDiv;
         out.push(total);
     }
+    throw new Error(out.join(', '));
     return out;
 }
 
