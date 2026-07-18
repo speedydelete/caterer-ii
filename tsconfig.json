@@ -11,8 +11,5 @@
         "sourceMap": true,
         "declaration": true
     },
-    "include": ["./src/**/*.ts"],
-    "references": [
-        {"path": "./src"},
-    ]
+    "include": ["./src/**/*.ts"]
 }
