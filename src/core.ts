@@ -236,7 +236,6 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         argv = argv.slice(2);
         p = createPattern(rule, aliases);
         let weights = parseFill(fill, p);
-        throw new Error(weights.join(', '));
         if (p instanceof TorusPattern && (p.height < height || p.width < width)) {
             height = p.height;
             width = p.width;
@@ -254,6 +253,7 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
         }
         p.setData(height, width, data);
         replyTo = msg;
+        throw new Error(weights.join(', '));
     } else {
         let data = await findRLE(msg);
         if (!data) {
