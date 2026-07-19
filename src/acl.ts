@@ -140,6 +140,9 @@ async function expressionToACL(node: Expression | PrivateName, guild: Guild): Pr
 }
 
 export async function parseACL(data: string, guild: Guild): Promise<ACL> {
+    if (data === '') {
+        throw new BotError('No ACL provided!');
+    }
     return await expressionToACL(parseExpression(data), guild);
 }
 
