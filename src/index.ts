@@ -204,14 +204,14 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
     },
 
     'acl': cmdAcl,
-    'acl show': undefined,
-    'acl get': undefined,
-    'acl set': undefined,
-    'acl delete': undefined,
-    'acl uses': undefined,
-    'acl showcmd': undefined,
-    'acl getcmd': undefined,
-    'acl deletecmd': undefined,
+    'acl show': () => {throw new Error('hi');},
+    'acl get': () => {throw new Error('hi');},
+    'acl set': () => {throw new Error('hi');},
+    'acl delete': () => {throw new Error('hi');},
+    'acl uses': () => {throw new Error('hi');},
+    'acl showcmd': () => {throw new Error('hi');},
+    'acl getcmd': () => {throw new Error('hi');},
+    'acl deletecmd': () => {throw new Error('hi');},
 
     'sim': cmdSim,
 
