@@ -4,11 +4,12 @@ import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, Partial
 
 import * as lifeweb from '../lifeweb/lib/index.js';
 import * as lifewebRPF from '../lifeweb/lib/editor/rpf.js';
-import {BotError, Response, Message, readFile, writeFile, config, sentByAdmin, aliases, noReplyPings, findRLEFromText, findRLE} from './util.js';
+import {BotError, Response, Message, readFile, writeFile, config, aliases, sentByAdmin, noReplyPings, findRLEFromText, findRLE} from './util.js';
+import {aclData, matchesACL} from './acl.js';
 import {cmdHelp} from './help.js';
 import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax, cmdIdentifyConduit} from './core.js';
 import {cmdHashsoup, cmdApgencode, cmdApgdecode, cmdPopulation, cmdToMAP, cmdRuleInfo, cmdNormalizeRule, cmdBlackWhiteReverse, cmdCheckerboardDual} from './ca.js';
-import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSimStats, cmdSaveSimStats, cmdAlias, cmdUnalias, cmdLookupAlias, cmdListAliases} from './db.js';
+import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSimStats, cmdSaveSimStats, cmdAlias, cmdRealias, cmdUnalias, cmdLookupAlias, cmdListAliases} from './db.js';
 import {cmdWiki} from './wiki.js';
 import {check5S} from './notifier.js';
 
@@ -38,15 +39,14 @@ function getChannel(msg: Message, args: string[]): [TextBasedChannel & {guild: G
 }
 
 
-const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Response>} = Object.assign(Object.create(null), {
-// const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Response>} = {
+export const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Response>} = Object.assign(Object.create(null), {
 
     help: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
     about: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
     info: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
 
     async eval(msg: Message, argv: string[]): Promise<Response> {
-        if (sentByAdmin(msg)) {
+        if (!sentByAdmin(msg)) {
             await msg.channel.sendTyping();
             let index = msg.content.indexOf(' ');
             let index2 = msg.content.indexOf('\n');
@@ -120,9 +120,6 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
     },
 
     async say(msg: Message, argv: string[]): Promise<Response> {
-        if (!sentByAdmin(msg)) {
-            return;
-        }
         let deleteAfter = argv[1] === '-iq';
         if (deleteAfter) {
             argv = argv.slice(1);
@@ -144,9 +141,6 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
     },
 
     async edit(msg: Message, argv: string[]): Promise<Response> {
-        if (!sentByAdmin(msg)) {
-            return;
-        }
         let deleteAfter = argv[1] === '-iq';
         if (deleteAfter) {
             argv = argv.slice(1);
@@ -164,9 +158,6 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
     },
 
     async react(msg: Message, argv: string[]): Promise<Response> {
-        if (!sentByAdmin(msg)) {
-            return;
-        }
         let deleteAfter = argv[1] === '-iq';
         if (deleteAfter) {
             argv = argv.slice(1);
@@ -250,6 +241,8 @@ const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Respon
 
     'alias': cmdAlias,
     'upload': cmdAlias,
+    'realias': cmdRealias,
+    'reupload': cmdRealias,
     'unalias': cmdUnalias,
     'deletealias': cmdUnalias,
     'lookupalias': cmdLookupAlias,
@@ -306,6 +299,9 @@ async function runCommand(msg: Message): Promise<void> {
     cmd = cmd.toLowerCase().replaceAll('_', '');
     // if (Reflect.has(COMMANDS, cmd)) {
     if (cmd in COMMANDS) {
+        if (!matchesACL(msg, aclData.commands[cmd])) {
+            previousMsgs.push([msg.id, await msg.reply({content: 'Error: You do not have permission to run this command', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+        }
         runningCommands.add(msg.id);
         let argv: string[] = [cmd];
         let currentArg = '';
@@ -423,10 +419,11 @@ async function runCommand(msg: Message): Promise<void> {
 }
 
 
-let client = new Client({
+export let client = new Client({
     intents: [
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMessageReactions,
     ],

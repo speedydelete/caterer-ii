@@ -1,6 +1,7 @@
 
 import * as fs from 'node:fs/promises';
 import {join} from 'node:path';
+
 import {DiscordAPIError, Message as _Message, OmitPartialGroupDMChannel} from 'discord.js';
 import {Pattern, parse} from '../lifeweb/lib/index.js';
 import {RPFFile} from '../lifeweb/lib/editor/rpf.js';
@@ -19,7 +20,6 @@ export type Response = undefined | void | Parameters<Message['reply']>[0] | Mess
 export interface Config {
     readonly token: string;
     readonly admins: string[];
-    readonly accepterers: string[];
     readonly wrapperToken: string;
     readonly wrapperInfoChannel: [string, string];
     readonly wrapperMaxRestartsPerDay: number;
@@ -53,24 +53,18 @@ export async function writeFile(path: string, data: Parameters<typeof fs.writeFi
 
 
 export const config: Config = Object.freeze(JSON.parse(await readFile('config.json')));
-export let aliases = Object.assign(Object.create(null), JSON.parse(await readFile('data/aliases.json'))) as {[key: string]: string};
-export let noReplyPings = JSON.parse(await readFile('data/no_reply_pings.json')) as string[];
+
+export let aliases: {[key: string]: string} = Object.assign(Object.create(null), JSON.parse(await readFile('data/aliases.json')));
+
+export let noReplyPings: string[] = JSON.parse(await readFile('data/no_reply_pings.json'));
+
 export let names = new Map((await readFile('data/names.txt')).split('\n').map(x => x.split(' ')).map(x => [x[0], x.slice(1).join(' ')]));
-export let simStats = JSON.parse(await readFile('data/sim_stats.json')) as {[key: string]: number};
+
+export let simStats: {[key: string]: number} = JSON.parse(await readFile('data/sim_stats.json'));
 
 
 export function sentByAdmin(msg: Message): boolean {
     return config.admins.includes(msg.author.id);
-}
-
-export function sentByAccepterer(msg: Message): boolean {
-    if (sentByAdmin(msg)) {
-        return true;
-    }
-    if (msg.member && msg.member.roles.cache.find(role => config.accepterers.includes(role.id))) {
-        return true;
-    }
-    return false;
 }
 
 

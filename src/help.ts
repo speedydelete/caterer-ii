@@ -290,7 +290,7 @@ const HELP: {[key: string]: Help} = {
     },
 
     rename: {
-        desc: 'Change the name of a pattern (accepterers only)',
+        desc: 'Change the name of a pattern',
         args: [
             {
                 name: 'new_name',
@@ -301,7 +301,7 @@ const HELP: {[key: string]: Help} = {
     },
 
     deletename: {
-        desc: 'Delete the name of a pattern (accepterers only)',
+        desc: 'Delete the name of a pattern',
         args: [],
     },
 
@@ -317,7 +317,7 @@ const HELP: {[key: string]: Help} = {
     },
 
     savesimstats: {
-        desc: 'Save the !sim stats (accepterer only)',
+        desc: 'Save the !sim stats',
         args: [],
     },
 
@@ -337,15 +337,31 @@ const HELP: {[key: string]: Help} = {
         aliases: ['upload'],
     },
 
+    realias: {
+        desc: 'Change an alias',
+        args: [
+            {
+                name: 'alias',
+                desc: 'The new alias for the rule.',
+            },
+            {
+                name: 'rule',
+                newline: true,
+                desc: 'The rule being aliased to. Must be on a new line. Can be a file.',
+            },
+        ],
+        aliases: ['upload'],
+    },
+
     unalias: {
-        desc: 'Remove an alias for a rule (accepterers only)',
+        desc: 'Remove an alias for a rule',
         args: [
             {
                 name: 'alias',
                 desc: 'The alias to remove.',
             },
         ],
-        aliases: ['delete_alias', 'deletealias'],
+        aliases: ['deletealias'],
     },
 
     lookupalias: {

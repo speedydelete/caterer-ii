@@ -3,7 +3,7 @@ import {EmbedBuilder} from 'discord.js';
 
 import {RuleError, identifyPeriodic, getApgcode, createPattern, parseSpeed} from '../lifeweb/lib/index.js';
 import {Type, TYPE_NAMES} from '../sssss/lib/index.js';
-import {BotError, Message, Response, readFile, writeFile, aliases, names, simStats, sentByAccepterer, findRLE} from './util.js';
+import {BotError, Message, Response, readFile, writeFile, aliases, names, simStats, findRLE} from './util.js';
 
 
 export async function cmdSssss(msg: Message, argv: string[]): Promise<Response> {
@@ -105,13 +105,7 @@ export async function cmdName(msg: Message, argv: string[]): Promise<Response> {
     //     throw new BotError('Invalid name!');
     // }
     if (names.has(apgcode)) {
-        if (!sentByAccepterer(msg)) {
-            throw new BotError('Pattern is already named and you are not an accepterer');
-        }
-        let oldName = names.get(apgcode);
-        names.set(apgcode, newName);
-        await writeFile('data/names.txt', Array.from(names.entries()).map(x => x[0] + ' ' + x[1]).join('\n'));
-        return 'Renamed `' + oldName + '` to `' + newName + '`';
+        throw new BotError(`You must use !rename to rename patterns`);
     } else {
         names.set(apgcode, newName);
         await writeFile('data/names.txt', Array.from(names.entries()).map(x => x[0] + ' ' + x[1]).join('\n'));
@@ -121,9 +115,6 @@ export async function cmdName(msg: Message, argv: string[]): Promise<Response> {
 
 export async function cmdRename(msg: Message, argv: string[]): Promise<Response> {
     await msg.channel.sendTyping();
-    if (!sentByAccepterer(msg)) {
-        throw new BotError('You are not an accepterer');
-    }
     let data = await findRLE(msg);
     if (!data) {
         throw new BotError('Cannot find RLE');
@@ -150,9 +141,6 @@ export async function cmdRename(msg: Message, argv: string[]): Promise<Response>
 
 export async function cmdDeleteName(msg: Message, argv: string[]): Promise<Response> {
     await msg.channel.sendTyping();
-    if (!sentByAccepterer(msg)) {
-        throw new BotError('You are not an accepterer');
-    }
     let data = await findRLE(msg);
     if (!data) {
         throw new BotError('Cannot find RLE');
@@ -186,9 +174,6 @@ export async function cmdSimStats(msg: Message, argv: string[]): Promise<Respons
 }
 
 export async function cmdSaveSimStats(msg: Message, argv: string[]): Promise<Response> {
-    if (!sentByAccepterer(msg)) {
-        throw new BotError('You are not an accepterer');
-    }
     await writeFile('data/sim_stats.json', JSON.stringify(simStats, undefined, 4));
     return 'Saved!';
 }
@@ -225,7 +210,7 @@ export async function cmdAlias(msg: Message, argv: string[]): Promise<Response> 
             throw new BotError('Cannot alias to an empty rule.\n\nThe proper syntax is:\n```\n!alias <alias>\n<rule>\n```');
         }
     }
-    if (alias in aliases && !sentByAccepterer(msg)) {
+    if (alias in aliases) {
         throw new BotError('Alias is already used');
     }
     aliases[alias] = rule;
@@ -233,10 +218,47 @@ export async function cmdAlias(msg: Message, argv: string[]): Promise<Response> 
     return 'Alias set!';
 }
 
-export async function cmdUnalias(msg: Message, argv: string[]): Promise<Response> {
-    if (!sentByAccepterer(msg)) {
-        throw new BotError('You are not an accepterer');
+export async function cmdRealias(msg: Message, argv: string[]): Promise<Response> {
+    let data = msg.content.slice(msg.content.indexOf(' ') + 1).split('\n');
+    let alias = data[0].toLowerCase().trim();
+    if (alias === '') {
+        throw new BotError('No alias provided!');
     }
+    let isValidRule = true;
+    try {
+        createPattern(alias);
+    } catch (error) {
+        if (error instanceof RuleError) {
+            isValidRule = false;
+        } else {
+            throw error;
+        }
+    }
+    if (isValidRule) {
+        throw new BotError('Did not add alias because it is a valid rule');
+    }
+    let rule = data.slice(1).join('\n');
+    if (rule === '') {
+        if (msg.attachments.size > 0) {
+            let attachment = msg.attachments.first();
+            if (attachment) {
+                rule = await (await fetch(attachment.url)).text();
+            }
+        }
+        if (rule === '') {
+            throw new BotError('Cannot alias to an empty rule.\n\nThe proper syntax is:\n```\n!alias <alias>\n<rule>\n```');
+        }
+    }
+    if (!(alias in aliases)) {
+        throw new BotError('Alias is not used');
+    }
+    aliases[alias] = rule;
+    await writeFile('data/aliases.json', JSON.stringify(aliases, undefined, 4));
+    return 'Alias set!';
+}
+
+
+export async function cmdUnalias(msg: Message, argv: string[]): Promise<Response> {
     let alias = argv.slice(1).join(' ').toLowerCase().trim();
     if (alias in aliases) {
         delete aliases[alias];
