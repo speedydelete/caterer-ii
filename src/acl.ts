@@ -329,6 +329,6 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         delete aclData.commands[name];
         return 'Command ACL deleted!';
     } else {
-        throw new BotError(`Invalid subcommand: '${cmd}'`);
+        throw new BotError(`Invalid subcommand: '${argv[1]}'`);
     }
 }
