@@ -17,7 +17,8 @@ export type ACL =
     | {type: 'acl', acl: string}
     | {type: 'not', value: ACL}
     | {type: 'and', left: ACL, right: ACL}
-    | {type: 'or', left: ACL, right: ACL};
+    | {type: 'or', left: ACL, right: ACL}
+    | {type: 'xor', left: ACL, right: ACL};
 
 
 export interface ACLData {
@@ -59,6 +60,8 @@ async function expressionToACL(node: Expression | PrivateName, guild: Guild): Pr
             return {type: 'and', left: await expressionToACL(node.left, guild), right: await expressionToACL(node.right, guild)};
         } else if (node.operator === '|') {
             return {type: 'or', left: await expressionToACL(node.left, guild), right: await expressionToACL(node.right, guild)};
+        } else if (node.operator === '^') {
+            return {type: 'xor', left: await expressionToACL(node.left, guild), right: await expressionToACL(node.right, guild)};
         } else {
             throwParsingError(node, `Bad binary operator: '${node.operator}'`);
         }
@@ -167,6 +170,8 @@ export async function aclToString(acl: ACL, pretty: boolean): Promise<string> {
         return `(${aclToString(acl.left, pretty)} & ${aclToString(acl.right, pretty)})`;
     } else if (acl.type === 'or') {
         return `(${aclToString(acl.left, pretty)} | ${aclToString(acl.right, pretty)})`;
+    } else if (acl.type === 'xor') {
+        return `(${aclToString(acl.left, pretty)} ^ ${aclToString(acl.right, pretty)})`;
     } else {
         throw new Error(`Invalid ACL type: '${(acl as any).type}'`);
     }
