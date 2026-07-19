@@ -297,8 +297,8 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         }
     } else if (cmd === 'showcmd') {
         let name = args.join(' ');
-        if (!(name in COMMANDS)) {
-            throw new BotError(`Command '${name}' does not exist`);
+        if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
+            throw new BotError(`Command '${name}' does not exist or is an alias`);
         }
         if (!(name in aclData.commands)) {
             throw new BotError(`Command '${name}' is not bound to an ACL`);
@@ -306,8 +306,8 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         return aclToString(aclData.commands[name], true);
     } else if (cmd === 'getcmd') {
         let name = args.join(' ');
-        if (!(name in COMMANDS)) {
-            throw new BotError(`Command '${name}' does not exist`);
+        if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
+            throw new BotError(`Command '${name}' does not exist or is an alias`);
         }
         if (!(name in aclData.commands)) {
             throw new BotError(`Command '${name}' is not bound to an ACL`);
@@ -315,8 +315,8 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         return aclToString(aclData.commands[name], false);
     } else if (cmd === 'setcmd') {
         let name = args[0];
-        if (!(name in COMMANDS)) {
-            throw new BotError(`Command '${name}' does not exist`);
+        if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
+            throw new BotError(`Command '${name}' does not exist or is an alias`);
         }
         let acl = await parseACL(args.slice(1).join(' '), msg.guild as Guild);
         aclData.commands[name] = acl;
@@ -324,8 +324,8 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         return 'Command ACL set!';
     } else if (cmd === 'deletecmd') {
         let name = args.join(' ');
-        if (!(name in COMMANDS)) {
-            throw new BotError(`Command '${name}' does not exist`);
+        if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
+            throw new BotError(`Command '${name}' does not exist or is an alias`);
         }
         if (!(name in aclData.commands)) {
             throw new BotError(`Command '${name}' is not bound to an ACL`);
