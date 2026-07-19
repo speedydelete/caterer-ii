@@ -3,7 +3,7 @@ import {Node, Expression, PrivateName} from '@babel/types';
 import {parseExpression} from '@babel/parser';
 import {CategoryChannel, Guild} from 'discord.js';
 
-import {BotError, Message, Response, readFile, config, sentByAdmin} from './util.js';
+import {BotError, Message, Response, readFile, writeFile, sentByAdmin} from './util.js';
 import {COMMANDS, client} from './index.js';
 
 
@@ -269,6 +269,7 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         let name = args[0];
         let acl = await parseACL(args.slice(1).join(' '), msg.guild as Guild);
         aclData.acls[name] = acl;
+        await writeFile('data/acls.json', JSON.stringify(aclData));
         return 'ACL set!';
     } else if (cmd === 'delete') {
         let name = args.join(' ');
@@ -281,6 +282,8 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         } else {
             throw new BotError(`ACL '${name}' is used in these places: ${uses.join(', ')}`);
         }
+        await writeFile('data/acls.json', JSON.stringify(aclData));
+        return 'ACL deleted!';
     } else if (cmd === 'uses') {
         let name = args.join(' ');
         if (!(name in aclData.acls)) {
@@ -317,6 +320,7 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         }
         let acl = await parseACL(args.slice(1).join(' '), msg.guild as Guild);
         aclData.commands[name] = acl;
+        await writeFile('data/acls.json', JSON.stringify(aclData));
         return 'Command ACL set!';
     } else if (cmd === 'deletecmd') {
         let name = args.join(' ');
@@ -327,6 +331,7 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
             throw new BotError(`Command '${name}' is not bound to an ACL`);
         }
         delete aclData.commands[name];
+        await writeFile('data/acls.json', JSON.stringify(aclData));
         return 'Command ACL deleted!';
     } else {
         throw new BotError(`Invalid subcommand: '${argv[1]}'`);
