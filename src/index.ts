@@ -301,6 +301,7 @@ async function runCommand(msg: Message): Promise<void> {
     if (cmd in COMMANDS) {
         if (!matchesACL(msg, aclData.commands[cmd])) {
             previousMsgs.push([msg.id, await msg.reply({content: 'Error: You do not have permission to run this command', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+            return;
         }
         runningCommands.add(msg.id);
         let argv: string[] = [cmd];
