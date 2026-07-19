@@ -201,7 +201,7 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
     await msg.channel.sendTyping();
     let noTimeout = false;
     if (argv[1] === 'notimeout') {
-        if (!sentByAdmin(msg)) {
+        if (sentByAdmin(msg)) {
             noTimeout = true;
             argv = argv.slice(1);
         } else {
@@ -397,7 +397,7 @@ export async function cmdIdentify(msg: Message, argv: string[]): Promise<Respons
     await msg.channel.sendTyping();
     let noTimeout = false;
     if (argv[1] === 'notimeout') {
-        if (!sentByAdmin(msg)) {
+        if (sentByAdmin(msg)) {
             noTimeout = true;
             argv = argv.slice(1);
         } else {
@@ -427,7 +427,7 @@ export async function cmdBasicIdentify(msg: Message, argv: string[]): Promise<Re
     await msg.channel.sendTyping();
     let noTimeout = false;
     if (argv[1] === 'notimeout') {
-        if (!sentByAdmin(msg)) {
+        if (sentByAdmin(msg)) {
             noTimeout = true;
             argv = argv.slice(1);
         } else {
@@ -456,7 +456,7 @@ export async function cmdMinmax(msg: Message, argv: string[]): Promise<Response>
     await msg.channel.sendTyping();
     let noTimeout = false;
     if (argv[1] === 'notimeout') {
-        if (!sentByAdmin(msg)) {
+        if (sentByAdmin(msg)) {
             noTimeout = true;
             argv = argv.slice(1);
         } else {
@@ -482,7 +482,7 @@ export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<
     await msg.channel.sendTyping();
     let noTimeout = false;
     if (argv[1] === 'notimeout') {
-        if (!sentByAdmin(msg)) {
+        if (sentByAdmin(msg)) {
             noTimeout = true;
             argv = argv.slice(1);
         } else {
