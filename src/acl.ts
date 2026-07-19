@@ -311,7 +311,7 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         }
         return aclToString(aclData.commands[name], false);
     } else if (cmd === 'setcmd') {
-        let name = args.join(' ');
+        let name = args[0];
         if (!(name in COMMANDS)) {
             throw new BotError(`Command '${name}' does not exist`);
         }
