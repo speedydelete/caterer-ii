@@ -143,6 +143,7 @@ async function expressionToACL(node: Expression | PrivateName, guild: Guild): Pr
 }
 
 export async function parseACL(data: string, guild: Guild): Promise<ACL> {
+    data = data.replaceAll('`', '');
     if (data === '') {
         throw new BotError('No ACL provided!');
     }
@@ -165,13 +166,13 @@ export async function aclToString(acl: ACL, pretty: boolean): Promise<string> {
     } else if (acl.type === 'acl') {
         return acl.acl;
     } else if (acl.type === 'not') {
-        return `!${aclToString(acl.value, pretty)}`;
+        return `!${await aclToString(acl.value, pretty)}`;
     } else if (acl.type === 'and') {
-        return `(${aclToString(acl.left, pretty)} & ${aclToString(acl.right, pretty)})`;
+        return `(${await aclToString(acl.left, pretty)} & ${await aclToString(acl.right, pretty)})`;
     } else if (acl.type === 'or') {
-        return `(${aclToString(acl.left, pretty)} | ${aclToString(acl.right, pretty)})`;
+        return `(${await aclToString(acl.left, pretty)} | ${await aclToString(acl.right, pretty)})`;
     } else if (acl.type === 'xor') {
-        return `(${aclToString(acl.left, pretty)} ^ ${aclToString(acl.right, pretty)})`;
+        return `(${await aclToString(acl.left, pretty)} ^ ${await aclToString(acl.right, pretty)})`;
     } else {
         throw new Error(`Invalid ACL type: '${(acl as any).type}'`);
     }
