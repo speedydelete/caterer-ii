@@ -204,15 +204,17 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
     },
 
     async users(): Promise<Response> {
-        let total = 0;
-        let serverCount = 0;
-        let out = ``;
+        let servers: [string, number][] = [];
         for (let [_, partialGuild] of await client.guilds.fetch()) {
             let guild = await partialGuild.fetch();
-            out += `* ${guild.name}: ${guild.memberCount} users`;
-            total += guild.memberCount;
+            servers.push([guild.name, guild.memberCount]);
         }
-        out = `No more than ${total} users across ${serverCount} servers:\n` + out;
+        servers = servers.sort((x, y) => x[1] - y[1]);
+        let total = servers.map(x => x[1]).reduce((x, y) => x + y);
+        let out = `No more than ${total} users across ${servers.length} servers:\n`;
+        for (let [name, users] of servers) {
+            out += `* ${name}: ${users} users\n`;
+        }
         return out;
     },
 
