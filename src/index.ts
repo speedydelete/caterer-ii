@@ -209,7 +209,7 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
             let guild = await partialGuild.fetch();
             servers.push([guild.name, guild.memberCount]);
         }
-        servers = servers.sort((x, y) => x[1] - y[1]);
+        servers = servers.sort((x, y) => y[1] - x[1]);
         let total = servers.map(x => x[1]).reduce((x, y) => x + y);
         let out = `No more than ${total} users across ${servers.length} servers:\n`;
         for (let [name, users] of servers) {
