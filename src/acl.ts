@@ -317,6 +317,7 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         }
         let acl = await parseACL(args.slice(1).join(' '), msg.guild as Guild);
         aclData.commands[name] = acl;
+        return 'Command ACL set!';
     } else if (cmd === 'deletecmd') {
         let name = args.join(' ');
         if (!(name in COMMANDS)) {
