@@ -5,7 +5,7 @@ import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, Partial
 import * as lifeweb from '../lifeweb/lib/index.js';
 import * as lifewebRPF from '../lifeweb/lib/editor/rpf.js';
 import {BotError, Response, Message, readFile, writeFile, config, aliases, sentByAdmin, noReplyPings, findRLEFromText, findRLE} from './util.js';
-import {aclData, matchesACL} from './acl.js';
+import {aclData, matchesACL, cmdAcl} from './acl.js';
 import {cmdHelp} from './help.js';
 import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax, cmdIdentifyConduit} from './core.js';
 import {cmdHashsoup, cmdApgencode, cmdApgdecode, cmdPopulation, cmdToMAP, cmdRuleInfo, cmdNormalizeRule, cmdBlackWhiteReverse, cmdCheckerboardDual} from './ca.js';
@@ -200,6 +200,8 @@ export const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise
            await msg.delete();
         }
     },
+
+    'acl': cmdAcl,
 
     'sim': cmdSim,
 
