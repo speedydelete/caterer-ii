@@ -273,7 +273,7 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         if (!(name in aclData.acls)) {
             throw new BotError(`ACL '${name}' does not exist`);
         }
-        return aclToString(aclData.acls[name], false);
+        return '`' + aclToString(aclData.acls[name], false) + '`';
     } else if (cmd === 'set') {
         let name = args[0];
         let acl = await parseACL(args.slice(1).join(' '), msg.guild as Guild);
@@ -321,7 +321,7 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         if (!(name in aclData.commands)) {
             throw new BotError(`Command '${name}' is not bound to an ACL`);
         }
-        return aclToString(aclData.commands[name], false);
+        return '`' + aclToString(aclData.commands[name], false) + '`';
     } else if (cmd === 'setcmd') {
         let name = args[0];
         if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
