@@ -248,7 +248,7 @@ export function getACLUses(name: string): string[] {
 
 
 export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
-    let cmd = argv[1].toLowerCase().replaceAll(/[ _]/, '').replaceAll('command', 'cmd');
+    let cmd = argv[1].toLowerCase().replaceAll(/[ _]/g, '').replaceAll('command', 'cmd');
     if (!matchesACL(msg, aclData.commands[`acl ${cmd}`])) {
         throw new BotError(`You do not have permission to run this subcommand`);
     }
