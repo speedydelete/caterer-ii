@@ -41,9 +41,9 @@ function getChannel(msg: Message, args: string[]): [TextBasedChannel & {guild: G
 
 export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) => Promise<Response>)} = Object.assign(Object.create(null), {
 
-    help: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
-    about: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
-    info: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
+    help: cmdHelp,
+    about: 'help',
+    info: 'help',
 
     async eval(msg: Message, argv: string[]): Promise<Response> {
         if (!sentByAdmin(msg)) {

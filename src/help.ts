@@ -1,5 +1,6 @@
 
 import {BotError, Message, Response} from './util.js';
+import {COMMANDS} from './index.js';
 
 
 interface Help {
@@ -461,7 +462,7 @@ for (let cmd in HELP) {
     }
 }
 
-export async function cmdHelp(msg: Message, argv: string[], commands: {[key: string]: unknown}): Promise<Response> {
+export async function cmdHelp(msg: Message, argv: string[]): Promise<Response> {
     if (argv.length > 1) {
         let cmd = argv.slice(1).join(' ').toLowerCase();
         if (cmd.startsWith('!')) {
@@ -469,7 +470,7 @@ export async function cmdHelp(msg: Message, argv: string[], commands: {[key: str
         }
         if (cmd in helpMsgs) {
             return helpMsgs[cmd];
-        } else if (cmd in commands) {
+        } else if (cmd in COMMANDS) {
             throw new BotError(`Command !${cmd} present, but has no help entry`);
         } else {
             throw new BotError(`No command called !${cmd}`);
