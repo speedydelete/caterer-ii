@@ -39,7 +39,7 @@ function getChannel(msg: Message, args: string[]): [TextBasedChannel & {guild: G
 }
 
 
-export const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise<Response>} = Object.assign(Object.create(null), {
+export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) => Promise<Response>)} = Object.assign(Object.create(null), {
 
     help: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
     about: (msg: Message, argv: string[]) => cmdHelp(msg, argv, COMMANDS),
@@ -214,23 +214,23 @@ export const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise
     'apgencode': cmdApgencode,
     'apgdecode': cmdApgdecode,
     'population': cmdPopulation,
-    'pop': cmdPopulation,
+    'pop': 'population',
 
     'tomap': cmdToMAP,
 
     'ruleinfo': cmdRuleInfo,
     'normalizerule': cmdNormalizeRule,
     'blackwhitereverse': cmdBlackWhiteReverse,
-    'blackwhitereversal': cmdBlackWhiteReverse,
-    'bwreverse': cmdBlackWhiteReverse,
-    'bwreversal': cmdBlackWhiteReverse,
+    'blackwhitereversal': 'blackwhitereverse',
+    'bwreverse': 'blackwhitereverse',
+    'bwreversal': 'blackwhitereverse',
     'checkerboarddual': cmdCheckerboardDual,
-    'cbdual': cmdCheckerboardDual,
+    'cbdual': 'checkerboarddual',
 
     'sssss': cmdSssss,
-    '5s': cmdSssss,
+    '5s': 'sssss',
     'sssssinfo': cmdSssssInfo,
-    '5sinfo': cmdSssssInfo,
+    '5sinfo': 'sssssinfo',
 
     'dyk': cmdDyk,
 
@@ -242,14 +242,14 @@ export const COMMANDS: {[key: string]: (msg: Message, argv: string[]) => Promise
     'savesimstats': cmdSaveSimStats,
 
     'alias': cmdAlias,
-    'upload': cmdAlias,
+    'upload': 'alias',
     'realias': cmdRealias,
-    'reupload': cmdRealias,
+    'reupload': 'realias',
     'unalias': cmdUnalias,
     'deletealias': cmdUnalias,
     'lookupalias': cmdLookupAlias,
     'listaliases': cmdListAliases,
-    'aliases': cmdListAliases,
+    'aliases': 'listaliases',
 
     'wiki': cmdWiki,
 
@@ -301,6 +301,14 @@ async function runCommand(msg: Message): Promise<void> {
     cmd = cmd.toLowerCase().replaceAll('_', '');
     // if (Reflect.has(COMMANDS, cmd)) {
     if (cmd in COMMANDS) {
+        let resolvedCommand = COMMANDS[cmd];
+        while (typeof resolvedCommand === 'string') {
+            resolvedCommand = COMMANDS[resolvedCommand];
+            if (resolvedCommand === undefined) {
+                await msg.channel.send(`<@1253852708826386518> command loop detected for command '${cmd}'`);
+                return;
+            }
+        }
         if (!matchesACL(msg, aclData.commands[cmd])) {
             previousMsgs.push([msg.id, await msg.reply({content: 'Error: You do not have permission to run this command', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             return;
@@ -364,7 +372,7 @@ async function runCommand(msg: Message): Promise<void> {
             argv.push(currentArg);
         }
         try {
-            let value = await COMMANDS[cmd](msg, argv);
+            let value = await resolvedCommand(msg, argv);
             if (value) {
                 let out: Message;
                 let newDeleters: string[] = [msg.author.id];
