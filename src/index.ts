@@ -204,6 +204,14 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
     },
 
     'acl': cmdAcl,
+    'acl show': undefined,
+    'acl get': undefined,
+    'acl set': undefined,
+    'acl delete': undefined,
+    'acl uses': undefined,
+    'acl showcmd': undefined,
+    'acl getcmd': undefined,
+    'acl deletecmd': undefined,
 
     'sim': cmdSim,
 
