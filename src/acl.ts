@@ -293,6 +293,8 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         }
         await writeFile('data/acls.json', JSON.stringify(aclData));
         return 'ACL deleted!';
+    } else if (cmd === 'list') {
+        return Object.keys(aclData.acls).join(', ');
     } else if (cmd === 'uses') {
         let name = args.join(' ');
         if (!(name in aclData.acls)) {
@@ -304,8 +306,6 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         } else {
             return uses.join(', ');
         }
-    } else if (cmd === 'list') {
-        return Object.keys(aclData.acls).join(', ');
     } else if (cmd === 'showcmd') {
         let name = args.join(' ');
         if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
