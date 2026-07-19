@@ -289,7 +289,7 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         if (uses.length === 0) {
             delete aclData.acls[name];
         } else {
-            throw new BotError(`ACL '${name}' is used in these places: ${uses.join(', ')}`);
+            throw new BotError(`Cannot delete ACL '${name}' because it is used in these places: ${uses.join(', ')}`);
         }
         await writeFile('data/acls.json', JSON.stringify(aclData));
         return 'ACL deleted!';
