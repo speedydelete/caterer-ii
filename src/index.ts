@@ -301,15 +301,17 @@ async function runCommand(msg: Message): Promise<void> {
     cmd = cmd.toLowerCase().replaceAll('_', '');
     // if (Reflect.has(COMMANDS, cmd)) {
     if (cmd in COMMANDS) {
-        let resolvedCommand = COMMANDS[cmd];
-        while (typeof resolvedCommand === 'string') {
-            resolvedCommand = COMMANDS[resolvedCommand];
-            if (resolvedCommand === undefined) {
-                await msg.channel.send(`<@1253852708826386518> command loop detected for command '${cmd}'`);
+        let resolvedCommandFunc = COMMANDS[cmd];
+        let resolvedCommandName = cmd;
+        while (typeof resolvedCommandFunc === 'string') {
+            resolvedCommandName = resolvedCommandFunc;
+            resolvedCommandFunc = COMMANDS[resolvedCommandFunc];
+            if (resolvedCommandFunc === undefined) {
+                await msg.channel.send(`<@1253852708826386518> nonexistent alias detected for command '${cmd}'`);
                 return;
             }
         }
-        if (!matchesACL(msg, aclData.commands[cmd])) {
+        if (!matchesACL(msg, aclData.commands[resolvedCommandName])) {
             previousMsgs.push([msg.id, await msg.reply({content: 'Error: You do not have permission to run this command', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             return;
         }
@@ -372,7 +374,7 @@ async function runCommand(msg: Message): Promise<void> {
             argv.push(currentArg);
         }
         try {
-            let value = await resolvedCommand(msg, argv);
+            let value = await resolvedCommandFunc(msg, argv);
             if (value) {
                 let out: Message;
                 let newDeleters: string[] = [msg.author.id];
