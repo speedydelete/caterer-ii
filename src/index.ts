@@ -223,6 +223,7 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
     'acl get': () => {throw new Error('hi');},
     'acl set': () => {throw new Error('hi');},
     'acl delete': () => {throw new Error('hi');},
+    'acl list': () => {throw new Error('hi');},
     'acl uses': () => {throw new Error('hi');},
     'acl showcmd': () => {throw new Error('hi');},
     'acl getcmd': () => {throw new Error('hi');},

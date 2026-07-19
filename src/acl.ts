@@ -304,6 +304,8 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
         } else {
             return uses.join(', ');
         }
+    } else if (cmd === 'list') {
+        return Object.keys(aclData.acls).join(', ');
     } else if (cmd === 'showcmd') {
         let name = args.join(' ');
         if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
