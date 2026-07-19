@@ -71,6 +71,8 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
                     breakLength: 120,
                 }).replaceAll('\x1b[22m', '\x1b[0m').replaceAll('\x1b[39m', '\x1b[0m') + '\n```';
             }
+        } else {
+            throw new Error('ACL is probably misconfigured for !eval');
         }
     },
 
