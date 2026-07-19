@@ -203,6 +203,19 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
         }
     },
 
+    async users(): Promise<Response> {
+        let total = 0;
+        let serverCount = 0;
+        let out = ``;
+        for (let [_, partialGuild] of await client.guilds.fetch()) {
+            let guild = await partialGuild.fetch();
+            out += `* ${guild.name}: ${guild.memberCount} users`;
+            total += guild.memberCount;
+        }
+        out = `No more than ${total} users across ${serverCount} servers:\n` + out;
+        return out;
+    },
+
     'acl': cmdAcl,
     'acl show': () => {throw new Error('hi');},
     'acl get': () => {throw new Error('hi');},
