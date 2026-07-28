@@ -315,4 +315,5 @@ export async function cmdStarboardPrevent(msg: Message, argv: string[]): Promise
     } else {
         throw new BotError('!starboardprevent must be used in servers witih starboards');
     }
+    return 'Prevented!';
 }
