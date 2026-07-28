@@ -3,6 +3,7 @@ import {inspect} from 'node:util';
 import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReplyOptions, Guild, TextChannel, TextBasedChannel, Partials} from 'discord.js';
 import * as lifeweb from '../lifeweb/lib/index.js';
 import * as lifewebRPF from '../lifeweb/lib/editor/rpf.js';
+import * as lifewebRuleSymmetries from '../lifeweb/lib/misc/rule_symmetries.js';
 
 import {BotError, Response, Message, readFile, writeFile, config, aliases, noReplyPings, findRLE} from './util.js';
 import {aclData, matchesACL, cmdAcl} from './acl.js';
@@ -15,7 +16,7 @@ import {check5S} from './notifier.js';
 import {starboardChannels, cmdStarboardPrevent} from './starboard.js';
 
 
-const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\n';
+const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\nlet {' + Object.keys(lifewebRuleSymmetries).join(', ') + '} = lifewebRuleSymmetries;\n';
 
 
 function getChannel(msg: Message, args: string[]): [TextBasedChannel & {guild: Guild}, string] {
@@ -62,7 +63,7 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
                 code = 'return ' + code;
             }
             code = `return (async () => {${code}})()`;
-            let out = await (new Function('client', 'msg', 'lifeweb', 'lifewebRPF', 'aliases', 'findRLE', 'readFile', 'writeFile', '"use strict";' + EVAL_PREFIX + code))(client, msg, lifeweb, lifewebRPF, aliases, findRLE, readFile, writeFile);
+            let out = await (new Function('client', 'msg', 'lifeweb', 'lifewebRPF', 'lifewebRuleSymmetries', 'aliases', 'findRLE', 'readFile', 'writeFile', '"use strict";' + EVAL_PREFIX + code))(client, msg, lifeweb, lifewebRPF, lifewebRuleSymmetries, aliases, findRLE, readFile, writeFile);
             if (typeof out === 'string') {
                 return '```\n' + out + '\n```';
             } else {
