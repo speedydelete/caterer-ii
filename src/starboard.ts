@@ -288,11 +288,11 @@ let interval = setInterval(async () => {
             if (msg.guildId && msg.guildId in config.starboardServers) {
                 let boardName = config.starboardServers[msg.guildId];
                 let entry = starboard[boardName].data.get(msg.id);
-                starboard[boardName].forbidden.add(msg.id);
                 if (entry) {
+                    starboard[boardName].forbidden.add(msg.id);
                     await deleteStarboardEntry(boardName, msg, entry);
+                    await saveStarboard();
                 }
-                await saveStarboard();
             }
         });
     }
