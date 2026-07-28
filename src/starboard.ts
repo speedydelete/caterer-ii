@@ -229,7 +229,6 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
                     throw error;
                 }
             }
-            await deleteStarboardEntry(boardName, msg, entry);
         }
         let msg0 = await channel.send({content: text, allowedMentions: {parse: []}});
         let msg1 = await msg.forward(channel);
