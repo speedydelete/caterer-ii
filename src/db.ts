@@ -1,8 +1,8 @@
 
 import {EmbedBuilder} from 'discord.js';
-
 import {RuleError, identifyPeriodic, getApgcode, createPattern, parseSpeed} from '../lifeweb/lib/index.js';
 import {Type, TYPE_NAMES} from '../sssss/lib/index.js';
+
 import {BotError, Message, Response, readFile, writeFile, aliases, names, simStats, findRLE} from './util.js';
 
 

@@ -1,8 +1,7 @@
 
 import * as fs from 'node:fs/promises';
 import {join} from 'node:path';
-
-import {DiscordAPIError, Message as _Message, OmitPartialGroupDMChannel, parseEmoji} from 'discord.js';
+import {DiscordAPIError, Message as _Message, OmitPartialGroupDMChannel} from 'discord.js';
 import {Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
 import {RPFParser} from '../lifeweb/lib/editor/rpf.js';
 

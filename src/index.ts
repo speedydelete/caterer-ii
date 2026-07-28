@@ -1,9 +1,9 @@
 
 import {inspect} from 'node:util';
 import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReplyOptions, Guild, TextChannel, TextBasedChannel, Partials} from 'discord.js';
-
 import * as lifeweb from '../lifeweb/lib/index.js';
 import * as lifewebRPF from '../lifeweb/lib/editor/rpf.js';
+
 import {BotError, Response, Message, readFile, writeFile, config, aliases, noReplyPings, findRLE} from './util.js';
 import {aclData, matchesACL, cmdAcl} from './acl.js';
 import {cmdHelp} from './help.js';
