@@ -24,7 +24,7 @@ let starboard: {[key: string]: {data: Map<string, [string, string]>, forbidden: 
 
 type StarboardFile = {[key: string]: {data: [string, [string, string]][], forbidden: string[]}};
 
-let starboardData = JSON.parse(await readFile('starboard.json')) as StarboardFile;
+let starboardData = JSON.parse(await readFile('data/starboard.json')) as StarboardFile;
 for (let [key, value] of Object.entries(starboardData)) {
     starboard[key] = {
         data: new Map(value.data),
