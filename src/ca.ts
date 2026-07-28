@@ -144,6 +144,6 @@ export async function cmdBasis(msg: Message, argv: string[]): Promise<Response> 
     if (str.length < 2000) {
         return str;
     } else {
-        return {files: [new AttachmentBuilder(Buffer.from(str, 'utf-8'))]};
+        return {files: [new AttachmentBuilder(Buffer.from(str, 'utf-8'), {name: 'basis.txt'})]};
     }
 }
