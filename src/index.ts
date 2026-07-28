@@ -8,7 +8,7 @@ import {BotError, Response, Message, readFile, writeFile, config, aliases, noRep
 import {aclData, matchesACL, cmdAcl} from './acl.js';
 import {cmdHelp} from './help.js';
 import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax, cmdIdentifyConduit} from './core.js';
-import {cmdHashsoup, cmdApgencode, cmdApgdecode, cmdPopulation, cmdToMAP, cmdRuleInfo, cmdNormalizeRule, cmdBlackWhiteReverse, cmdCheckerboardDual} from './ca.js';
+import {cmdHashsoup, cmdApgencode, cmdApgdecode, cmdPopulation, cmdToMAP, cmdRuleInfo, cmdNormalizeRule, cmdBlackWhiteReverse, cmdCheckerboardDual, cmdBasis} from './ca.js';
 import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSimStats, cmdSaveSimStats, cmdAlias, cmdRealias, cmdUnalias, cmdLookupAlias, cmdListAliases} from './db.js';
 import {cmdWiki} from './wiki.js';
 import {check5S} from './notifier.js';
@@ -253,6 +253,7 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
     'bwreversal': 'blackwhitereverse',
     'checkerboarddual': cmdCheckerboardDual,
     'cbdual': 'checkerboarddual',
+    'basis': cmdBasis,
 
     'sssss': cmdSssss,
     '5s': 'sssss',
