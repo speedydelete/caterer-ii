@@ -5,7 +5,7 @@ import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
 
 import {RuleError, Pattern, TorusPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, createPattern} from '../lifeweb/lib/index.js';
-import {RPFPattern} from '../lifeweb/lib/editor/rpf.js';
+import {RPFFile, RPFPattern} from '../lifeweb/lib/editor/rpf.js';
 import {BotError, Message, Response, writeFile, config, names, aliases, simStats, sentByAdmin, findRLE} from './util.js';
 import type {Job} from './worker.js';
 
@@ -123,7 +123,7 @@ let simCounter = 0;
 
 function serialize(value: Pattern): string {
     if (value instanceof RPFPattern) {
-        return 'rpf\n' + value.toRPFFile().toString();
+        return 'rpf\n' + value.toString();
     } else {
         return 'rle\n' + value.toRLE();
     }
@@ -181,6 +181,8 @@ function parseFill(fill: string, p: Pattern): number[] {
             }
             end = start;
         }
+        start = Math.max(start, 0);
+        end = Math.min(end, p.rule.states);
         let weight = Number(data[1]);
         for (let i = start; i <= end; i++) {
             weights[i] = weight;
