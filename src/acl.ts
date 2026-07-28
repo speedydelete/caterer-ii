@@ -162,7 +162,13 @@ export async function aclToString(acl: ACL, pretty: boolean): Promise<string> {
     } else if (acl.type === 'category') {
         return pretty ? `<#${acl.id}>` : `category(${acl.id})`;
     } else if (acl.type === 'server') {
-        return pretty ? `server('${(await client.guilds.fetch(acl.id)).name}')` : `server(${acl.id})`;
+        if (pretty) {
+            let server = client.guilds.cache.get(acl.id);
+            if (server) {
+                return `server('${server}')`;
+            }
+        }
+        return `server(${acl.id})`;
     } else if (acl.type === 'acl') {
         return acl.acl;
     } else if (acl.type === 'not') {
