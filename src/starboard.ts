@@ -8,16 +8,17 @@ import {client} from './index.js';
 export let starboardChannels: {[key: string]: TextChannel} = {};
 let starReactions = new Set<string>();
 
-setTimeout(() => {
-    client.once('clientReady', async () => {
+let interval = setInterval(async () => {
+    if (client.isReady()) {
+        clearInterval(interval);
         for (let x of Object.values(config.starboards)) {
             starboardChannels[x.channel] = await (await client.guilds.fetch(x.server)).channels.fetch(x.channel) as TextChannel;
             for (let emoji in x.emojis) {
                 starReactions.add(emoji);
             }
         }
-    });
-});
+    }
+}, 1000);
 
 let starboard: {[key: string]: {data: Map<string, [string, string]>, forbidden: Set<string>}} = {};
 
