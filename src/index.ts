@@ -592,6 +592,20 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
     }
 }
 
+async function deleteStarboardEntry(boardName: string, msg: _Message | PartialMessage, entry: [string, string]): Promise<void> {
+    starboard[boardName].delete(msg.id);
+    for (let id of entry) {
+        try {
+            await starboardChannels[config.starboards[boardName].channel].messages.delete(id);
+        } catch (error) {
+            if (error instanceof DiscordAPIError) {
+                console.error(error);
+            } else {
+                throw error;
+            }
+        }
+    }
+}
 
 async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     if (msg.partial) {
@@ -644,8 +658,17 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     }
     let entry = starboard[boardName].get(msg.id);
     if (entry) {
-        getReactions(await channel.messages.fetch(entry[0]), board.emojis, reacts);
-        getReactions(await channel.messages.fetch(entry[1]), board.emojis, reacts);
+        for (let id of entry) {
+            try {
+                getReactions(await channel.messages.fetch(id), board.emojis, reacts);
+            } catch (error) {
+                if (error instanceof DiscordAPIError) {
+                    console.error(error);
+                } else {
+                    throw error;
+                }
+            }
+        }
     }
     if (msg.author?.id === client.user.id && msg.attachments.size === 1) {
         let msg2 = await msg.fetchReference();
@@ -720,17 +743,14 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
         }
         text += ` (https://discord.com/channels/${msg.guildId}/${msg.channelId}/${msg.id})`;
         if (entry) {
-            (await channel.messages.fetch(entry[0])).edit({content: text, allowedMentions: {parse: []}});
-        } else {
-            let msg0 = await channel.send({content: text, allowedMentions: {parse: []}});
-            let msg1 = await msg.forward(channel);
-            starboard[boardName].set(msg.id, [msg0.id, msg1.id]);
-            await writeFile('data/starboard.json', JSON.stringify(Object.fromEntries(Object.entries(starboard).map(x => [x[0], Array.from(x[1].entries())]))));
+            await deleteStarboardEntry(boardName, msg, entry);
         }
+        let msg0 = await channel.send({content: text, allowedMentions: {parse: []}});
+        let msg1 = await msg.forward(channel);
+        starboard[boardName].set(msg.id, [msg0.id, msg1.id]);
+        await writeFile('data/starboard.json', JSON.stringify(Object.fromEntries(Object.entries(starboard).map(x => [x[0], Array.from(x[1].entries())]))));
     } else if (entry) {
-        starboard[boardName].delete(msg.id);
-        await channel.messages.delete(entry[0]);
-        await channel.messages.delete(entry[1]);
+        await deleteStarboardEntry(boardName, msg, entry);
     }
 }
 
@@ -767,11 +787,7 @@ client.on('messageReactionRemoveAll', async msg => {
         let boardName = config.starboardServers[msg.guildId];
         let entry = starboard[boardName].get(msg.id);
         if (entry) {
-            let board = config.starboards[boardName];
-            let channel = starboardChannels[board.channel];
-            starboard[boardName].delete(msg.id);
-            await channel.messages.delete(entry[0]);
-            await channel.messages.delete(entry[1]);
+            await deleteStarboardEntry(boardName, msg, entry);
         }
     }
 });
@@ -781,11 +797,7 @@ client.on('messageDelete', async msg => {
         let boardName = config.starboardServers[msg.guildId];
         let entry = starboard[boardName].get(msg.id);
         if (entry) {
-            let board = config.starboards[boardName];
-            let channel = starboardChannels[board.channel];
-            starboard[boardName].delete(msg.id);
-            await channel.messages.delete(entry[0]);
-            await channel.messages.delete(entry[1]);
+            await deleteStarboardEntry(boardName, msg, entry);
         }
     }
 });
