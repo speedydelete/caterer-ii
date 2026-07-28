@@ -218,6 +218,17 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
         }
         text += ` (https://discord.com/channels/${msg.guildId}/${msg.channelId}/${msg.id})`;
         if (entry) {
+            try {
+                (await channel.messages.fetch(entry[0])).edit({content: text, allowedMentions: {parse: []}});
+                await saveStarboard();
+                return;
+            } catch (error) {
+                if (error instanceof DiscordAPIError) {
+                    console.error(error);
+                } else {
+                    throw error;
+                }
+            }
             await deleteStarboardEntry(boardName, msg, entry);
         }
         let msg0 = await channel.send({content: text, allowedMentions: {parse: []}});
