@@ -90,6 +90,10 @@ client.on('messageCreate', async msg => {
             await startBot();
             await msg.reply('Started!');
         } else if (msg.content === '!!stop') {
+            if (!process && isSupposedToBeOn) {
+                isSupposedToBeOn = false;
+                await msg.reply('Stopped!');
+            }
             isSupposedToBeOn = false;
             await stopBot();
             await msg.reply('Stopped!');
