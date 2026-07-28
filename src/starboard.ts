@@ -5,19 +5,7 @@ import {readFile, writeFile, config, findRLEFromText} from './util.js';
 import {client} from './index.js';
 
 
-export let starboardChannels: {[key: string]: TextChannel} = {};
-let starReactions = new Set<string>();
-
-async function loadStarboard(): Promise<void> {
-    for (let x of Object.values(config.starboards)) {
-        starboardChannels[x.channel] = await (await client.guilds.fetch(x.server)).channels.fetch(x.channel) as TextChannel;
-        for (let emoji in x.emojis) {
-            starReactions.add(emoji);
-        }
-    }
-}
-
-let starboard: {[key: string]: {data: Map<string, [string, string]>, forbidden: Set<string>}} = {};
+export let starboard: {[key: string]: {data: Map<string, [string, string]>, forbidden: Set<string>}} = {};
 
 type StarboardFile = {[key: string]: {data: [string, [string, string]][], forbidden: string[]}};
 
@@ -36,6 +24,18 @@ async function saveStarboard(): Promise<void> {
             data: Array.from(value.data.entries()),
             forbidden: Array.from(value.forbidden),
         };
+    }
+}
+
+export let starboardChannels: {[key: string]: TextChannel} = {};
+let starReactions = new Set<string>();
+
+async function loadStarboard(): Promise<void> {
+    for (let x of Object.values(config.starboards)) {
+        starboardChannels[x.channel] = await (await client.guilds.fetch(x.server)).channels.fetch(x.channel) as TextChannel;
+        for (let emoji in x.emojis) {
+            starReactions.add(emoji);
+        }
     }
 }
 

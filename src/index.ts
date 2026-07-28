@@ -12,7 +12,7 @@ import {cmdHashsoup, cmdApgencode, cmdApgdecode, cmdPopulation, cmdToMAP, cmdRul
 import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSimStats, cmdSaveSimStats, cmdAlias, cmdRealias, cmdUnalias, cmdLookupAlias, cmdListAliases} from './db.js';
 import {cmdWiki} from './wiki.js';
 import {check5S} from './notifier.js';
-import {starboardChannels} from './starboard.js';
+import {starboard, starboardChannels} from './starboard.js';
 
 
 const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\n';
