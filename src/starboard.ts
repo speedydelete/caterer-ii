@@ -1,7 +1,7 @@
 
 import {DiscordAPIError, Message as _Message, PartialMessage, MessageReaction, PartialMessageReaction, TextChannel} from 'discord.js';
 
-import {readFile, writeFile, config, findRLEFromText} from './util.js';
+import {BotError, Response, Message, readFile, writeFile, config, findRLEFromText} from './util.js';
 import {client} from './index.js';
 
 
@@ -297,3 +297,22 @@ let interval = setInterval(async () => {
         });
     }
 }, 1000);
+
+
+export async function cmdStarboardPrevent(msg: Message, argv: string[]): Promise<Response> {
+    if (!msg.reference) {
+        throw new BotError('!starboardprevent must be used when replying to a message');
+    }
+    let msg2 = await msg.fetchReference();
+    if (msg2.guildId && msg2.guildId in config.starboardServers) {
+        let boardName = config.starboardServers[msg2.guildId];
+        let entry = starboard[boardName].data.get(msg2.id);
+        starboard[boardName].forbidden.add(msg2.id);
+        if (entry) {
+            await deleteStarboardEntry(boardName, msg2, entry);
+        }
+        await saveStarboard();
+    } else {
+        throw new BotError('!starboardprevent must be used in servers witih starboards');
+    }
+}

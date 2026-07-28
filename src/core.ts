@@ -5,8 +5,8 @@ import {Worker} from 'node:worker_threads';
 import {EmbedBuilder} from 'discord.js';
 
 import {RuleError, Pattern, TorusPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, createPattern} from '../lifeweb/lib/index.js';
-import {RPFFile, RPFPattern} from '../lifeweb/lib/editor/rpf.js';
-import {BotError, Message, Response, writeFile, config, names, aliases, simStats, sentByAdmin, findRLE} from './util.js';
+import {RPFPattern} from '../lifeweb/lib/editor/rpf.js';
+import {BotError, Message, Response, writeFile, names, aliases, simStats, sentByAdmin, findRLE} from './util.js';
 import type {Job} from './worker.js';
 
 
