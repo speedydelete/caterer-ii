@@ -4,7 +4,7 @@ import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
 
 import {RuleError, Pattern, PLACEHOLDER_PATTERN, MAPPattern, HistoryPattern, SuperPattern, InvestigatorPattern, TreePattern, findMinmax, identifyPeriodic, getDescription, identify, identifyConduit, INTSeparator, Separator, createPattern, parse} from '../lifeweb/lib/index.js';
-import {RPFFile, RPFParser} from '../lifeweb/lib/editor/rpf.js';
+import {RPFParser} from '../lifeweb/lib/editor/rpf.js';
 import {BotError, aliases} from './util.js';
 
 

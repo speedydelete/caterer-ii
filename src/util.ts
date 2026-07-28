@@ -2,9 +2,9 @@
 import * as fs from 'node:fs/promises';
 import {join} from 'node:path';
 
-import {DiscordAPIError, Message as _Message, OmitPartialGroupDMChannel} from 'discord.js';
-import {Pattern, parse} from '../lifeweb/lib/index.js';
-import {RPFFile} from '../lifeweb/lib/editor/rpf.js';
+import {DiscordAPIError, Message as _Message, OmitPartialGroupDMChannel, parseEmoji} from 'discord.js';
+import {Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
+import {RPFParser} from '../lifeweb/lib/editor/rpf.js';
 
 
 export class BotError extends Error {
@@ -83,11 +83,8 @@ export function findRLEFromText(data: string): Pattern | undefined {
             return;
         }
         data = data.slice(0, index);
-        let rpf = RPFFile.fromString(data, '/');
-        if (!rpf.data['main']) {
-            throw new BotError(`No 'main' object in RPF!`);
-        }
-        return rpf.data['main'];
+        let parser = new RPFParser(PLACEHOLDER_PATTERN, '/index.rpf', data);
+        return parser.pattern();
     }
     data = data.slice(match.index);
     let index = data.indexOf('!');
@@ -120,11 +117,8 @@ export async function findRLEFromMessage(msg: Message): Promise<{msg: Message, p
                 }
             } else if (file.endsWith('.rpf')) {
                 let data = await (await fetch(attachment.url)).text();
-                let rpf = RPFFile.fromString(data, '/');
-                if (!rpf.data['main']) {
-                    throw new BotError(`No 'main' object in RPF!`);
-                }
-                return {msg, p: rpf.data['main']};
+                let parser = new RPFParser(PLACEHOLDER_PATTERN, '/index.rpf', data);
+                return {msg, p: parser.pattern()};
             }
         }
     }
