@@ -25,6 +25,7 @@ async function saveStarboard(): Promise<void> {
             forbidden: Array.from(value.forbidden),
         };
     }
+    await writeFile('data/starboard.json', JSON.stringify(data));
 }
 
 export let starboardChannels: {[key: string]: TextChannel} = {};
