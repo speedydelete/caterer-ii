@@ -1,7 +1,6 @@
 
 import {AttachmentBuilder, EmbedBuilder} from 'discord.js';
 import {RuleError, Pattern, unparseMAP, unparseMAPRuleFull, MAPPattern, MAPB0Pattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal, MAPGenPattern} from '../lifeweb/lib/index.js';
-import {findBasis, basisToString, parseSymmetries} from '../lifeweb/lib/misc/rule_symmetries.js';
 
 import {BotError, Message, Response, aliases, findRLE} from './util.js';
 
@@ -133,17 +132,4 @@ export async function cmdCheckerboardDual(msg: Message, argv: string[]): Promise
         odd[i ^ 0b101010101] = trs[i] ^ 1;
     }
     return `Even: ${unparseMAPRuleFull(even, p.rule.states)}\nOdd: ${unparseMAPRuleFull(odd, p.rule.states)}`;
-}
-
-export async function cmdBasis(msg: Message, argv: string[]): Promise<Response> {
-    let basis = findBasis(parseSymmetries(argv.slice(1).join(' ')));
-    if (basis === 'contradiction') {
-        return 'Contradiction';
-    }
-    let str = basisToString(basis);
-    if (str.length < 2000) {
-        return str;
-    } else {
-        return {files: [new AttachmentBuilder(Buffer.from(str, 'utf-8'), {name: 'basis.txt'})]};
-    }
 }

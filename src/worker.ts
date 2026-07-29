@@ -2,8 +2,9 @@
 import * as fs from 'node:fs/promises';
 import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
-import {RuleError, Pattern, PLACEHOLDER_PATTERN, MAPPattern, HistoryPattern, SuperPattern, InvestigatorPattern, TreePattern, findMinmax, identifyPeriodic, getDescription, identify, identifyConduit, INTSeparator, Separator, createPattern, parse} from '../lifeweb/lib/index.js';
+import {LifewebError, Pattern, PLACEHOLDER_PATTERN, MAPPattern, HistoryPattern, SuperPattern, InvestigatorPattern, TreePattern, findMinmax, identifyPeriodic, getDescription, identify, identifyConduit, INTSeparator, Separator, createPattern, parse} from '../lifeweb/lib/index.js';
 import {RPFParser} from '../lifeweb/lib/editor/rpf.js';
+import {findBasis, basisToString, SymmetryError, SymmetryParser} from '../lifeweb/lib/misc/rule_symmetries.js';
 
 import {BotError, aliases} from './util.js';
 
@@ -640,11 +641,13 @@ if (!parentPort) {
     throw new Error('No parent port');
 }
 
-export type Job =
-        | {id: number, type: 'sim', argv: string[], value: string}
-        | {id: number, type: 'identify' | 'basic_identify', value: string, limit: number}
-        | {id: number, type: 'minmax', value: string, gens: number}
-        | {id: number, type: 'identify_conduit', value: string, minTime: number, maxTime: number, maxRT: number, sepGens: number, identifyGens: number};
+export type Job = {id: number} & (
+    | {type: 'sim', argv: string[], value: string}
+    | {type: 'identify' | 'basic_identify', value: string, limit: number}
+    | {type: 'minmax', value: string, gens: number}
+    | {type: 'identify_conduit', value: string, minTime: number, maxTime: number, maxRT: number, sepGens: number, identifyGens: number}
+    | {type: 'basis', value: string}
+);
 
 parentPort.on('message', async (data: Job) => {
     if (!parentPort) {
@@ -670,11 +673,22 @@ parentPort.on('message', async (data: Job) => {
                     throw error;
                 }
             }
+        } else if (data.type === 'basis') {
+            let parser = new SymmetryParser(data.value);
+            let symmetry = parser.program();
+            if (symmetry === undefined) {
+                throw new BotError(`Symmetry program does not return a value`);
+            }
+            let out = findBasis(symmetry);
+            if (Array.isArray(out)) {
+                out = basisToString(out);
+            }
+            parentPort.postMessage({id, ok: true, data: out});
         } else {
             throw new Error('Invalid type!');
         }
     } catch (error) {
-        if (error instanceof BotError || error instanceof RuleError) {
+        if (error instanceof LifewebError || error instanceof BotError) {
             parentPort.postMessage({id, ok: false, error: error.message, intentional: true, type: error.constructor.name});
         } else {
             parentPort.postMessage({id, ok: false, error: (error instanceof Error && error.stack) ? error.stack : String(error), intentional: false});
