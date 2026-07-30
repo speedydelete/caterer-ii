@@ -34,11 +34,9 @@ function workerOnMessage(msg: WorkerResult): void {
         job.resolve(msg.data);
     } else {
         if (msg.intentional) {
-            if (msg.type === 'BotError') {
-                job.reject(new BotError(msg.error));
-            } else {
-                job.reject(new LifewebError(msg.error));
-            }
+            let error = new LifewebError(msg.error);
+            error.name = msg.type;
+            job.reject(error);
         } else {
             job.reject(msg.error);
         }
