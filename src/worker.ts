@@ -675,7 +675,6 @@ parentPort.on('message', async (data: Job) => {
                 }
             }
         } else if (data.type === 'basis') {
-            console.log(JSON.stringify(data.value));
             let parser = new SymmetryParser(data.value, Object.create(PREDEFINED_SYMMETRY_NAMESPACE));
             let symmetry = parser.program();
             if (symmetry === undefined) {
