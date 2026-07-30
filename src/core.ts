@@ -564,6 +564,7 @@ export async function cmdBasis(msg: Message, argv: string[]): Promise<Response> 
         }
     }
     let symmetry = argv.slice(1).join(' ');
+    console.log(JSON.stringify(symmetry));
     let out = await runWorkerJob('basis', symmetry, noTimeout);
     if (out.length < 2000) {
         return out;
