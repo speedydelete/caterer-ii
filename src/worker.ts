@@ -683,6 +683,8 @@ parentPort.on('message', async (data: Job) => {
             let out = findBasis(symmetry);
             if (Array.isArray(out)) {
                 out = basisToString(out);
+            } else {
+                out = out[0].toUpperCase() + out.slice(1);
             }
             parentPort.postMessage({id, ok: true, data: out});
         } else {
