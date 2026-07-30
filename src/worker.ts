@@ -690,7 +690,7 @@ parentPort.on('message', async (data: Job) => {
         }
     } catch (error) {
         if (error instanceof LifewebError || error instanceof BotError) {
-            parentPort.postMessage({id, ok: false, error: error.message, intentional: true, type: error.constructor.name});
+            parentPort.postMessage({id, ok: false, error: String(error), intentional: true, type: error.constructor.name});
         } else {
             parentPort.postMessage({id, ok: false, error: (error instanceof Error && error.stack) ? error.stack : String(error), intentional: false});
         }
