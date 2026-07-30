@@ -99,7 +99,7 @@ function runWorkerJob(type: 'identify', data: {value: string, limit: number}, no
 function runWorkerJob(type: 'basic_identify', data: {value: string, limit: number}, noTimeout?: boolean): Promise<PatternType | null>;
 function runWorkerJob(type: 'minmax', data: {value: string, gens: number}, noTimeout?: boolean): Promise<[string, string] | null>;
 function runWorkerJob(type: 'identify_conduit', data: {value: string, minTime: number, maxTime: number, maxRT: number, sepGens: number, identifyGens: number}, noTimeout?: boolean): Promise<false | Conduit | null>;
-function runWorkerJob(type: 'basis', data: string, noTimeout?: boolean): Promise<string>;
+function runWorkerJob(type: 'basis', data: {value: string}, noTimeout?: boolean): Promise<string>;
 function runWorkerJob(type: 'sim' | 'identify' | 'basic_identify' | 'minmax' | 'identify_conduit' | 'basis', data: any, noTimeout?: boolean): Promise<any> {
     return new Promise((resolve, reject) => {
         let id = nextID++;
@@ -564,8 +564,7 @@ export async function cmdBasis(msg: Message, argv: string[]): Promise<Response> 
         }
     }
     let symmetry = argv.slice(1).join(' ');
-    console.log(JSON.stringify(symmetry));
-    let out = await runWorkerJob('basis', symmetry, noTimeout);
+    let out = await runWorkerJob('basis', {value: symmetry}, noTimeout);
     if (out.length < 2000) {
         return out;
     } else {
