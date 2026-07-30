@@ -7,7 +7,7 @@ import {BotError, Message, Response, readFile, writeFile, aliases, names, simSta
 
 
 export async function cmdSssss(msg: Message, argv: string[]): Promise<Response> {
-    if (argv.length === 0) {
+    if (argv.length < 2) {
         throw new BotError(`Expected at least 1 argument`);
     }
     await msg.channel.sendTyping();

@@ -6,6 +6,9 @@ import {BotError, Message, Response, aliases, findRLE} from './util.js';
 
 
 export async function cmdHashsoup(msg: Message, argv: string[]): Promise<Response> {
+    if (argv.length < 3) {
+        throw new BotError(`Expected at least 2 arguments`);
+    }
     let {height, width, data} = await getHashsoup(argv[2], argv[1]);
     return createPattern(argv[3] ?? 'B3/S23', aliases, height, width, data).toRLE();
 }

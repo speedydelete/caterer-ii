@@ -7,8 +7,10 @@ import {RPFParser} from '../lifeweb/lib/editor/rpf.js';
 
 
 export class BotError extends Error {
-    name: 'BotError' = 'BotError';
-    [Symbol.toStringTag] = 'BotError';
+
+    name: string = 'BotError';
+    [Symbol.toStringTag]: string = 'BotError';
+
 }
 
 

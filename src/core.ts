@@ -387,7 +387,9 @@ function embedIdentified(original: Pattern, type: PatternType | Identified, isOu
     }
     let embeds = [(new EmbedBuilder()).setTitle(title).setDescription(out)];
     if ('output' in type && type.output) {
-        embeds.push(...embedIdentified(Object.assign(original.clearedCopy(), type.output.phases[0]), type.output, true));
+        for (let embed of embedIdentified(Object.assign(original.clearedCopy(), type.output.phases[0]), type.output, true)) {
+            embeds.push(embed);
+        }
     }
     return embeds;
 }

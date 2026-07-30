@@ -91,17 +91,21 @@ export async function check5S(channel: TextChannel): Promise<void> {
     for (let _key of Object.keys(groups).sort()) {
         let key = _key as Type;
         let data = groups[key] as ShipGroup;
+        let newMsgs: string[] = [];
         if (data.newSpeeds.length > 0) {
-            msgs.push(...formatShips('speed', 'new', key, data.newSpeeds));
+            newMsgs = formatShips('speed', 'new', key, data.newSpeeds);
         }
         if (data.newPeriods.length > 0) {
-            msgs.push(...formatShips('period', 'new', key, data.newPeriods));
+            newMsgs = formatShips('period', 'new', key, data.newPeriods);
         }
         if (data.improvedSpeeds.length > 0) {
-            msgs.push(...formatShips('speed', 'improved', key, data.improvedSpeeds));
+            newMsgs = formatShips('speed', 'improved', key, data.improvedSpeeds);
         }
         if (data.improvedPeriods.length > 0) {
-            msgs.push(...formatShips('period', 'improved', key, data.improvedPeriods));
+            newMsgs = formatShips('period', 'improved', key, data.improvedPeriods);
+        }
+        for (let msg of newMsgs) {
+            msgs.push(msg);
         }
     }
     for (let msg of msgs) {

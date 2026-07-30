@@ -1,5 +1,6 @@
 
 import {inspect} from 'node:util';
+
 import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReplyOptions, Guild, TextChannel, TextBasedChannel, Partials} from 'discord.js';
 import * as lifeweb from '../lifeweb/lib/index.js';
 import * as lifewebRPF from '../lifeweb/lib/editor/rpf.js';
@@ -14,6 +15,7 @@ import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSi
 import {cmdWiki} from './wiki.js';
 import {check5S} from './notifier.js';
 import {starboardChannels, cmdStarboardPrevent} from './starboard.js';
+import {CalcError, cmdCalc} from './calc.js';
 
 
 const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\nlet {' + Object.keys(lifewebRuleSymmetries).join(', ') + '} = lifewebRuleSymmetries;\n';
@@ -205,7 +207,7 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
         }
     },
 
-    async users(): Promise<Response> {
+    async users(msg: Message, argv: string[]): Promise<Response> {
         let servers: [string, number][] = [];
         for (let [_, partialGuild] of await client.guilds.fetch()) {
             let guild = await partialGuild.fetch();
@@ -219,6 +221,9 @@ export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) 
         }
         return out;
     },
+
+    'calc': cmdCalc,
+    'roll': 'calc',
 
     'acl': cmdAcl,
     'acl show': () => {throw new Error('hi');},
@@ -410,7 +415,9 @@ async function runCommand(msg: Message): Promise<void> {
                 let out: Message;
                 let newDeleters: string[] = [msg.author.id];
                 if (Array.isArray(value)) {
-                    newDeleters.push(...value[1]);
+                    for (let id of value[1]) {
+                        newDeleters.push(id);
+                    }
                     value = value[0];
                 }
                 if (typeof value === 'string') {
@@ -434,7 +441,13 @@ async function runCommand(msg: Message): Promise<void> {
             }
         } catch (error) {
             if (error instanceof BotError || error instanceof lifeweb.LifewebError || error instanceof SyntaxError) {
-                previousMsgs.push([msg.id, await msg.reply({content: `${error.name}: ` + error.message, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+                let content: string;
+                if (error instanceof CalcError) {
+                    content = error.message;
+                } else {
+                    content = `${error.name}: ${error.message};`
+                }
+                previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             } else if (error instanceof Error && (error.message === 'Worker exited with code 1!' || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim.gif'` || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim_base.gif'`)) {
                 previousMsgs.push([msg.id, await msg.reply({content: `${error.name}: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             } else if (error instanceof DiscordAPIError && error.message.match(/Must be (2|4)000 or fewer in length/)) {

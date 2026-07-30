@@ -190,6 +190,7 @@ export async function cmdWiki(msg: Message, argv: string[]): Promise<Response> {
     text = text.replaceAll(/(?<=\n)\n+(?=#+ )/g, '');
     text = text.replaceAll('&lt;', '<');
     text = text.replaceAll('&gt;', '>');
+    text = text.replaceAll('&times;', '×');
     text = text.trim();
     text = prefix + text;
     if (text.length > 1000) {

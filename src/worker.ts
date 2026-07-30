@@ -120,9 +120,9 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             }
             data.gifSize = part[1];
             part = part.slice(2);
-        } else if (part[0] === 'wait') {
+        } else if (part[0] === 'wait' || part[0] === 'pause') {
             if (typeof part[1] !== 'number') {
-                throw new BotError(`Invalid part: Expected argument of type number for "wait", got type ${typeof part[1]}: ${part.join(' ')}`);
+                throw new BotError(`Invalid part: Expected argument of type number for "${part[0]}", got type ${typeof part[1]}: ${part.join(' ')}`);
             }
             let frame = getFrame(p, data);
             frame.time = part[1] * 100;
@@ -210,7 +210,8 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             if (typeof part[1] === 'number') {
                 throw new BotError(`Invalid part: Expected argument of type string for "setrule", got type ${typeof part[1]}: ${part.join(' ')}`);
             }
-            let q = createPattern(part[1], aliases, p.height, p.width, p.getData());
+            let q = createPattern(part[1], aliases);
+            q.setData(p.height, p.width, p.getData());
             q.xOffset = p.xOffset;
             q.yOffset = p.yOffset;
             q.generation = p.generation;
