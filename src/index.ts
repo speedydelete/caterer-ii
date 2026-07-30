@@ -445,7 +445,7 @@ async function runCommand(msg: Message): Promise<void> {
                 if (error instanceof CalcError) {
                     content = error.message;
                 } else {
-                    content = `${error.name}: ${error.message};`
+                    content = `${error.name}: ${error.message}`;
                 }
                 previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             } else if (error instanceof Error && (error.message === 'Worker exited with code 1!' || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim.gif'` || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim_base.gif'`)) {
