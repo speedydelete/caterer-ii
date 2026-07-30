@@ -4,7 +4,7 @@ import {execSync} from 'node:child_process';
 import {parentPort} from 'node:worker_threads';
 import {LifewebError, Pattern, PLACEHOLDER_PATTERN, MAPPattern, HistoryPattern, SuperPattern, InvestigatorPattern, TreePattern, findMinmax, identifyPeriodic, getDescription, identify, identifyConduit, INTSeparator, Separator, createPattern, parse} from '../lifeweb/lib/index.js';
 import {RPFParser} from '../lifeweb/lib/editor/rpf.js';
-import {findBasis, basisToString, SymmetryError, SymmetryParser} from '../lifeweb/lib/misc/rule_symmetries.js';
+import {findBasis, basisToString, SymmetryParser, PREDEFINED_SYMMETRY_NAMESPACE} from '../lifeweb/lib/misc/rule_symmetries.js';
 
 import {BotError, aliases} from './util.js';
 
@@ -674,7 +674,7 @@ parentPort.on('message', async (data: Job) => {
                 }
             }
         } else if (data.type === 'basis') {
-            let parser = new SymmetryParser(data.value);
+            let parser = new SymmetryParser(data.value, Object.create(PREDEFINED_SYMMETRY_NAMESPACE));
             let symmetry = parser.program();
             if (symmetry === undefined) {
                 throw new BotError(`Symmetry program does not return a value`);
