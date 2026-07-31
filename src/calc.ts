@@ -71,7 +71,6 @@ function runExpression(node: Expression | PrivateName | SpreadElement | Argument
     } else if (node.type === 'BooleanLiteral') {
         return node.value;
     } else if (node.type === 'StringLiteral') {
-        throw new Error('wtf');
         return node.value;
     } else if (node.type === 'NumericLiteral') {
         return node.value;
@@ -188,6 +187,12 @@ function runExpression(node: Expression | PrivateName | SpreadElement | Argument
 }
 
 export async function cmdCalc(msg: Message, argv: string[]): Promise<Response> {
+    let str = msg.content;
+    let index = str.indexOf(' ');
+    if (index === -1) {
+        throw new BotError(`Expected at least 1 argument`);
+    }
+    str = str.slice(index + 1);
     try {
         return String(runExpression(parseExpression(argv.slice(1).join(' '))));
     } catch (error) {
