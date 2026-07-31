@@ -215,6 +215,8 @@ function _matchesACL(msg: Message, acl: ACL): boolean {
         return _matchesACL(msg, acl.left) && _matchesACL(msg, acl.right);
     } else if (acl.type === 'or') {
         return _matchesACL(msg, acl.left) || _matchesACL(msg, acl.right);
+    } else if (acl.type === 'xor') {
+        return _matchesACL(msg, acl.left) !== _matchesACL(msg, acl.right);
     } else {
         throw new Error(`Invalid ACL type: '${(acl as any).type}'`);
     }
