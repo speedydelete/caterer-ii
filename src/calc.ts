@@ -71,6 +71,7 @@ function runExpression(node: Expression | PrivateName | SpreadElement | Argument
     } else if (node.type === 'BooleanLiteral') {
         return node.value;
     } else if (node.type === 'StringLiteral') {
+        throw new Error('wtf');
         return node.value;
     } else if (node.type === 'NumericLiteral') {
         return node.value;
@@ -173,15 +174,14 @@ function runExpression(node: Expression | PrivateName | SpreadElement | Argument
         return runExpression(node.test) ? runExpression(node.consequent) : runExpression(node.alternate);
     } else if (node.type === 'CallExpression') {
         let args = node.arguments.map(runExpression);
-        throw new Error(JSON.stringify(args));
-        // if (node.callee.type !== 'Identifier') {
-        //     throw new CalcError(`SyntaxError: Invalid node type for function (expected 'Identifier'): '${node.callee.type}`);
-        // }
-        // let func = node.callee.name.toLowerCase();
-        // if (!(func in FUNCTIONS)) {
-        //     throw new CalcError(`ReferenceError: ${node.callee.name} is not defined`);
-        // }
-        // return FUNCTIONS[func](...args);
+        if (node.callee.type !== 'Identifier') {
+            throw new CalcError(`SyntaxError: Invalid node type for function (expected 'Identifier'): '${node.callee.type}`);
+        }
+        let func = node.callee.name.toLowerCase();
+        if (!(func in FUNCTIONS)) {
+            throw new CalcError(`ReferenceError: ${node.callee.name} is not defined`);
+        }
+        return FUNCTIONS[func](...args);
     } else {
         throw new CalcError(`SyntaxError: Invalid node type: '${node.type}'`);
     }
