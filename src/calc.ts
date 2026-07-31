@@ -173,14 +173,15 @@ function runExpression(node: Expression | PrivateName | SpreadElement | Argument
         return runExpression(node.test) ? runExpression(node.consequent) : runExpression(node.alternate);
     } else if (node.type === 'CallExpression') {
         let args = node.arguments.map(runExpression);
-        if (node.callee.type !== 'Identifier') {
-            throw new CalcError(`SyntaxError: Invalid node type for function (expected 'Identifier'): '${node.callee.type}`);
-        }
-        let func = node.callee.name.toLowerCase();
-        if (!(func in FUNCTIONS)) {
-            throw new CalcError(`ReferenceError: ${node.callee.name} is not defined`);
-        }
-        return FUNCTIONS[func](...args);
+        throw new Error(JSON.stringify(args));
+        // if (node.callee.type !== 'Identifier') {
+        //     throw new CalcError(`SyntaxError: Invalid node type for function (expected 'Identifier'): '${node.callee.type}`);
+        // }
+        // let func = node.callee.name.toLowerCase();
+        // if (!(func in FUNCTIONS)) {
+        //     throw new CalcError(`ReferenceError: ${node.callee.name} is not defined`);
+        // }
+        // return FUNCTIONS[func](...args);
     } else {
         throw new CalcError(`SyntaxError: Invalid node type: '${node.type}'`);
     }
