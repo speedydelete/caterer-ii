@@ -17,17 +17,15 @@ export class CalcError extends BotError {
 type Primitive = undefined | null | boolean | number | string | bigint | symbol;
 
 
-const VARIABLES: {[key: string]: Primitive} = {
-
-    'undefined': undefined,
+const VARIABLES = new Map<string, Primitive>(Object.entries({
 
     'pi': Math.PI,
     'e': Math.E,
 
-};
+}));
 
 
-const FUNCTIONS: {[key: string]: (...args: any[]) => any} = {
+const FUNCTIONS = new Map<string, (...args: any[]) => any>(Object.entries({
 
     boolean(value: any): boolean {
         return Boolean(value);
@@ -53,7 +51,7 @@ const FUNCTIONS: {[key: string]: (...args: any[]) => any} = {
         return value < 0 ? -value : value;
     },
 
-};
+}));
 
 
 function runExpression(node: Expression | PrivateName | SpreadElement | ArgumentPlaceholder): Primitive {
@@ -61,10 +59,15 @@ function runExpression(node: Expression | PrivateName | SpreadElement | Argument
         let value = node.name.toLowerCase();
         if (value.match(/^d([0-9.e]+|0x[0-9a-fA-F.]+|0b[01.e]+|0o[0-7.e]+|-?NaN|-?Infinity)$/)) {
             return crypto.randomInt(Number(value.slice(1)));
-        } else if (value in VARIABLES) {
-            return VARIABLES[value];
+        } else if (value === 'undefined') {
+            return undefined;
         } else {
-            throw new CalcError(`ReferenceError: ${node.name} is not defined`);
+            let out = VARIABLES.get(value);
+            if (out === undefined) {
+                throw new CalcError(`ReferenceError: ${node.name} is not defined`);
+            } else {
+                return out;
+            }
         }
     } else if (node.type === 'NullLiteral') {
         return null;
@@ -176,11 +179,11 @@ function runExpression(node: Expression | PrivateName | SpreadElement | Argument
         if (node.callee.type !== 'Identifier') {
             throw new CalcError(`SyntaxError: Invalid node type for function (expected 'Identifier'): '${node.callee.type}`);
         }
-        let func = node.callee.name.toLowerCase();
-        if (!(func in FUNCTIONS)) {
+        let func = FUNCTIONS.get(node.callee.name.toLowerCase());
+        if (func === undefined) {
             throw new CalcError(`ReferenceError: ${node.callee.name} is not defined`);
         }
-        return FUNCTIONS[func](...args);
+        return func(...args);
     } else {
         throw new CalcError(`SyntaxError: Invalid node type: '${node.type}'`);
     }
