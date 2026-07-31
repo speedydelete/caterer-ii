@@ -194,7 +194,7 @@ export async function cmdCalc(msg: Message, argv: string[]): Promise<Response> {
     }
     str = str.slice(index + 1);
     try {
-        return String(runExpression(parseExpression(argv.slice(1).join(' '))));
+        return String(runExpression(parseExpression(str)));
     } catch (error) {
         if (error instanceof Error) {
             if (error instanceof CalcError) {
