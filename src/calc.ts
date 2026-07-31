@@ -184,7 +184,7 @@ function runExpression(node: Expression | PrivateName | SpreadElement | Argument
         if (!(func in FUNCTIONS)) {
             throw new CalcError(`ReferenceError: ${node.callee.name} is not defined`);
         }
-        return FUNCTIONS[func].apply(undefined, args);
+        return FUNCTIONS[func](...args);
     } else {
         throw new CalcError(`SyntaxError: Invalid node type: '${node.type}'`);
     }
