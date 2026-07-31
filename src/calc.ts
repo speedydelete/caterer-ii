@@ -50,11 +50,7 @@ const FUNCTIONS: {[key: string]: (...args: any[]) => any} = {
     },
 
     abs(value: any): any {
-        if (typeof value === 'bigint') {
-            return value < 0 ? -value : value;
-        } else {
-            return value;
-        }
+        return value < 0 ? -value : value;
     },
 
 };
