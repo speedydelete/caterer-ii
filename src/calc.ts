@@ -197,7 +197,12 @@ export async function cmdCalc(msg: Message, argv: string[]): Promise<Response> {
     }
     str = str.slice(index + 1);
     try {
-        return String(runExpression(parseExpression(str)));
+        let out = runExpression(parseExpression(str));
+        if (typeof out === 'string') {
+            return `'${out.replaceAll(`'`, `\\'`)}'`;
+        } else {
+            return String(out);
+        }
     } catch (error) {
         if (error instanceof Error) {
             if (error instanceof CalcError) {
