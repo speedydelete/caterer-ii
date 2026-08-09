@@ -106,9 +106,11 @@ client.on('messageCreate', async msg => {
             await msg.reply('Updating...');
             execSync(import.meta.dirname + '/../update2.sh');
             if (process) {
+                isSupposedToBeOn = false;
                 await stopBot();
             }
             await startBot();
+            isSupposedToBeOn = true;
             await msg.channel.send('Update complete!');
         }
     } catch (error) {
