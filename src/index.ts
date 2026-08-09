@@ -442,7 +442,7 @@ async function runCommand(msg: Message): Promise<void> {
         } catch (error) {
             if (error instanceof BotError || error instanceof lifeweb.LifewebError || error instanceof SyntaxError) {
                 let content: string;
-                if (error instanceof CalcError) {
+                if (error instanceof CalcError || error.message.startsWith('SymmetryError: ')) {
                     content = error.message;
                 } else {
                     content = `${error.name}: ${error.message}`;
