@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -eu -o pipefail
+pushd $(dirname "$(realpath $0)") > /dev/null
+
+git clone https://github.com/speedydelete/lifeweb
+pushd lifeweb > /dev/null
+./install
+popd > /dev/null
+
+git clone https://github.com/speedydelete/sssss
+pushd lifeweb > /dev/null
+./install
+popd > /dev/null
+
+npm install
+npx tsc -b
+
+popd > /dev/null

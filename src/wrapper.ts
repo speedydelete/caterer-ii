@@ -142,7 +142,7 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
 
     async 'update'(msg: Message): Promise<Response> {
         await msg.reply('Updating...');
-        execSync(import.meta.dirname + '/../update2.sh');
+        execSync(import.meta.dirname + '/../update');
         if (caterer) {
             isSupposedToBeOn = false;
             await stopBot();
