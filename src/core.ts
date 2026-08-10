@@ -383,13 +383,21 @@ function embedIdentified(original: Pattern, type: PatternType | Identified, isOu
     if (isOutput) {
         title = 'Output: ' + title;
     }
-    let embeds = [(new EmbedBuilder()).setTitle(title).setDescription(out)];
-    if ('output' in type && type.output) {
-        for (let embed of embedIdentified(Object.assign(original.clearedCopy(), type.output.phases[0]), type.output, true)) {
-            embeds.push(embed);
+    try {
+        let embeds = [(new EmbedBuilder()).setTitle(title).setDescription(out)];
+        if ('output' in type && type.output) {
+            for (let embed of embedIdentified(Object.assign(original.clearedCopy(), type.output.phases[0]), type.output, true)) {
+                embeds.push(embed);
+            }
+        }
+        return embeds;
+    } catch (error) {
+        if (error instanceof Error && error.message === 'Received one or more errors') {
+            throw new BotError('Message too long!');
+        } else {
+            throw error;
         }
     }
-    return embeds;
 }
 
 export async function cmdIdentify(msg: Message, argv: string[]): Promise<Response> {

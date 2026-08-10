@@ -452,6 +452,8 @@ async function runCommand(msg: Message): Promise<void> {
                 let content: string;
                 if (error instanceof CalcError || error.message.startsWith('SymmetryError: ')) {
                     content = error.message;
+                } else if (error instanceof BotError && error.message === 'Message too long!') {
+                    content = `Error: Message too long!`;
                 } else {
                     content = `${error.name}: ${error.message}`;
                 }
