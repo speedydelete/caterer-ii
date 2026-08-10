@@ -2,7 +2,7 @@
 import {ChildProcess, spawn, execSync} from 'node:child_process';
 import {Client, GatewayIntentBits, TextChannel} from 'discord.js';
 
-import {BotError, config, sentByAdmin} from './util.js';
+import {BotError, Message, config, sentByAdmin} from './util.js';
 
 
 let client = new Client({intents: [
@@ -15,16 +15,13 @@ let client = new Client({intents: [
 
 let messageChannel: TextChannel;
 
-client.once('clientReady', async () => {
-    console.log('Logged in');
-    let server = await client.guilds.fetch(config.wrapperInfoChannel[0]);
-    messageChannel = server.channels.cache.get(config.wrapperInfoChannel[1]) as TextChannel;
-    await messageChannel.send('Wrapper started!');
-    await startBot();
-});
+async function log(message: string): Promise<void> {
+    console.log(message);
+    await messageChannel.send(message);
+}
 
 
-let process: ChildProcess | undefined;
+let caterer: ChildProcess | undefined;
 
 
 function getDay() {
@@ -36,16 +33,42 @@ let restartsToday = 0;
 
 let isSupposedToBeOn = true;
 
+let antiFreezeInterval: NodeJS.Timeout | undefined;
+let lastHeartbeat = 0;
+
+function clearAntiFreeze() {
+    if (antiFreezeInterval) {
+        clearInterval(antiFreezeInterval);
+        antiFreezeInterval = undefined;
+    }
+}
+
 async function startBot(): Promise<void> {
-    if (process) {
+    if (caterer) {
         throw new BotError('Bot is running!');
     }
-    process = spawn('/home/caterer/.nvm/versions/node/v26.2.0/bin/node', [`${import.meta.dirname}/index.js`], {stdio: 'inherit'});
+    caterer = spawn('/home/caterer/.nvm/versions/node/v26.2.0/bin/node', [`${import.meta.dirname}/index.js`], {stdio: ['inherit', 'inherit', 'inherit', 'ipc']});
+    lastHeartbeat = Date.now();
+    // listen for heartbeats
+    caterer.on('message', msg => {
+        if (msg === 'heartbeat') {
+            lastHeartbeat = Date.now();
+        }
+    });
+    // start ethylene glycol monitor
+    clearAntiFreeze();
+    antiFreezeInterval = setInterval(async () => {
+        if (caterer && (Date.now() - lastHeartbeat > config.antiFreeze.timeoutInterval * 1000)) {
+            log('Hang detected, restarting');
+            caterer.kill('SIGKILL');
+        }
+    }, config.antiFreeze.checkInterval * 1000);
     let {promise, resolve} = Promise.withResolvers<void>();
-    process.on('spawn', resolve);
-    process.on('exit', async () => {
-        process = undefined;
-        await messageChannel.send('Bot exited, restarting');
+    caterer.on('spawn', resolve);
+    caterer.on('exit', async () => {
+        caterer = undefined;
+        clearAntiFreeze();
+        log('Bot exited, restarting');
         setTimeout(async () => {
             if (!isSupposedToBeOn) {
                 return;
@@ -55,9 +78,10 @@ async function startBot(): Promise<void> {
                 restartsToday++;
             } else {
                 restartsToday = 1;
+                lastRestartDay = currentDay;
             }
             if (restartsToday > config.wrapperMaxRestartsPerDay) {
-                await messageChannel.send('Maximum restarts exceeded');
+                log('Maximum restarts exceeded for today');
             }
             await startBot();
         }, 5000);
@@ -66,52 +90,71 @@ async function startBot(): Promise<void> {
 }
 
 async function stopBot(): Promise<void> {
-    if (!process) {
+    if (!caterer) {
         throw new BotError('Bot is not running!');
     }
-    process.removeAllListeners('exit');
+    clearAntiFreeze();
+    caterer.removeAllListeners('exit');
     let {promise, resolve} = Promise.withResolvers<void>();
-    process.on('exit', () => {
-        process = undefined;
+    caterer.on('exit', () => {
+        caterer = undefined;
         resolve();
     });
-    process.kill(9);
+    caterer.kill(9);
     return promise;
 }
 
 
+type Response = string | undefined;
+
+const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.assign(Object.create(null), {
+
+    async 'start'(): Promise<Response> {
+        isSupposedToBeOn = true;
+        await startBot();
+        return 'Started!';
+    },
+
+    async 'stop'(): Promise<Response> {
+        if (!caterer && isSupposedToBeOn) {
+            isSupposedToBeOn = false;
+            return 'Stopped!';
+        } else {
+            isSupposedToBeOn = false;
+            await stopBot();
+        }
+        return 'Stopped!';
+    },
+
+    async 'restart'(): Promise<Response> {
+        await stopBot();
+        await startBot();
+        return 'Restarted!';
+    },
+
+    async 'update'(msg: Message): Promise<Response> {
+        await msg.reply('Updating...');
+        execSync(import.meta.dirname + '/../update2.sh');
+        if (caterer) {
+            isSupposedToBeOn = false;
+            await stopBot();
+        }
+        await startBot();
+        isSupposedToBeOn = true;
+        return 'Update complete!';
+    },
+
+});
+
+
 client.on('messageCreate', async msg => {
-    if (msg.author.bot || !sentByAdmin(msg) || !msg.content.startsWith('!!')) {
+    if (msg.author.bot || !sentByAdmin(msg) || !msg.content.startsWith('!!') || !(msg.content in COMMANDS)) {
         return;
     }
     try {
-        if (msg.content === '!!start') {
-            isSupposedToBeOn = true;
-            await startBot();
-            await msg.reply('Started!');
-        } else if (msg.content === '!!stop') {
-            if (!process && isSupposedToBeOn) {
-                isSupposedToBeOn = false;
-                await msg.reply('Stopped!');
-                return;
-            }
-            isSupposedToBeOn = false;
-            await stopBot();
-            await msg.reply('Stopped!');
-        } else if (msg.content === '!!restart') {
-            await stopBot();
-            await startBot();
-            await msg.reply('Restarted!');
-        } else if (msg.content === '!!update') {
-            await msg.reply('Updating...');
-            execSync(import.meta.dirname + '/../update2.sh');
-            if (process) {
-                isSupposedToBeOn = false;
-                await stopBot();
-            }
-            await startBot();
-            isSupposedToBeOn = true;
-            await msg.channel.send('Update complete!');
+        let resp = await COMMANDS[msg.content](msg);
+        if (resp !== undefined) {
+            await msg.reply(resp);
         }
     } catch (error) {
         let str: string;
@@ -122,6 +165,14 @@ client.on('messageCreate', async msg => {
         }
         await msg.reply('```' + str + '```');
     }
+});
+
+client.once('clientReady', async () => {
+    console.log('Logged in');
+    let server = await client.guilds.fetch(config.wrapperInfoChannel[0]);
+    messageChannel = server.channels.cache.get(config.wrapperInfoChannel[1]) as TextChannel;
+    log('Wrapper started!');
+    await startBot();
 });
 
 client.login(config.wrapperToken);

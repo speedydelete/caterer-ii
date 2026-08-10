@@ -18,6 +18,14 @@ import {starboardChannels, cmdStarboardPrevent} from './starboard.js';
 import {CalcError, cmdCalc} from './calc.js';
 
 
+// ethylene glycol
+setInterval(() => {
+    if (process.send) {
+        process.send('heartbeat');
+    }
+}, config.antiFreeze.sendInterval * 1000);
+
+
 const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\nlet {' + Object.keys(lifewebRuleSymmetries).join(', ') + '} = lifewebRuleSymmetries;\n';
 
 

@@ -19,11 +19,16 @@ export type Message = OmitPartialGroupDMChannel<_Message>;
 export type Response = undefined | void | Parameters<Message['reply']>[0] | Message | [Parameters<Message['reply']>[0] | Message, string[]];
 
 export interface Config {
-    readonly token: string;
     readonly admins: string[];
+    readonly token: string;
     readonly wrapperToken: string;
     readonly wrapperInfoChannel: [string, string];
     readonly wrapperMaxRestartsPerDay: number;
+    readonly antiFreeze: {
+        readonly sendInterval: number;
+        readonly checkInterval: number;
+        readonly timeoutInterval: number;
+    };
     readonly initTime: number;
     readonly serverNames: {[key: string]: string};
     readonly starboards: {[key: string]: {
