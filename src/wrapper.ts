@@ -113,7 +113,7 @@ async function stopBot(): Promise<void> {
 }
 
 
-type Response = string | undefined;
+type Response = string | undefined | void;
 
 const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.assign(Object.create(null), {
 
@@ -149,7 +149,7 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
         }
         await startBot();
         isSupposedToBeOn = true;
-        return 'Update complete!';
+        await msg.channel.send('Update complete!');
     },
 
 });
