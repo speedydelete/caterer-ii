@@ -66,8 +66,8 @@ async function startBot(): Promise<void> {
     }, config.antiFreeze.checkInterval * 1000);
     let {promise, resolve} = Promise.withResolvers<void>();
     caterer.on('spawn', () => {
-        resolve();
         log('Bot started!');
+        resolve();
     });
     caterer.on('exit', async (code, signal) => {
         caterer = undefined;
