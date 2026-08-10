@@ -229,7 +229,7 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             }
             let value = String(part[2]);
             if (value.startsWith('#')) {
-                value = value[1];
+                value = value.slice(1);
             }
             let color: [number, number, number];
             if (value.length === 3) {

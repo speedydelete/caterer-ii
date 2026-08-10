@@ -85,9 +85,6 @@ const NAME_GENERATIONS = 1024;
 export async function cmdName(msg: Message, argv: string[]): Promise<Response> {
     await msg.channel.sendTyping();
     let data = await findRLE(msg);
-    if (!data) {
-        throw new BotError('Cannot find RLE');
-    }
     let apgcode = getApgcode(identifyPeriodic(data.p, NAME_GENERATIONS, false));
     if (!apgcode.startsWith('x') && !apgcode.startsWith('y')) {
         apgcode = data.p.toCanonicalApgcode(1, 'x');
@@ -116,9 +113,6 @@ export async function cmdName(msg: Message, argv: string[]): Promise<Response> {
 export async function cmdRename(msg: Message, argv: string[]): Promise<Response> {
     await msg.channel.sendTyping();
     let data = await findRLE(msg);
-    if (!data) {
-        throw new BotError('Cannot find RLE');
-    }
     let apgcode = getApgcode(identifyPeriodic(data.p, NAME_GENERATIONS, false));
     if (!apgcode.startsWith('x') && !apgcode.startsWith('y')) {
         apgcode = data.p.toCanonicalApgcode(1, 'x');
@@ -142,9 +136,6 @@ export async function cmdRename(msg: Message, argv: string[]): Promise<Response>
 export async function cmdDeleteName(msg: Message, argv: string[]): Promise<Response> {
     await msg.channel.sendTyping();
     let data = await findRLE(msg);
-    if (!data) {
-        throw new BotError('Cannot find RLE');
-    }
     let apgcode = getApgcode(identifyPeriodic(data.p, NAME_GENERATIONS, false));
     if (!apgcode.startsWith('x') && !apgcode.startsWith('y')) {
         apgcode = data.p.toCanonicalApgcode(1, 'x');

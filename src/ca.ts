@@ -15,9 +15,6 @@ export async function cmdHashsoup(msg: Message, argv: string[]): Promise<Respons
 
 export async function cmdApgencode(msg: Message, argv: string[]): Promise<Response> {
     let data = await findRLE(msg);
-    if (!data) {
-        throw new BotError('Cannot find RLE');
-    }
     let p = data.p.shrinkToFit();
     if (argv[1] && argv[1].startsWith('c')) {
         let gens = 0;
@@ -53,9 +50,6 @@ export async function cmdApgdecode(msg: Message, argv: string[]): Promise<Respon
 
 export async function cmdPopulation(msg: Message, argv: string[]): Promise<Response> {
     let data = await findRLE(msg);
-    if (!data) {
-        throw new BotError('Cannot find RLE!');
-    }
     let p = data.p;
     msg = data.msg;
     if (p.rule.states === 2) {

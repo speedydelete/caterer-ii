@@ -19,8 +19,8 @@ type Primitive = undefined | null | boolean | number | string | bigint | symbol;
 
 const VARIABLES = new Map<string, Primitive>(Object.entries({
 
-    'NaN': NaN,
-    'Infinity': Infinity,
+    'nan': NaN,
+    'infinity': Infinity,
 
     'pi': Math.PI,
     'e': Math.E,

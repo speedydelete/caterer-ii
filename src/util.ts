@@ -198,7 +198,7 @@ export async function findRLEFromMessage(msg: Message, replyTo: Message): Promis
     }
 }
 
-export async function findRLE(msg: Message): Promise<RLEData | undefined> {
+export async function findRLE(msg: Message): Promise<RLEData> {
     let out: RLEData | undefined;
     if (msg.reference) {
         let reply: Message | undefined = undefined;
@@ -223,4 +223,5 @@ export async function findRLE(msg: Message): Promise<RLEData | undefined> {
             return out;
         }
     }
+    throw new BotError(`Cannot find RLE!`);
 }
