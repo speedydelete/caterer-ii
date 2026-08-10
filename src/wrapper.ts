@@ -156,11 +156,15 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
 
 
 client.on('messageCreate', async msg => {
-    if (msg.author.bot || !sentByAdmin(msg) || !msg.content.startsWith('!!') || !(msg.content in COMMANDS)) {
+    if (msg.author.bot || !sentByAdmin(msg) || !msg.content.startsWith('!!')) {
         return;
     }
     try {
-        let resp = await COMMANDS[msg.content](msg);
+        let command = msg.content.slice(2);
+        if (!(command in COMMANDS)) {
+            return;
+        }
+        let resp = await COMMANDS[command](msg);
         if (resp !== undefined) {
             await msg.reply(resp);
         }
