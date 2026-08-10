@@ -452,15 +452,13 @@ async function runCommand(msg: Message): Promise<void> {
                 let content: string;
                 if (error instanceof CalcError || error.message.startsWith('SymmetryError: ')) {
                     content = error.message;
-                } else if (error instanceof BotError && error.message === 'Message too long!') {
-                    content = `Error: Message too long!`;
                 } else {
                     content = `${error.name}: ${error.message}`;
                 }
                 previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             } else if (error instanceof Error && (error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim.gif'` || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim_base.gif'`)) {
                 previousMsgs.push([msg.id, await msg.reply({content: `${error.name}: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
-            } else if (error instanceof DiscordAPIError && error.message.match(/Must be (2|4)000 or fewer in length/)) {
+            } else if ((error instanceof DiscordAPIError && error.message.match(/Must be (2|4)000 or fewer in length/)) || (error instanceof Error && error.message === 'Received one or more errors' && typeof error.stack === 'string' && error.stack.toLowerCase().includes('sapphire'))) {
                 previousMsgs.push([msg.id, await msg.reply({content: 'Error: Message too long!', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
             } else {
                 let str: string;
