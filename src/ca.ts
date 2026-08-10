@@ -1,6 +1,6 @@
 
 import {AttachmentBuilder, EmbedBuilder} from 'discord.js';
-import {RuleError, Pattern, unparseMAP, unparseMAPRuleFull, MAPPattern, MAPB0Pattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal, MAPGenPattern} from '../lifeweb/lib/index.js';
+import {RuleError, Pattern, unparseMAP, unparseMAPRuleFull, MAPPattern, MAPB0Pattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal, MAPGenPattern, LifewebError} from '../lifeweb/lib/index.js';
 
 import {BotError, Message, Response, aliases, findRLE} from './util.js';
 
@@ -106,7 +106,7 @@ export async function cmdRuleInfo(msg: Message, argv: string[]): Promise<Respons
     try {
         out += `**Black/white reversal:** ${getBlackWhiteReversal(rule)}\n`;
     } catch (error) {
-        if (!(error instanceof RuleError)) {
+        if (!(error instanceof LifewebError && error.message.toLowerCase().includes('black/white reversal'))) {
             throw error;
         }
     }
