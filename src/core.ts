@@ -257,7 +257,7 @@ export async function cmdSim(msg: Message, argv: string[]): Promise<Response> {
             throw new BotError('Cannot find RLE');
         }
         p = data.p;
-        replyTo = data.msg;
+        replyTo = data.replyTo;
     }
     let outputTime = false;
     if (argv[1] === 'time') {

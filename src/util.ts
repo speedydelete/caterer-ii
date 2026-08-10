@@ -136,6 +136,12 @@ export function sentByAdmin(msg: Message): boolean {
 }
 
 
+export interface RLEData {
+    p: Pattern;
+    msg: Message;
+    replyTo: Message;
+}
+
 export const RLE_HEADER = /\s*x\s*=\s*\d+\s*,?\s*y\s*=\s*\d+/;
 
 export function findRLEFromText(data: string): Pattern | undefined {
@@ -162,14 +168,14 @@ export function findRLEFromText(data: string): Pattern | undefined {
     return parse(data.slice(0, index + 1), aliases);
 }
 
-export async function findRLEFromMessage(msg: Message): Promise<{msg: Message, p: Pattern} | undefined> {
+export async function findRLEFromMessage(msg: Message, replyTo: Message): Promise<RLEData | undefined> {
     let out = findRLEFromText(msg.content);
     if (out) {
-        return {msg, p: out};
+        return {p: out, msg, replyTo};
     }
     if (msg.reference && msg.reference.type === 1) {
         let msg2 = await msg.fetchReference();
-        let out = await findRLEFromMessage(msg2);
+        let out = await findRLEFromMessage(msg2, msg);
         if (out) {
             return out;
         }
@@ -181,19 +187,19 @@ export async function findRLEFromMessage(msg: Message): Promise<{msg: Message, p
                 let data = await (await fetch(attachment.url)).text();
                 let out = findRLEFromText(data);
                 if (out) {
-                    return {msg, p: out};
+                    return {p: out, msg, replyTo};
                 }
             } else if (file.endsWith('.rpf')) {
                 let data = await (await fetch(attachment.url)).text();
                 let parser = new RPFParser(PLACEHOLDER_PATTERN, '/index.rpf', data);
-                return {msg, p: parser.pattern()};
+                return {p: parser.pattern(), msg, replyTo};
             }
         }
     }
 }
 
-export async function findRLE(msg: Message): Promise<{msg: Message, p: Pattern} | undefined> {
-    let out: {msg: Message, p: Pattern} | undefined;
+export async function findRLE(msg: Message): Promise<RLEData | undefined> {
+    let out: RLEData | undefined;
     if (msg.reference) {
         let reply: Message | undefined = undefined;
         try {
@@ -204,15 +210,16 @@ export async function findRLE(msg: Message): Promise<{msg: Message, p: Pattern} 
             }
         }
         if (reply) {
-            out = await findRLEFromMessage(reply);
+            out = await findRLEFromMessage(reply, reply);
             if (out) {
                 return out;
             }
         }
     }
     let msgs = await msg.channel.messages.fetch({limit: 50});
-    for (let msg of msgs) {
-        if (out = await findRLEFromMessage(msg[1] as Message)) {
+    for (let msg of msgs.values() as MapIterator<Message>) {
+        let out = await findRLEFromMessage(msg, msg);
+        if (out) {
             return out;
         }
     }
