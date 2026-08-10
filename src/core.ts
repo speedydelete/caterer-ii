@@ -87,9 +87,9 @@ function workerOnError(error: Error): void {
 
 function workerOnExit(code: number): void {
     workerAlive = false;
-    let msg = `Worker exited with code ` + code + '!';
-    console.log(msg + ', restarting worker');
-    workerHandleFatal(new Error(msg));
+    let msg = `Worker exited with code ${code}`;
+    console.log(`${msg}, restarting worker`);
+    workerHandleFatal(new BotError(`${msg}!`));
 }
 
 function runWorkerJob(type: 'sim', data: {argv: string[], value: string}, noTimeout?: boolean): Promise<[number, string | undefined] | null>;

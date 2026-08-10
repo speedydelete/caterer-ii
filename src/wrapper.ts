@@ -2,7 +2,7 @@
 import {ChildProcess, spawn, execSync} from 'node:child_process';
 import {Client, GatewayIntentBits, TextChannel} from 'discord.js';
 
-import {BotError, Message, config, sentByAdmin} from './util.js';
+import {BotError, lookupSignal, Message, config, sentByAdmin} from './util.js';
 
 
 let client = new Client({intents: [
@@ -11,7 +11,6 @@ let client = new Client({intents: [
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
 ]});
-
 
 let messageChannel: TextChannel;
 
@@ -35,6 +34,7 @@ let isSupposedToBeOn = true;
 
 let antiFreezeInterval: NodeJS.Timeout | undefined;
 let lastHeartbeat = 0;
+let antiFreezeKilled = false;
 
 function clearAntiFreeze() {
     if (antiFreezeInterval) {
@@ -60,15 +60,23 @@ async function startBot(): Promise<void> {
     antiFreezeInterval = setInterval(async () => {
         if (caterer && (Date.now() - lastHeartbeat > config.antiFreeze.timeoutInterval * 1000)) {
             log('Hang detected, restarting');
+            antiFreezeKilled = true;
             caterer.kill('SIGKILL');
         }
     }, config.antiFreeze.checkInterval * 1000);
     let {promise, resolve} = Promise.withResolvers<void>();
-    caterer.on('spawn', resolve);
-    caterer.on('exit', async () => {
+    caterer.on('spawn', () => {
+        resolve();
+        log('Bot started!');
+    });
+    caterer.on('exit', async (code, signal) => {
         caterer = undefined;
         clearAntiFreeze();
-        log('Bot exited, restarting');
+        if (antiFreezeKilled) {
+            antiFreezeKilled = false;
+        } else {
+            log(`Bot exited with code ${code} ${signal === null ? '' : `(${lookupSignal(signal).desc}) `}, restarting`);
+        }
         setTimeout(async () => {
             if (!isSupposedToBeOn) {
                 return;
