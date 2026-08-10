@@ -43,7 +43,7 @@ function clearAntiFreeze() {
     }
 }
 
-async function startBot(): Promise<void> {
+async function startBot(manual: boolean = false): Promise<void> {
     if (caterer) {
         throw new BotError('Bot is running!');
     }
@@ -66,7 +66,11 @@ async function startBot(): Promise<void> {
     }, config.antiFreeze.checkInterval * 1000);
     let {promise, resolve} = Promise.withResolvers<void>();
     caterer.on('spawn', () => {
-        log('Bot started!');
+        if (manual) {
+            console.log('Bot started!');
+        } else {
+            log('Bot started!');
+        }
         resolve();
     });
     caterer.on('exit', async (code, signal) => {
@@ -119,7 +123,7 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
 
     async 'start'(): Promise<Response> {
         isSupposedToBeOn = true;
-        await startBot();
+        await startBot(true);
         return 'Started!';
     },
 
@@ -136,7 +140,7 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
 
     async 'restart'(): Promise<Response> {
         await stopBot();
-        await startBot();
+        await startBot(true);
         return 'Restarted!';
     },
 
@@ -147,7 +151,7 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
             isSupposedToBeOn = false;
             await stopBot();
         }
-        await startBot();
+        await startBot(true);
         isSupposedToBeOn = true;
         await msg.channel.send('Update complete!');
     },
