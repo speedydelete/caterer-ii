@@ -3,7 +3,8 @@ import {Node, Expression, PrivateName} from '@babel/types';
 import {parseExpression} from '@babel/parser';
 import {CategoryChannel, Guild} from 'discord.js';
 
-import {BotError, Message, Response, readFile, writeFile, sentByAdmin} from './util.js';
+import {BotError, Message, Response} from './base.js';
+import {readFile, writeFile, sentByAdmin} from './util.js';
 import {COMMANDS, client} from './index.js';
 
 
@@ -24,11 +25,36 @@ export type ACL =
 export interface ACLData {
     acls: {[key: string]: ACL};
     commands: {[key: string]: ACL};
-    // actions: {[key: string]: ACL};
-    // registeredActions: string[];
 }
 
-export let aclData: ACLData = JSON.parse(await readFile('data/acls.json'));
+export let aclData: ACLData = Object.assign(Object.create(null), JSON.parse(await readFile('data/acls.json')));
+
+
+export const ACL_NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]$/;
+export const INVALID_ACL_NAMES = ['everyone', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'new', 'null', 'return', 'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with', 'undefined', 'Infinity', 'NaN', '__proto__', 'constructor'];
+
+export function aclValidator(acl: string): string | {name: string, reason?: string} {
+    if (!acl.match(ACL_NAME_REGEX)) {
+        return {name: 'ACL', reason: 'includes invalid characters'};
+    }
+    if (INVALID_ACL_NAMES.includes(acl)) {
+        return {name: 'ACL', reason: 'name is forbidden'};
+    }
+    return acl;
+}
+
+export function aclAndExistsValidator(acl: string): string | {name: string, reason?: string} {
+    if (!acl.match(ACL_NAME_REGEX)) {
+        return {name: 'ACL', reason: 'includes invalid characters'};
+    }
+    if (INVALID_ACL_NAMES.includes(acl)) {
+        return {name: 'ACL', reason: 'name is forbidden'};
+    }
+    if (!(acl in aclData)) {
+        return {name: 'ACL', reason: 'does not exist'};
+    }
+    return acl;
+}
 
 
 function throwParsingError(node: Node, msg: string): never {
@@ -53,7 +79,7 @@ async function expressionToACL(node: Expression | PrivateName, guild: Guild): Pr
         if (node.operator === '!' || node.operator === '~') {
             return {type: 'not', value: await expressionToACL(node.argument, guild)};
         } else {
-            throwParsingError(node, `Bad unary operator: '${node.operator}`)
+            throwParsingError(node, `Bad unary operator: '${node.operator}`);
         }
     } else if (node.type === 'BinaryExpression') {
         if (node.operator === '&') {
@@ -77,6 +103,11 @@ async function expressionToACL(node: Expression | PrivateName, guild: Guild): Pr
             arg = argNode.name;
         } else if (argNode.type === 'NumericLiteral') {
             arg = (argNode.extra as {raw: string}).raw;
+        } else if (argNode.type === 'TemplateLiteral') {
+            if (argNode.expressions.length !== 0 || argNode.quasis.length !== 1) {
+                throwParsingError(node, `Cannot use substitution inside template literals`);
+            }
+            arg = argNode.quasis[0].value.raw;
         } else {
             throwParsingError(node, `Invalid argument type (expected StringLiteral or Identifier): '${argNode.type}'`);
         }
@@ -150,6 +181,7 @@ export async function parseACL(data: string, guild: Guild): Promise<ACL> {
     return await expressionToACL(parseExpression(data), guild);
 }
 
+
 export async function aclToString(acl: ACL, pretty: boolean): Promise<string> {
     if (acl.type === 'everyone') {
         return 'everyone';
@@ -183,6 +215,7 @@ export async function aclToString(acl: ACL, pretty: boolean): Promise<string> {
         throw new Error(`Invalid ACL type: '${(acl as any).type}'`);
     }
 }
+
 
 function _matchesACL(msg: Message, acl: ACL): boolean {
     if (acl.type === 'everyone') {
@@ -226,15 +259,6 @@ export function matchesACL(msg: Message, acl: ACL | undefined): boolean {
     return Boolean(sentByAdmin(msg) || (acl && _matchesACL(msg, acl)));
 }
 
-// export function hasACLAction(msg: Message, action: string): boolean {
-//     return config.admin === msg.author.id || (action in acls.actions && _matchesACL(msg, acls.actions[action]));
-// }
-
-// export function registerACLAction(action: string): void {
-//     if (!acls.registeredActions.includes(action)) {
-//         acls.registeredActions.push(action);
-//     }
-// }
 
 function _aclIsUsed(name: string, acl: ACL): boolean {
     if (acl.type === 'acl') {
@@ -271,49 +295,18 @@ export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
     }
     let args = argv.slice(2);
     if (cmd === 'show') {
-        let name = args.join(' ');
-        if (!(name in aclData.acls)) {
-            throw new BotError(`ACL '${name}' does not exist`);
-        }
-        return await aclToString(aclData.acls[name], true);
+
     } else if (cmd === 'get') {
-        let name = args.join(' ');
-        if (!(name in aclData.acls)) {
-            throw new BotError(`ACL '${name}' does not exist`);
-        }
-        return '`' + (await aclToString(aclData.acls[name], false)) + '`';
+
     } else if (cmd === 'set') {
-        let name = args[0];
-        let acl = await parseACL(args.slice(1).join(' '), msg.guild as Guild);
-        aclData.acls[name] = acl;
-        await writeFile('data/acls.json', JSON.stringify(aclData));
-        return 'ACL set!';
+
     } else if (cmd === 'delete') {
-        let name = args.join(' ');
-        if (!(name in aclData.acls)) {
-            throw new BotError(`ACL '${name}' does not exist`);
-        }
-        let uses = getACLUses(name);
-        if (uses.length === 0) {
-            delete aclData.acls[name];
-        } else {
-            throw new BotError(`Cannot delete ACL '${name}' because it is used in these places: ${uses.join(', ')}`);
-        }
-        await writeFile('data/acls.json', JSON.stringify(aclData));
-        return 'ACL deleted!';
+
     } else if (cmd === 'list') {
-        return Object.keys(aclData.acls).join(', ');
+
     } else if (cmd === 'uses') {
         let name = args.join(' ');
-        if (!(name in aclData.acls)) {
-            throw new BotError(`ACL '${name}' does not exist`);
-        }
-        let uses = getACLUses(name);
-        if (uses.length === 0) {
-            return `ACL is not used`;
-        } else {
-            return uses.join(', ');
-        }
+
     } else if (cmd === 'showcmd') {
         let name = args.join(' ');
         if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {

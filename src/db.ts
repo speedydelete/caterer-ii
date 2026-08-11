@@ -3,7 +3,13 @@ import {EmbedBuilder} from 'discord.js';
 import {RuleError, identifyPeriodic, getApgcode, createPattern, parseSpeed} from '../lifeweb/lib/index.js';
 import {Type, TYPE_NAMES} from '../sssss/lib/index.js';
 
-import {BotError, Message, Response, readFile, writeFile, aliases, names, simStats, findRLE} from './util.js';
+import {BotError, Message, Response} from './base.js';
+import {readFile, writeFile, findRLE} from './util.js';
+
+
+export let aliases: {[key: string]: string} = Object.assign(Object.create(null), JSON.parse(await readFile('data/aliases.json')));
+
+export let names = new Map((await readFile('data/names.txt')).split('\n').map(x => x.split(' ')).map(x => [x[0], x.slice(1).join(' ')]));
 
 
 export async function cmdSssss(msg: Message, argv: string[]): Promise<Response> {

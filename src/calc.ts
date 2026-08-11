@@ -3,7 +3,7 @@ import * as crypto from 'node:crypto';
 import {Expression, PrivateName, SpreadElement, ArgumentPlaceholder} from '@babel/types';
 import {parseExpression} from '@babel/parser';
 
-import {BotError, Response, Message} from './util.js';
+import {BotError, Response, Message} from './base.js';
 
 
 export class CalcError extends BotError {
@@ -424,6 +424,12 @@ function runExpression(node: Expression | PrivateName | SpreadElement | Argument
             return left % right;
         } else if (op === '**') {
             return left ** right;
+        } else if (op === '|') {
+            return left | right;
+        } else if (op === '^') {
+            return left ^ right;
+        } else if (op === '&') {
+            return left & right;
         } else {
             throw new CalcError(`SyntaxError: Invalid binary operator: '${op}'`);
         }

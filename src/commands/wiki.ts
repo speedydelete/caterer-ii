@@ -2,7 +2,7 @@
 import * as fs from 'node:fs/promises';
 import {EmbedBuilder} from 'discord.js';
 
-import {BotError, Message, Response} from './util.js';
+import {BotError, Response, addCommand, restArg} from '../base.js';
 
 
 const NAMESPACES: {[key: string]: number} = {
@@ -36,9 +36,7 @@ const NAMESPACES: {[key: string]: number} = {
     'random': NaN,
 };
 
-
-export async function cmdWiki(msg: Message, argv: string[]): Promise<Response> {
-    let query = argv.slice(1).join(' ');
+export async function queryWiki(query: string): Promise<Response> {
     let originalQuery = query;
     query = query.toLowerCase();
     if (query.length === 0) {
@@ -206,3 +204,14 @@ export async function cmdWiki(msg: Message, argv: string[]): Promise<Response> {
         return {embeds: [embed]};
     }
 }
+
+addCommand(
+    'wiki', 'other', [],
+    'Look up something on the ConwayLife.com wiki',
+    [
+        restArg('query', 'string', 'The query to search'),
+    ],
+    async args => {
+        return queryWiki(args.query);
+    },
+);

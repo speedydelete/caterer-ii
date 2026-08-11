@@ -1,234 +1,19 @@
 
-import {inspect} from 'node:util';
+import {DiscordAPIError, GatewayIntentBits, MessageReplyOptions, Message as _Message, TextChannel, Partials, Client} from 'discord.js';
+import {LifewebError} from '../lifeweb/lib/index.js';
 
-import {Client, GatewayIntentBits, DiscordAPIError, Message as _Message, MessageReplyOptions, Guild, TextChannel, TextBasedChannel, Partials} from 'discord.js';
-import * as lifeweb from '../lifeweb/lib/index.js';
-import * as lifewebRPF from '../lifeweb/lib/editor/rpf.js';
-import * as lifewebRuleSymmetries from '../lifeweb/lib/rule_symmetries/index.js';
-
-import {BotError, Response, Message, readFile, writeFile, config, aliases, noReplyPings, findRLE} from './util.js';
+import {BotError, Response, Message, readFile, writeFile, config, aliases, noReplyPings, findRLE} from './base.js';
 import {aclData, matchesACL, cmdAcl} from './acl.js';
-import {cmdHelp} from './help.js';
 import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax, cmdIdentifyConduit, cmdBasis} from './core.js';
 import {cmdHashsoup, cmdApgencode, cmdApgdecode, cmdPopulation, cmdToMAP, cmdRuleInfo, cmdNormalizeRule, cmdBlackWhiteReverse, cmdCheckerboardDual} from './ca.js';
 import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSimStats, cmdSaveSimStats, cmdAlias, cmdRealias, cmdUnalias, cmdLookupAlias, cmdListAliases} from './db.js';
-import {cmdWiki} from './wiki.js';
+import {cmdWiki} from './commands/wiki.js';
 import {check5S} from './notifier.js';
 import {starboardChannels, cmdStarboardPrevent} from './starboard.js';
 import {CalcError, cmdCalc} from './calc.js';
 
 
-// ethylene glycol
-setInterval(() => {
-    if (process.send) {
-        process.send('heartbeat');
-    }
-}, config.antiFreeze.sendInterval * 1000);
-
-
-const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\nlet {' + Object.keys(lifewebRuleSymmetries).join(', ') + '} = lifewebRuleSymmetries;\n';
-
-
-function getChannel(msg: Message, args: string[]): [TextBasedChannel & {guild: Guild}, string] {
-    let guildName = args[0];
-    if (guildName === 'here') {
-        return [msg.channel as TextBasedChannel & {guild: Guild}, args.slice(1).join(' ')];
-    }
-    if (!(guildName in config.serverNames)) {
-        throw new BotError(`Invalid server: '${guildName}'`);
-    }
-    let guild = client.guilds.cache.get(config.serverNames[guildName]);
-    if (!guild) {
-        throw new BotError(`Invalid server: '${guildName}'`);
-    }
-    let channelName = args[1];
-    for (let channel of guild.channels.cache.values()) {
-        if (channel.name === channelName && channel.isTextBased()) {
-            return [channel, args.slice(2).join(' ')];
-        }
-    }
-    throw new BotError(`Nonexistent channel: '${channelName}'`);
-}
-
-
 export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) => Promise<Response>)} = Object.assign(Object.create(null), {
-
-    help: cmdHelp,
-    about: 'help',
-    info: 'help',
-
-    async eval(msg: Message, argv: string[]): Promise<Response> {
-        if (msg.author.id === '1253852708826386518') {
-            await msg.channel.sendTyping();
-            let index = msg.content.indexOf(' ');
-            let index2 = msg.content.indexOf('\n');
-            if (index === -1 || (index2 !== -1 && index2 < index)) {
-                index = index2;
-            }
-            if (index === -1) {
-                throw new BotError(`No separating whitespace detected`);
-            }
-            let code = msg.content.slice(index + 1);
-            if (!code.includes(';') && !code.includes('\n')) {
-                code = 'return ' + code;
-            }
-            code = `return (async () => {${code}})()`;
-            let out = await (new Function('client', 'msg', 'lifeweb', 'lifewebRPF', 'lifewebRuleSymmetries', 'aliases', 'findRLE', 'readFile', 'writeFile', '"use strict";' + EVAL_PREFIX + code))(client, msg, lifeweb, lifewebRPF, lifewebRuleSymmetries, aliases, findRLE, readFile, writeFile);
-            if (typeof out === 'string') {
-                return '```\n' + out + '\n```';
-            } else {
-                return '```ansi\n' + inspect(out, {
-                    colors: true,
-                    depth: 2,
-                    breakLength: 120,
-                }).replaceAll('\x1b[22m', '\x1b[0m').replaceAll('\x1b[39m', '\x1b[0m') + '\n```';
-            }
-        } else {
-            throw new BotError('You are not speedydelete');
-        }
-    },
-
-    async ping(msg: Message, argv: string[]): Promise<Response> {
-        let msg2 = await msg.reply({content: 'Pong!', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}});
-        msg2.edit({content: `Pong! Latency: ${Math.round(msg2.createdTimestamp - msg.createdTimestamp)} ms (Discord WebSocket: ${Math.round(client.ws.ping)} ms)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})
-    },
-
-    async pig(msg: Message, argv: string[]): Promise<Response> {
-        if (msg.reference) {
-            await (await msg.fetchReference()).react('🐷');
-        } else {
-            await msg.react('🐷');
-        }
-    },
-
-    async noreplypings(msg: Message, argv: string[]): Promise<Response> {
-        if (noReplyPings.includes(msg.author.id)) {
-            throw new BotError(`You already have reply pings disabled!`);
-        } else {
-            noReplyPings.push(msg.author.id);
-            await writeFile('data/no_reply_pings.json', JSON.stringify(noReplyPings, undefined, 4));
-            return 'Pings disabled!';
-        }
-    },
-
-    async yesreplypings(msg: Message, argv: string[]): Promise<Response> {
-        let index = noReplyPings.indexOf(msg.author.id);
-        if (index === -1) {
-            throw new BotError(`You already have reply pings enabled!`);
-        } else {
-            noReplyPings.splice(index, 1);
-            await writeFile('data/no_reply_pings.json', JSON.stringify(noReplyPings, undefined, 4));
-            return 'Pings enabled!';
-        }
-    },
-
-    async da2a(msg: Message, argv: string[]): Promise<Response> {
-        if (msg.reference) {
-            let ref = await msg.fetchReference();
-            if (ref.type === 0) {
-                ref.reply({content: `Don't ask to ask, you should beg to ask! Many users on mathcord are important people with busy lives and you are inconveniencing them by asking a question. As such you should grovel and beg for the privilege of doing so.`, allowedMentions: {repliedUser: false}});
-            }
-        } else {
-            msg.channel.send(`Don't ask to ask, you should beg to ask! Many users on mathcord are important people with busy lives and you are inconveniencing them by asking a question. As such you should grovel and beg for the privilege of doing so.`);
-        }
-    },
-
-    async say(msg: Message, argv: string[]): Promise<Response> {
-        let deleteAfter = argv[1] === '-iq';
-        if (deleteAfter) {
-            argv = argv.slice(1);
-        }
-        if (msg.reference && msg.reference.type === 0) {
-            let reply = await msg.fetchReference();
-            await reply.reply(argv.slice(1).join(' '));
-        } else {
-            let [channel, args] = getChannel(msg, argv.slice(1));
-            if (channel.isSendable()) {
-                await channel.send(args);
-            } else {
-                throw new BotError(`Cannot send in channel`);
-            }
-        }
-        if (deleteAfter && msg.deletable) {
-            await msg.delete();
-        }
-    },
-
-    async edit(msg: Message, argv: string[]): Promise<Response> {
-        let deleteAfter = argv[1] === '-iq';
-        if (deleteAfter) {
-            argv = argv.slice(1);
-        }
-        if (msg.reference) {
-            (await msg.fetchReference()).edit(argv.slice(1).join(' '));
-        } else {
-            let [channel, toSend] = getChannel(msg, argv.slice(1));
-            let toEdit = await channel.messages.fetch(argv[3]);
-            toEdit.edit(toSend);
-        }
-        if (deleteAfter && msg.deletable) {
-            await msg.delete();
-        }
-    },
-
-    async react(msg: Message, argv: string[]): Promise<Response> {
-        let deleteAfter = argv[1] === '-iq';
-        if (deleteAfter) {
-            argv = argv.slice(1);
-        }
-        let toReact: Message;
-        let emoji: string;
-        if (msg.reference) {
-            toReact = await msg.fetchReference();
-            emoji = argv[1];
-        } else {
-            let [channel, msgId] = getChannel(msg, argv.slice(1));
-            toReact = await channel.messages.fetch(msgId) as Message;
-            emoji = argv[4];
-        }
-        let out: string;
-        let match: RegExpMatchArray | null;
-        if (match = emoji.match(/^<(a?):([a-zA-Z0-9_]+):(\d+)>$/)) {
-            out = match[3];
-        } else if (match = emoji.match(/^:?([a-zA-Z0-9_]+):?$/)) {
-            let name = match[1];
-            let resolved = client.emojis.cache.find(e => e.name === name);
-            if (resolved) {
-                out = resolved.id;
-            } else {
-                throw new BotError(`Cannot find emoji: '${emoji}'`);
-            }
-        } else {
-            out = emoji;
-        }
-        await toReact.react(out);
-        setTimeout(async () => {
-            let reaction = toReact.reactions.cache.get(out);
-            if (reaction) {
-                try {
-                    await reaction.users.remove(client.user.id)
-                } catch {}
-            }
-        }, 30000);
-        if (deleteAfter && msg.deletable) {
-           await msg.delete();
-        }
-    },
-
-    async users(msg: Message, argv: string[]): Promise<Response> {
-        let servers: [string, number][] = [];
-        for (let [_, partialGuild] of await client.guilds.fetch()) {
-            let guild = await partialGuild.fetch();
-            servers.push([guild.name, guild.memberCount]);
-        }
-        servers = servers.sort((x, y) => y[1] - x[1]);
-        let total = servers.map(x => x[1]).reduce((x, y) => x + y);
-        let out = `No more than ${total} users across ${servers.length} servers:\n`;
-        for (let [name, users] of servers) {
-            out += `* ${name}: ${users} users\n`;
-        }
-        return out;
-    },
 
     'calc': cmdCalc,
     'roll': 'calc',
@@ -304,19 +89,6 @@ let previousMsgs: [string, Message][] = [];
 let deleters: [string, string][] = [];
 let runningCommands = new Set<string>();
 
-const ESCAPES: {[key: string]: string} = {
-    'a': '\x07',
-    'b': '\x08',
-    'e': '\x1b',
-    'f': '\f',
-    'n': '\n',
-    'r': '\r',
-    't': '\t',
-    'v': '\v',
-};
-
-const MULTILINE_CMDS: string[] = ['sim'];
-
 async function runCommand(msg: Message): Promise<void> {
     if (msg.author.bot || msg.createdTimestamp < config.initTime || runningCommands.has(msg.id)) {
         return;
@@ -360,63 +132,6 @@ async function runCommand(msg: Message): Promise<void> {
             return;
         }
         runningCommands.add(msg.id);
-        let argv: string[] = [cmd];
-        let currentArg = '';
-        let quoteMode: 'none' | 'single' | 'double' = 'none';
-        for (let i = 0; i < data.length; i++) {
-            let char = data[i];
-            if (char === '\\' && quoteMode !== 'single') {
-                if (i === data.length - 1) {
-                    currentArg += char;
-                    continue;
-                }
-                char = data[i++];
-                if (char in ESCAPES) {
-                    currentArg += ESCAPES[char];
-                } else if (char === 'x') {
-                    currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 3), 16));
-                    i += 2;
-                } else if (char === 'u') {
-                    currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 5), 16));
-                    i += 4;
-                } else if (char === 'U') {
-                    currentArg += String.fromCharCode(parseInt(data.slice(i + 1, i + 6), 16));
-                    i += 5;
-                } else if ('0123456789'.includes(char)) {
-                    currentArg += String.fromCharCode(parseInt(data.slice(i, i + 3), 8));
-                    i += 2;
-                } else {
-                    currentArg += char;
-                }
-            } else if (char === "'") {
-                if (quoteMode === 'none') {
-                    quoteMode = 'single';
-                } else if (quoteMode === 'single') {
-                    quoteMode = 'none';
-                } else {
-                    currentArg += char;
-                }
-            } else if (char === '"') {
-                if (quoteMode === 'none') {
-                    quoteMode = 'double';
-                } else if (quoteMode === 'single') {
-                    currentArg += char;
-                } else {
-                    quoteMode = 'none';
-                }
-            } else if (char === '\n' && MULTILINE_CMDS.includes(cmd)) {
-                argv.push(currentArg, '\n');
-                currentArg = '';
-            } else if ((char === ' ' || char === '\n') && quoteMode === 'none') {
-                argv.push(currentArg);
-                currentArg = '';
-            } else {
-                currentArg += char;
-            }
-        }
-        if (currentArg.length > 0) {
-            argv.push(currentArg);
-        }
         try {
             let value = await resolvedCommandFunc(msg, argv);
             if (value) {
@@ -448,7 +163,7 @@ async function runCommand(msg: Message): Promise<void> {
                 }
             }
         } catch (error) {
-            if (error instanceof BotError || error instanceof lifeweb.LifewebError || error instanceof SyntaxError) {
+            if (error instanceof BotError || error instanceof LifewebError || error instanceof SyntaxError) {
                 let content: string;
                 if (error instanceof CalcError || error.message.startsWith('SymmetryError: ')) {
                     content = error.message;
@@ -482,6 +197,9 @@ async function runCommand(msg: Message): Promise<void> {
         }
     }
 }
+
+
+export let noReplyPings: string[] = JSON.parse(await readFile('data/no_reply_pings.json'));
 
 
 export let client = new Client({

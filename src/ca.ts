@@ -2,7 +2,7 @@
 import {AttachmentBuilder, EmbedBuilder} from 'discord.js';
 import {RuleError, Pattern, unparseMAP, unparseMAPRuleFull, MAPPattern, MAPB0Pattern, getHashsoup, createPattern, toCatagolueRule, getBlackWhiteReversal, MAPGenPattern, LifewebError} from '../lifeweb/lib/index.js';
 
-import {BotError, Message, Response, aliases, findRLE} from './util.js';
+import {BotError, Message, Response, aliases, findRLE} from './base.js';
 
 
 export async function cmdHashsoup(msg: Message, argv: string[]): Promise<Response> {
@@ -129,4 +129,25 @@ export async function cmdCheckerboardDual(msg: Message, argv: string[]): Promise
         odd[i ^ 0b101010101] = trs[i] ^ 1;
     }
     return `Even: ${unparseMAPRuleFull(even, p.rule.states)}\nOdd: ${unparseMAPRuleFull(odd, p.rule.states)}`;
+}
+
+
+export async function cmdBasis(msg: Message, argv: string[]): Promise<Response> {
+    await msg.channel.sendTyping();
+    let noTimeout = false;
+    if (argv[1] === 'notimeout') {
+        if (sentByAdmin(msg)) {
+            noTimeout = true;
+            argv = argv.slice(1);
+        } else {
+            throw new BotError(`You must be an admin to use notimeout!`);
+        }
+    }
+    let symmetry = argv.slice(1).join(' ');
+    let out = await runWorkerJob('basis', {value: symmetry}, noTimeout);
+    if (out.length < 2000) {
+        return out;
+    } else {
+        return {files: [new AttachmentBuilder(Buffer.from(out, 'utf-8'), {name: 'basis.txt'})]};
+    }
 }

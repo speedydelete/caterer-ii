@@ -1,7 +1,7 @@
 
 import {DiscordAPIError, Message as _Message, PartialMessage, MessageReaction, PartialMessageReaction, TextChannel} from 'discord.js';
 
-import {BotError, Response, Message, readFile, writeFile, config, findRLEFromText} from './util.js';
+import {BotError, Response, Message, readFile, writeFile, config, findRLEFromText} from './base.js';
 import {client} from './index.js';
 
 

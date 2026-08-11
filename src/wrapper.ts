@@ -2,7 +2,9 @@
 import {ChildProcess, spawn, execSync} from 'node:child_process';
 import {Client, GatewayIntentBits, TextChannel} from 'discord.js';
 
-import {BotError, lookupSignal, Message, config, sentByAdmin} from './util.js';
+import {CatererIPCMessage} from './ipc_and_error_setup.js';
+import {BotError, Message, config} from './base.js';
+import {lookupSignal, sentByAdmin} from './util.js';
 
 
 let client = new Client({intents: [
@@ -23,8 +25,12 @@ async function log(message: string): Promise<void> {
 let caterer: ChildProcess | undefined;
 
 
+function getNow() {
+    return Date.now() / 1000;
+}
+
 function getDay() {
-    return Math.floor(Date.now() / 1000 / 86400);
+    return Math.floor(getNow() / 86400);
 }
 
 let lastRestartDay = getDay();
@@ -43,27 +49,38 @@ function clearAntiFreeze() {
     }
 }
 
+function onMessage(msg: CatererIPCMessage): void {
+    if (msg.type === 'heartbeat') {
+        lastHeartbeat = getNow();
+    } else if (msg.type === 'js-error' || msg.type === 'system-error') {
+        if (msg.type === 'js-error') {
+            let data = msg.data;
+            let out = 'JS error caught, restarting\n```';
+            if (typeof data === 'string') {
+                out += msg.data;
+            } else {
+                if (data.stack === undefined) {
+                    out += `${data.name}: ${data.message}`;
+                } else {
+                    out += data.stack;
+                }
+            }
+            out += '```';
+            log(out);
+        } else if (msg.type === 'system-error') {
+            log('System error detected, restarting\n```' + msg.message + '```');
+            if (caterer) {
+                caterer.kill('SIGKILL');
+            }
+        }
+    }
+}
+
 async function startBot(manual: boolean = false): Promise<void> {
     if (caterer) {
         throw new BotError('Bot is running!');
     }
     caterer = spawn('/home/caterer/.nvm/versions/node/v26.2.0/bin/node', [`${import.meta.dirname}/index.js`], {stdio: ['inherit', 'inherit', 'inherit', 'ipc']});
-    lastHeartbeat = Date.now();
-    // listen for heartbeats
-    caterer.on('message', msg => {
-        if (msg === 'heartbeat') {
-            lastHeartbeat = Date.now();
-        }
-    });
-    // start ethylene glycol monitor
-    clearAntiFreeze();
-    antiFreezeInterval = setInterval(async () => {
-        if (caterer && (Date.now() - lastHeartbeat > config.antiFreeze.timeoutInterval * 1000)) {
-            log('Hang detected, restarting');
-            antiFreezeKilled = true;
-            caterer.kill('SIGKILL');
-        }
-    }, config.antiFreeze.checkInterval * 1000);
     let {promise, resolve} = Promise.withResolvers<void>();
     caterer.on('spawn', () => {
         if (manual) {
@@ -79,7 +96,7 @@ async function startBot(manual: boolean = false): Promise<void> {
         if (antiFreezeKilled) {
             antiFreezeKilled = false;
         } else {
-            log(`Bot exited with code ${code} ${signal === null ? '' : `(${lookupSignal(signal).desc}) `}, restarting`);
+            log(`Bot exited with code ${code}${signal === null ? '' : ` (${lookupSignal(signal).desc}) `}, restarting`);
         }
         setTimeout(async () => {
             if (!isSupposedToBeOn) {
@@ -93,11 +110,24 @@ async function startBot(manual: boolean = false): Promise<void> {
                 lastRestartDay = currentDay;
             }
             if (restartsToday > config.wrapperMaxRestartsPerDay) {
-                log('Maximum restarts exceeded for today');
+                log('Maximum restarts exceeded for today, not restarting');
+                isSupposedToBeOn = false;
+                return;
             }
             await startBot();
         }, 5000);
     });
+    caterer.on('message', onMessage);
+    // start ethylene glycol monitor
+    lastHeartbeat = getNow();
+    clearAntiFreeze();
+    antiFreezeInterval = setInterval(async () => {
+        if (caterer && (getNow() - lastHeartbeat > config.antiFreeze.timeoutInterval)) {
+            log('Hang detected, restarting');
+            antiFreezeKilled = true;
+            caterer.kill('SIGKILL');
+        }
+    }, config.antiFreeze.checkInterval * 1000);
     return promise;
 }
 
@@ -156,6 +186,11 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
         await msg.channel.send('Update complete!');
     },
 
+    async 'resetcounter'(): Promise<Response> {
+        lastRestartDay = 0;
+        return 'Counter reset!';
+    },
+
 });
 
 
@@ -164,7 +199,7 @@ client.on('messageCreate', async msg => {
         return;
     }
     try {
-        let command = msg.content.slice(2);
+        let command = msg.content.slice(2).toLowerCase().replaceAll('_', '');
         if (!(command in COMMANDS)) {
             return;
         }
