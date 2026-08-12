@@ -2,7 +2,7 @@
 import * as fs from 'node:fs/promises';
 import {EmbedBuilder} from 'discord.js';
 
-import {BotError, Response, addCommand, restArg} from '../base.js';
+import {BotError, Response, addCommand, requiredRestArg} from '../base.js';
 
 
 const NAMESPACES: {[key: string]: number} = {
@@ -39,9 +39,6 @@ const NAMESPACES: {[key: string]: number} = {
 export async function queryWiki(query: string): Promise<Response> {
     let originalQuery = query;
     query = query.toLowerCase();
-    if (query.length === 0) {
-        throw new BotError('No page provided!');
-    }
     let namespace = 0;
     if (query.includes(':')) {
         let parts = query.split(':');
@@ -207,11 +204,12 @@ export async function queryWiki(query: string): Promise<Response> {
 
 addCommand(
     'wiki', 'other', [],
-    'Look up something on the ConwayLife.com wiki',
+    'Look up something on the ConwayLife.com wiki.',
     [
-        restArg('query', 'string', 'The query to search'),
+        requiredRestArg('query', 'string', 'The query to search'),
     ],
     async args => {
         return queryWiki(args.query);
     },
+    true,
 );

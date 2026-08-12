@@ -1,8 +1,9 @@
 
 import {DiscordAPIError, Message as _Message, PartialMessage, MessageReaction, PartialMessageReaction, TextChannel} from 'discord.js';
 
-import {BotError, Response, Message, readFile, writeFile, config, findRLEFromText} from './base.js';
-import {client} from './index.js';
+import {BotError, Response, Message, config} from '../base.js';
+import {readFile, writeFile, findRLEFromText} from '../util.js';
+import {client} from '../index.js';
 
 
 export let starboard: {[key: string]: {data: Map<string, [string, string]>, forbidden: Set<string>}} = {};

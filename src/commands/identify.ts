@@ -1,4 +1,14 @@
 
+import {EmbedBuilder} from 'discord.js';
+
+import {Pattern, Minmax, findMinmax, PatternType, identifyPeriodic, getApgcode, getDescription, ALTERNATE_SYMMETRIES, Identified, identify, toCatagolueRule} from '../../lifeweb/lib/index.js';
+
+import {requiredArg, optionalArg, flagArg, addCommand} from '../base.js';
+import {findRLE} from '../util.js';
+import {deserialize, registerWorkerTask} from '../worker.js';
+import {serialize, runWorkerTask} from '../worker_manager.js';
+import {names} from '../db.js';
+
 
 function embedIdentified(original: Pattern, type: PatternType | Identified, isOutput?: boolean): EmbedBuilder[] {
     let out = '';
@@ -25,8 +35,9 @@ function embedIdentified(original: Pattern, type: PatternType | Identified, isOu
     let maxPop = Math.max(...pops);
     out += `**Populations:** ${minPop} | ${Math.round(avgPop * 100) / 100} | ${maxPop}\n`;
     if ('minmax' in type && type.minmax) {
-        out += `**Min:** ${type.minmax[0]}\n`;
-        out += `**Max:** ${type.minmax[1]}\n`;
+        out += `**Min:** ${type.minmax.min}\n`;
+        out += `**Max:** ${type.minmax.max}\n`;
+        out += `**Versatility:** 2^${type.minmax.versatility} rules\n`;
     }
     if ('symmetry' in type) {
         out += `**Symmetry:** ${type.symmetry.replaceAll('*', '\\*')} (${ALTERNATE_SYMMETRIES[type.symmetry].replaceAll('\\', '\\\\').replaceAll('_', '\\_')})\n`;
@@ -82,134 +93,74 @@ function embedIdentified(original: Pattern, type: PatternType | Identified, isOu
     return embeds;
 }
 
-export async function cmdIdentify(msg: Message, argv: string[]): Promise<Response> {
-    await msg.channel.sendTyping();
-    let noTimeout = false;
-    if (argv[1] === 'notimeout') {
-        if (sentByAdmin(msg)) {
-            noTimeout = true;
-            argv = argv.slice(1);
-        } else {
-            throw new BotError(`You must be an admin to use notimeout!`);
-        }
+
+declare module '../worker_manager.js' {
+    export interface WorkerTaskTypes {
+        identify: [{pattern: string, limit: number, checkLinear: boolean, acceptStabilized: boolean}, Identified];
+        basicIdentify: [{pattern: string, limit: number, checkLinear: boolean, acceptStabilized: boolean}, PatternType];
+        minmax: [{pattern: string, gens: number, ot?: boolean}, Minmax];
     }
-    let limit = 1024;
-    if (argv[1]) {
-        let parsed = Number(argv[1]);
-        if (Number.isNaN(parsed)) {
-            throw new BotError(`Invalid number: '${argv[1]}'`);
-        }
-        limit = parsed;
-    }
-    let data = await findRLE(msg);
-    let out = await runWorkerJob('identify', {value: serialize(data.p), limit}, noTimeout);
-    return {embeds: embedIdentified(data.p, out)};
 }
 
-export async function cmdBasicIdentify(msg: Message, argv: string[]): Promise<Response> {
-    await msg.channel.sendTyping();
-    let noTimeout = false;
-    if (argv[1] === 'notimeout') {
-        if (sentByAdmin(msg)) {
-            noTimeout = true;
-            argv = argv.slice(1);
-        } else {
-            throw new BotError(`You must be an admin to use notimeout!`);
-        }
-    }
-    let limit = 1024;
-    if (argv[1]) {
-        let parsed = Number(argv[1]);
-        if (!Number.isNaN(parsed)) {
-            limit = parsed;
-        }
-    }
-    let data = await findRLE(msg);
-    let out = await runWorkerJob('basic_identify', {value: serialize(data.p), limit}, noTimeout);
-    return {embeds: embedIdentified(data.p, out)};
-}
+registerWorkerTask('identify', data => identify(deserialize(data.pattern), data.limit, data.acceptStabilized, data.checkLinear));
+registerWorkerTask('basicIdentify', data => identifyPeriodic(deserialize(data.pattern), data.limit, data.acceptStabilized, data.checkLinear));
+registerWorkerTask('minmax', data => findMinmax(deserialize(data.pattern), data.gens, undefined, undefined, data.ot));
 
-export async function cmdMinmax(msg: Message, argv: string[]): Promise<Response> {
-    await msg.channel.sendTyping();
-    let noTimeout = false;
-    if (argv[1] === 'notimeout') {
-        if (sentByAdmin(msg)) {
-            noTimeout = true;
-            argv = argv.slice(1);
-        } else {
-            throw new BotError(`You must be an admin to use notimeout!`);
-        }
-    }
-    let gens = Number(argv[1]);
-    if (Number.isNaN(gens)) {
-        throw new BotError('Argument 1 is not a valid number');
-    }
-    let data = await findRLE(msg);
-    let out = await runWorkerJob('minmax', {value: serialize(data.p), gens}, noTimeout);
-    return `Min: ${out[0]}\nMax: ${out[1]}`;
-}
+addCommand(
+    'identify', 'identify', [],
+    'Identify a pattern.',
+    [
+        optionalArg('limit', 'number', 'Number of generations to run the identifier for (default 4096).', 4096),
+        flagArg('only-periodic', ['p'], 'Whether to only accept periodic patterns (and not linear growth)'),
+        flagArg('only-real', ['r'], 'Whether to not accept patterns that stabilize into others'),
+    ],
+    async args => {
+        let p = (await findRLE(args.msg)).p;
+        let out = await runWorkerTask('identify', {
+            pattern: serialize(p),
+            limit: args.limit,
+            checkLinear: !args.onlyPeriodic,
+            acceptStabilized: !args.onlyReal,
+        });
+        return {embeds: embedIdentified(p, out)};
+    },
+    true,
+);
 
-export async function cmdIdentifyConduit(msg: Message, argv: string[]): Promise<Response> {
-    await msg.channel.sendTyping();
-    let noTimeout = false;
-    if (argv[1] === 'notimeout') {
-        if (sentByAdmin(msg)) {
-            noTimeout = true;
-            argv = argv.slice(1);
-        } else {
-            throw new BotError(`You must be an admin to use notimeout!`);
-        }
-    }
-    let minTime = argv[1] ? parseInt(argv[1]) : 0;
-    let sepGens = argv[2] ? parseInt(argv[2]) : 0;
-    let maxTime = argv[3] ? parseInt(argv[3]) : 512;
-    let identifyGens = argv[4] ? parseInt(argv[4]) : 256;
-    let p = (await findRLE(msg)).p;
-    if (p.rule.str.includes('History') || p.rule.str.includes('Super')) {
-        p.setData(p.height, p.width, p.getData().map(x => x % 2));
-    }
-    let data = await runWorkerJob('identify_conduit', {value: serialize(p), minTime, maxTime, maxRT: maxTime, sepGens, identifyGens}, noTimeout);
-    if (data === false) {
-        throw new BotError(`Not a conduit!`);
-    }
-    let title = getConduitName(data, true).replaceAll('_', '\\_').replaceAll('*', '\\*');
-    let out: string[] = [];
-    let inputTimeStr = data.inputTime ? ` at generation ${data.inputTime}` : '';
-    if (data.input in CONDUIT_OBJECTS) {
-        let name = CONDUIT_OBJECTS[data.input][0];
-        name = name[0].toUpperCase() + name.slice(1);
-        out.push(`**Input:** ${name}${inputTimeStr}`);
-    } else {
-        out.push(`**Input:** ${data.input}${inputTimeStr}`);
-    }
-    for (let obj of data.output) {
-        let suffix = `at generation ${obj.time} and position (${obj.x}, ${obj.y})`;
-        if (obj.objTime !== 0) {
-            suffix = `(after ${obj.objTime} generation${obj.objTime === 1 ? '' : 's'}) ` + suffix;
-        }
-        if (obj.obj in CONDUIT_OBJECTS) {
-            let name = CONDUIT_OBJECTS[obj.obj][0];
-            name = name[0].toUpperCase() + name.slice(1);
-            out.push(`**Output:** ${name} ${suffix}`);
-        } else {
-            out.push(`**Output:** ${obj.obj} ${suffix}`);
-        }
-    }
-    for (let glider of data.gliders) {
-        out.push(`**Output:** ${glider.dir} glider lane ${glider.lane} timing ${glider.timing}`);
-    }
-    for (let obj of data.otherOutputs) {
-        out.push(`**Output:** ${obj.code} (${obj.x}, ${obj.y})`);
-    }
-    if (data.repeatTime !== undefined) {
-        out.push(`**Repeat time:** ${data.repeatTime}`);
-        if (data.overclock) {
-            if (data.overclock.length === 0) {
-                out.push('**No overclock**');
-            } else {
-                out.push(`**Overclock:** ${toRanges(data.overclock)}`);
-            }
-        }
-    }
-    return {embeds: [(new EmbedBuilder()).setTitle(title).setDescription(out.join('\n'))]};
-}
+addCommand(
+    'basicidentify', 'identify', [],
+    'Identify a pattern, but provide less information (can be faster).',
+    [
+        optionalArg('limit', 'number', 'Number of generations to run the identifier for (default 4096).', 4096),
+        flagArg('only-periodic', ['p'], 'Whether to only accept periodic patterns (and not linear growth)'),
+        flagArg('only-real', ['r'], 'Whether to not accept patterns that stabilize into others'),
+    ],
+    async args => {
+        let p = (await findRLE(args.msg)).p;
+        let out = await runWorkerTask('basicIdentify', {
+            pattern: serialize(p),
+            limit: args.limit,
+            checkLinear: !args.onlyPeriodic,
+            acceptStabilized: !args.onlyReal,
+        });
+        return {embeds: embedIdentified(p, out)};
+    },
+    true,
+);
+
+addCommand(
+    'minmax', 'identify', [],
+    'Find the minimum and maximum rule of a pattern.',
+    [
+        requiredArg('gens', 'number', 'Number of generations to run the pattern for.'),
+    ],
+    async args => {
+        let p = (await findRLE(args.msg)).p;
+        let out = await runWorkerTask('minmax', {
+            pattern: serialize(p),
+            gens: args.gens,
+        });
+        return `Min: ${out.min}\nMax: ${out.max}\n2^${out.versatility} rules`;
+    },
+    true,
+);

@@ -6,7 +6,7 @@ import * as lifeweb from '../../lifeweb/lib/index.js';
 import * as lifewebRPF from '../../lifeweb/lib/editor/rpf.js';
 import * as lifewebRuleSymmetries from '../../lifeweb/lib/rule_symmetries/index.js';
 
-import {BotError, CommandCategory, CATEGORY_NAMES, SingleOptionTypeValue, ArgType, requiredArg, restArg, optionalArg, Command, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandValidator} from '../base.js';
+import {BotError, CommandCategory, CATEGORY_NAMES, Arg, requiredArg, requiredRestArg, optionalArg, Command, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandValidator} from '../base.js';
 import {readFile, writeFile, findRLE} from '../util.js';
 import {aclData, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses} from '../acl.js';
 import {aliases} from '../db.js';
@@ -24,9 +24,64 @@ You can use Bash-style quoting and escaping in commands.
 
 Type \`!help <command>\` for help for a specific command!`;
 
+function formatArgUsage(arg: Arg): string {
+    let out: string;
+    if (arg.kind === 'required') {
+        out = `<${arg.name}>`;
+    } else if (arg.kind === 'required-variadic') {
+        out = `${arg.name}...`;
+    } else if (arg.kind === 'required-rest') {
+        out = `...${arg.name}`;
+    } else if (arg.kind === 'optional') {
+        out = `[${arg.name}]`;
+    } else if (arg.kind === 'optional-variadic') {
+        out = `[${arg.name}...]`;
+    } else if (arg.kind === 'optional-rest') {
+        out = `[...${arg.name}]`;
+    } else if (arg.kind === 'flag' || arg.kind === 'option') {
+        let useAs: string[] = [];
+        if (arg.name.length === 1) {
+            useAs.push(`-${arg.name}`);
+        } else {
+            useAs.push(`--${arg.name}`);
+        }
+        for (let alias of arg.aliases) {
+            if (alias.length === 1) {
+                useAs.push(`-${alias}`);
+            } else {
+                useAs.push(`--${alias}`);
+            }
+        }
+        let str = useAs.sort((x, y) => {
+            if (x.length !== y.length) {
+                return x.length - y.length;
+            } else if (x < y) {
+                return -1;
+            } else if (x > y) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }).join('|');
+        if (arg.kind === 'option') {
+            if ('arg' in arg) {
+                str += ` ${formatArgUsage(arg.arg)}`;
+            } else {
+                for (let subArg of arg.args) {
+                    str += ` ${formatArgUsage(subArg)}`;
+                }
+            }
+        }
+        out = `[${str}]`;
+    } else {
+        throw new Error(`This error should not occur (invalid argument type: '${(arg as Arg).kind}')`);
+    }
+    return out;
+}
+
 addCommand(
     'help', 'meta', [],
-    `Display a help message`,
+    `Display a help message.`,
     [
         optionalArg('command', 'string', 'Command to display infomation for. If omitted or invalid, displays generic help/info message.'),
     ],
@@ -52,66 +107,7 @@ addCommand(
                 let usage: string[] = [];
                 let argStrs: string[] = [];
                 for (let [name, arg] of Object.entries(data.args)) {
-                    let value: string;
-                    if (arg.type === 'required') {
-                        value = `<${name}>`;
-                    } else if (arg.type === 'variadic') {
-                        value = `${name}...`;
-                    } else if (arg.type === 'rest') {
-                        value = `...${name}`;
-                    } else if (arg.type === 'optional') {
-                        value = `[${name}]`;
-                    } else if (arg.type === 'optional-variadic') {
-                        value = `[${name}...]`;
-                    } else if (arg.type === 'optional-rest') {
-                        value = `[...${name}]`;
-                    } else if (arg.type === 'flag' || arg.type === 'option' || arg.type === 'rest-option' || arg.type === 'variadic-option') {
-                        let useAs: string[] = [];
-                        if (arg.name.length === 1) {
-                            useAs.push(`-${arg.name}`);
-                        } else {
-                            useAs.push(`--${arg.name}`);
-                        }
-                        for (let alias of arg.aliases) {
-                            if (alias.length === 1) {
-                                useAs.push(`-${alias}`);
-                            } else {
-                                useAs.push(`--${alias}`);
-                            }
-                        }
-                        let str = useAs.sort((x, y) => {
-                            if (x.length !== y.length) {
-                                return x.length - y.length;
-                            } else if (x < y) {
-                                return -1;
-                            } else if (x > y) {
-                                return 1;
-                            } else {
-                                return 0;
-                            }
-                        }).join('|');
-                        if (arg.type === 'flag') {
-                            // do nothing if it's a flag
-                        } else if (arg.type === 'option') {
-                            if (arg.value.length === 0 || Array.isArray(arg.value[0])) {
-                                for (let subArg of arg.value as SingleOptionTypeValue[]) {
-                                    str += ` ${subArg[0]}`;
-                                }
-                            } else {
-                                str += ` ${(arg.value as SingleOptionTypeValue)[0]}`;
-                            }
-                        } else if (arg.type === 'variadic-option') {
-                            str += ` ${arg.name}...`;
-                        } else if (arg.type === 'rest-option') {
-                            str += ` ...${arg.name}`;
-                        } else {
-                            throw new Error(`This error should not occur (invalid argument type: '${(arg as ArgType).type}')`);
-                        }
-                        value = `[${str}]`;
-                    } else {
-                        throw new Error(`This error should not occur (invalid argument type: '${(arg as ArgType).type}')`);
-                    }
-                    usage.push(value);
+                    usage.push(formatArgUsage(arg));
                     argStrs.push(`* \`${name}\`: ${arg.desc}`);
                 }
                 desc = `Usage: \`${usage.join(' ')}\`\n${data.desc}\nArguments:\n${argStrs.join('\n')}`;
@@ -128,7 +124,7 @@ const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\
 
 addCommand(
     'eval', 'meta', [],
-    `Evaluates code (admin only)`,
+    `Evaluates code (admin only).`,
     [
         requiredArg('code', 'string', 'The code to run'),
     ],
@@ -167,7 +163,7 @@ addCommand(
 
 addCommand(
     'ping', 'meta', [],
-    `Gets the latency`,
+    `Gets the latency.`,
     [],
     async args => {
         let msg = args.msg;
@@ -202,12 +198,12 @@ Valid expression constructs:
 * \`<acl1> | <acl2>\` - Matches messages that match either of the ACLs
 * \`<acl1> ^ <acl2>\` - Matches messages that match exactly 1 of the given ACLs
 Parentheses can be used for grouping.
-`
+`,
 );
 
 addCommand(
     'acl show', 'sub', [],
-    `Pretty-print an ACL`,
+    `Pretty-print an ACL.`,
     [
         requiredArg('acl', aclAndExistsValidator, 'The ACL to show'),
     ],
@@ -218,7 +214,7 @@ addCommand(
 
 addCommand(
     'acl get', 'sub', [],
-    `Print an ACL in the format used to input them`,
+    `Print an ACL in the format used to input them.`,
     [
         requiredArg('acl', aclAndExistsValidator, 'The ACL to get'),
     ],
@@ -229,10 +225,10 @@ addCommand(
 
 addCommand(
     'acl set', 'sub', [],
-    `Set an ACL`,
+    `Set an ACL.`,
     [
         requiredArg('acl', aclValidator, 'The ACL to set'),
-        restArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation'),
+        requiredRestArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation'),
     ],
     async args => {
         let parsed = await parseACL(args.value, args.msg.guild as Guild);
@@ -244,7 +240,7 @@ addCommand(
 
 addCommand(
     'acl delete', 'sub', [],
-    `Delete an ACL, if it's unused`,
+    `Delete an ACL, if it's unused.`,
     [
         requiredArg('acl', aclAndExistsValidator, 'The ACL to delete'),
     ],
@@ -263,7 +259,7 @@ addCommand(
 
 addCommand(
     'acl list', 'sub', [],
-    'List all the ACLs',
+    'List all the ACLs.',
     [],
     async () => {
         return Object.keys(aclData.acls).join(', ');
@@ -272,7 +268,7 @@ addCommand(
 
 addCommand(
     'acl uses', 'sub', [],
-    'Show the places where an ACL is used',
+    'Show the places where an ACL is used.',
     [
         requiredArg('acl', aclAndExistsValidator, 'The ACL to check'),
     ],
@@ -288,7 +284,7 @@ addCommand(
 
 addCommand(
     'acl showcmd', 'sub', [],
-    `Pretty-print a command ACL`,
+    `Pretty-print a command ACL.`,
     [
         requiredArg('command', commandValidator, 'The command to show the ACL for'),
     ],
@@ -303,7 +299,7 @@ addCommand(
 
 addCommand(
     'acl getcmd', 'sub', [],
-    `Print a command ACL in the format used to input them`,
+    `Print a command ACL in the format used to input them.`,
     [
         requiredArg('command', commandValidator, 'The command to get the ACL for'),
     ],
@@ -318,22 +314,22 @@ addCommand(
 
 addCommand(
     'acl setcmd', 'sub', [],
-    `Set a command ACL`,
+    `Set a command ACL.`,
     [
         requiredArg('command', commandValidator, 'The command to set the ACL for'),
-        restArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation'),
+        requiredRestArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation'),
     ],
     async args => {
         let parsed = await parseACL(args.value, args.msg.guild as Guild);
         aclData.acls[args.command] = parsed;
         await saveACLs();
         return 'ACL set!';
-    }
+    },
 );
 
 addCommand(
     'acl deletecmd', 'sub', [],
-    `Delete a command ACL, making it unusable by everyone except for admins`,
+    `Delete a command ACL, making it unusable by everyone except for admins.`,
     [
         requiredArg('command', commandValidator, 'The command to delete the ACL for'),
     ],
@@ -351,7 +347,7 @@ addCommand(
 
 addCommand(
     'noreplypings', 'meta', [],
-    `Disables reply pings when using commands`,
+    `Disables reply pings when using commands.`,
     [],
     async args => {
         if (noReplyPings.includes(args.msg.author.id)) {
@@ -366,7 +362,7 @@ addCommand(
 
 addCommand(
     'yesreplypings', 'meta', [],
-    `Enables reply pings when using commands`,
+    `Enables reply pings when using commands.`,
     [],
     async args => {
         let index = noReplyPings.indexOf(args.msg.author.id);
@@ -381,23 +377,7 @@ addCommand(
 );
 
 
-const HELP: {[key: string]: Help} = {
-
-    sim: {
-        desc: 'Simulate a RLE and output a gif',
-        args: [
-            {
-                name: '\'time\'',
-                optional: true,
-                desc: 'Shows how much time it took',
-            },
-            {
-                name: 'parts',
-                desc: 'Specifies how to simulate',
-            },
-        ],
-        extra: `See https://discord.com/channels/357922255553953794/404518331605975040/1489678824932380774 for more details.`
-    },
+const HELP: {[key: string]: any} = {
 
     'sim rand': {
         desc: 'Simulate a random pattern',
@@ -424,28 +404,6 @@ const HELP: {[key: string]: Help} = {
             {
                 name: 'parts',
                 desc: 'How to run it. See !help sim.',
-            },
-        ],
-    },
-
-    identify: {
-        desc: 'Identify a pattern',
-        args: [
-            {
-                name: 'generations',
-                optional: true,
-                desc: 'Number of generations to run the identifier for (default 1024).'
-            },
-        ],
-    },
-
-    basicidentify: {
-        desc: 'Identify a pattern, but provide less information',
-        args: [
-            {
-                name: 'generations',
-                optional: true,
-                desc: 'Number of generations to run the identifier for (default 1024).'
             },
         ],
     },

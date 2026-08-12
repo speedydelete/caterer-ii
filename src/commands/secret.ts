@@ -7,7 +7,7 @@ import {client} from '../index.js';
 
 addCommand(
     'pig', 'secret', [],
-    `React with a pig, if used as a reply, will react to the replied message`,
+    `React with a pig, if used as a reply, will react to the replied message.`,
     [],
     async args => {
         let msg = args.msg;
@@ -22,7 +22,7 @@ addCommand(
 
 addCommand(
     'da2a', 'secret', [],
-    `See https://discord.com/channels/268882317391429632/1446065612227874847 for context`,
+    `See https://discord.com/channels/268882317391429632/1446065612227874847 for context.`,
     [],
     async args => {
         let msg = args.msg;
@@ -61,7 +61,7 @@ function getChannel(msg: Message, args: string[]): [TextBasedChannel & {guild: G
 
 addCommand(
     'say', 'secret', [],
-    `Send a message`,
+    `Send a message.`,
     [],
     async args => {
         let msg = args.msg;
@@ -89,7 +89,7 @@ addCommand(
 
 addCommand(
     'edit', 'secret', [],
-    `Edit a message`,
+    `Edit a message.`,
     [],
     async args => {
         let msg = args.msg;
@@ -165,7 +165,7 @@ addCommand(
 
 addCommand(
     'users', 'secret', [],
-    `Display information about the number of users of the bot`,
+    `Display information about the number of users of the bot.`,
     [],
     async () => {
         let servers: [string, number][] = [];

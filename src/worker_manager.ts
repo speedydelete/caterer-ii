@@ -1,13 +1,12 @@
 
 import {join} from 'node:path';
-import * as fs from 'node:fs/promises';
 import {Worker} from 'node:worker_threads';
 
-import {AttachmentBuilder, EmbedBuilder} from 'discord.js';
-import {LifewebError, Pattern, TorusPattern, PatternType, Identified, getApgcode, getDescription, ALTERNATE_SYMMETRIES, toCatagolueRule, Conduit, CONDUIT_OBJECTS, toRanges, getConduitName, createPattern} from '../lifeweb/lib/index.js';
-import {RPFPattern} from '../lifeweb/lib/editor/rpf.js';
+import {LifewebError, Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
+import {RPFParser, RPFPattern} from '../lifeweb/lib/editor/rpf.js';
 
-import {BotError, Message, Response} from './base.js';
+import {BotError} from './base.js';
+import {aliases} from './db.js';
 
 
 // this interface is augmented to define new worker tasks!
@@ -19,12 +18,15 @@ import {BotError, Message, Response} from './base.js';
 //         identiify: [{rle: string, limit: number, acceptStabilized: boolean, checkLinear: boolean}]
 //     }
 // }
-export interface WorkerTaskTypes {}
+type _WorkerTaskTypesTypeGuard = {[key: string]: [unknown, unknown]};
+export interface WorkerTaskTypes extends _WorkerTaskTypesTypeGuard {}
 
-export type WorkerTaskType = keyof WorkerTaskTypes;
+export type WorkerTaskType = keyof WorkerTaskTypes & string;
 
-type WorkerResult<T extends WorkerTaskType = WorkerTaskType> = 
-    {id: number, type: T} & (
+export type BotToWorkerMessage<T extends WorkerTaskType = WorkerTaskType> = {id: number, type: T, data: WorkerTaskTypes[T][0]};
+
+export type WorkerToBotMessage<T extends WorkerTaskType = WorkerTaskType> = 
+    {id: number} & (
         | {ok: true, data: WorkerTaskTypes[T][0]}
         | {ok: false, intentional: boolean, error: unknown}
     )
@@ -34,7 +36,7 @@ let worker: Worker;
 let workerAlive = false;
 
 interface TaskData {
-    resolve: (data: any) => void;
+    resolve: (data: WorkerTaskTypes[string][0]) => void;
     reject: (reason?: any) => void;
     timeout: NodeJS.Timeout;
 }
@@ -42,7 +44,7 @@ interface TaskData {
 let tasks = new Map<number, TaskData>();
 let nextTaskID = 0;
 
-function workerOnMessage(msg: WorkerResult): void {
+function workerOnMessage(msg: WorkerToBotMessage): void {
     let task = tasks.get(msg.id);
     if (!task) {
         return;
@@ -119,23 +121,34 @@ function workerOnExit(code: number): void {
     workerHandleFatal(new BotError(`${msg}!`));
 }
 
-function runWorkerJob(type: 'sim', data: {argv: string[], value: string}, noTimeout?: boolean): Promise<[number, string | undefined]>;
-function runWorkerJob(type: 'identify', data: {value: string, limit: number}, noTimeout?: boolean): Promise<Identified>;
-function runWorkerJob(type: 'basic_identify', data: {value: string, limit: number}, noTimeout?: boolean): Promise<PatternType>;
-function runWorkerJob(type: 'minmax', data: {value: string, gens: number}, noTimeout?: boolean): Promise<[string, string]>;
-function runWorkerJob(type: 'identify_conduit', data: {value: string, minTime: number, maxTime: number, maxRT: number, sepGens: number, identifyGens: number}, noTimeout?: boolean): Promise<false | Conduit>;
-function runWorkerJob(type: 'basis', data: {value: string}, noTimeout?: boolean): Promise<string>;
-function runWorkerJob(type: 'sim' | 'identify' | 'basic_identify' | 'minmax' | 'identify_conduit' | 'basis', data: any, noTimeout?: boolean): Promise<any> {
-    return new Promise((resolve, reject) => {
-        let id = nextTaskID++;
-        let timeout = setTimeout(() => {
-            if (!noTimeout) {
-                jobs.delete(id);
-                reject(new BotError('Timed out!'));
-                restartWorker();
-            }
-        }, 30000);
-        jobs.set(id, {resolve, reject, timeout});
-        worker.postMessage({id, type, ...data} satisfies Job);
-    });
+
+export function serialize(value: Pattern): string {
+    if (value instanceof RPFPattern) {
+        return 'rpf\n' + value.toString();
+    } else {
+        return 'rle\n' + value.toRLE();
+    }
+}
+
+export function deserialize(value: string): Pattern {
+    if (value.startsWith('rle\n')) {
+        return parse(value.slice(4), aliases);
+    } else {
+        let parser = new RPFParser(PLACEHOLDER_PATTERN, '/index.rpf', value.slice(4));
+        return parser.pattern();
+    }
+}
+
+
+export function runWorkerTask<T extends WorkerTaskType>(type: T, data: WorkerTaskTypes[T][0]): Promise<WorkerTaskTypes[T][1]> {
+    let {promise, resolve, reject} = Promise.withResolvers<WorkerTaskTypes[T][1]>();
+    let id = nextTaskID++;
+    let timeout = setTimeout(() => {
+        tasks.delete(id);
+        reject(new BotError('Timed out!'));
+        restartWorker();
+    }, 30000);
+    tasks.set(id, {resolve, reject, timeout});
+    worker.postMessage({id, type, data});
+    return promise;
 }
