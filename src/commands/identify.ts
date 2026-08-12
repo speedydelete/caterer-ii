@@ -124,7 +124,9 @@ addCommand(
         });
         return {embeds: embedIdentified(p, out)};
     },
-    true,
+    {
+        sendTyping: true,
+    },
 );
 
 addCommand(
@@ -145,7 +147,9 @@ addCommand(
         });
         return {embeds: embedIdentified(p, out)};
     },
-    true,
+    {
+        sendTyping: true,
+    },
 );
 
 addCommand(
@@ -162,5 +166,7 @@ addCommand(
         });
         return `Min: ${out.min}\nMax: ${out.max}\n2^${out.versatility} rules`;
     },
-    true,
+    {
+        sendTyping: true,
+    },
 );

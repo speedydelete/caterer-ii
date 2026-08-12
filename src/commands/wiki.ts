@@ -211,5 +211,8 @@ addCommand(
     async args => {
         return queryWiki(args.query);
     },
-    true,
+    {
+        sendTyping: true,
+        noArgvParse: true,
+    },
 );

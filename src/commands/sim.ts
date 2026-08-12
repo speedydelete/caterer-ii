@@ -813,5 +813,7 @@ addCommand(
             } catch {}
         }
     },
-    true,
+    {
+        sendTyping: true,
+    },
 );

@@ -10,7 +10,7 @@ import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSi
 import {cmdWiki} from './commands/wiki.js';
 import {check5S} from './notifier.js';
 import {starboardChannels, cmdStarboardPrevent} from './starboard.js';
-import {CalcError, cmdCalc} from './calc.js';
+import {CalcError, cmdCalc} from './commands/calc.js';
 
 
 export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) => Promise<Response>)} = Object.assign(Object.create(null), {

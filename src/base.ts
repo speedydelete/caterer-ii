@@ -150,8 +150,9 @@ export interface BasicCommand<T extends Arg[] = Arg[]> {
     posArgs: PosArg[];
     optionArgs: OptionArg[];
     func: CommandFunc<T>;
-    sendTyping: boolean;
+    sendTyping?: boolean;
     extraHelp?: string;
+    noArgvParse?: boolean;
 }
 
 export interface SuperCommand {
@@ -169,7 +170,7 @@ export type Command = BasicCommand | SuperCommand;
 export const COMMANDS: {[key: string]: Command} = Object.create(null);
 export const COMMANDS_BY_CATEGORY: {[key: string]: Command[]} = Object.create(null);
 
-export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, sendTyping: boolean = false, extraHelp?: string): void {
+export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, otherOptions: Partial<Pick<BasicCommand, 'sendTyping' | 'extraHelp' | 'noArgvParse'>> = {}): void {
     // compile argument data and sanity check the argument names
     let posArgs: PosArg[] = [];
     let optionArgs: OptionArg[] = [];
@@ -205,6 +206,9 @@ export function addCommand<T extends Arg[]>(name: string, category: CommandCateg
             throw new Error(`Confusing argument name '${arg}' detected in command '${name}'`);
         }
     }
+    if (otherOptions.extraHelp !== undefined) {
+        otherOptions.extraHelp = otherOptions.extraHelp.trim();
+    }
     let command: BasicCommand<T> = {
         type: 'basic',
         name,
@@ -215,8 +219,7 @@ export function addCommand<T extends Arg[]>(name: string, category: CommandCateg
         posArgs,
         optionArgs,
         func,
-        sendTyping,
-        extraHelp: extraHelp ? extraHelp.trim() : undefined,
+        ...otherOptions,
     };
     if (name in COMMANDS) {
         throw new Error(`Command '${name}' is already used`);

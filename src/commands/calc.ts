@@ -3,7 +3,7 @@ import * as crypto from 'node:crypto';
 import {Expression, PrivateName, SpreadElement, ArgumentPlaceholder} from '@babel/types';
 import {parseExpression} from '@babel/parser';
 
-import {BotError, Response, Message} from './base.js';
+import {BotError, requiredRestArg, addCommand} from '../base.js';
 
 
 export class CalcError extends BotError {
@@ -474,29 +474,33 @@ function runExpression(node: Expression | PrivateName | SpreadElement | Argument
     }
 }
 
-export async function cmdCalc(msg: Message, argv: string[]): Promise<Response> {
-    let str = msg.content;
-    let index = str.indexOf(' ');
-    if (index === -1) {
-        throw new BotError(`Expected at least 1 argument`);
-    }
-    str = str.slice(index + 1);
-    try {
-        let out = runExpression(parseExpression(str));
-        if (typeof out === 'string') {
-            return `'${out.replaceAll(`'`, `\\'`)}'`;
-        } else {
-            return String(out);
-        }
-    } catch (error) {
-        if (error instanceof Error) {
-            if (error instanceof CalcError) {
-                throw error;
+addCommand(
+    'calc', 'other', [],
+    'Evaluate a subset of the ECMAScript expressions.',
+    [
+        requiredRestArg('expression', 'string', 'The expression to run.'),
+    ],
+    async args => {
+        try {
+            let out = runExpression(parseExpression(args.expression));
+            if (typeof out === 'string') {
+                return `'${out.replaceAll(`'`, `\\'`)}'`;
             } else {
-                throw new CalcError(`${error.name}: ${error.message}`);
+                return String(out);
             }
-        } else {
-            throw new CalcError(String(error));
+        } catch (error) {
+            if (error instanceof Error) {
+                if (error instanceof CalcError) {
+                    throw error;
+                } else {
+                    throw new CalcError(`${error.name}: ${error.message}`);
+                }
+            } else {
+                throw new CalcError(String(error));
+            }
         }
-    }
-}
+    },
+    {
+        noArgvParse: true,
+    },
+);

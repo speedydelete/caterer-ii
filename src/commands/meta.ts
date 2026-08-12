@@ -132,16 +132,7 @@ addCommand(
         if (args.msg.author.id !== '1253852708826386518') {
             throw new BotError('You are not speedydelete');
         }
-        let text = args.rawArgs;
-        let index = text.indexOf(' ');
-        let index2 = text.indexOf('\n');
-        if (index === -1 || (index2 !== -1 && index2 < index)) {
-            index = index2;
-        }
-        if (index === -1) {
-            throw new BotError(`No separating whitespace detected`);
-        }
-        let code = text.slice(index + 1);
+        let code = args.code;
         if (!code.includes(';') && !code.includes('\n')) {
             code = 'return ' + code;
         }
@@ -157,7 +148,10 @@ addCommand(
             }).replaceAll('\x1b[22m', '\x1b[0m').replaceAll('\x1b[39m', '\x1b[0m') + '\n```';
         }
     },
-    true,
+    {
+        sendTyping: true,
+        noArgvParse: true,
+    },
 );
 
 
@@ -377,7 +371,7 @@ addCommand(
 );
 
 
-const HELP: {[key: string]: any} = {
+const HELP = {
 
     'sim rand': {
         desc: 'Simulate a random pattern',
