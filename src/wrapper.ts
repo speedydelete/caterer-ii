@@ -199,7 +199,7 @@ client.on('messageCreate', async msg => {
         return;
     }
     try {
-        let command = msg.content.slice(2).toLowerCase().replaceAll('_', '');
+        let command = msg.content.slice(2);
         if (!(command in COMMANDS)) {
             return;
         }
