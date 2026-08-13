@@ -1,10 +1,12 @@
 
 import {Node, Expression, PrivateName} from '@babel/types';
 import {parseExpression} from '@babel/parser';
-import {CategoryChannel, Guild} from 'discord.js';
+import {CategoryChannel, Guild, Client} from 'discord.js';
 
-import {BotError, Message, readFile, sentByAdmin} from './base.js';
-import {client} from './index.js';
+import {IS_CATERER, BotError, Message, readFile, sentByAdmin} from './base.js';
+
+
+let client: Client = IS_CATERER ? (await import('./index.js')).client : undefined as any;
 
 
 export type ACL = 

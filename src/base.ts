@@ -9,9 +9,10 @@ import {RPFPattern, RPFParser} from '../lifeweb/lib/editor/rpf.js';
 
 import {sendMessage} from './ipc_and_error_setup.js';
 import {aclData, matchesACL} from './acl.js';
+import {aliases} from './commands/aliases.js';
 
 
-let aliases = {};
+export const IS_CATERER = Boolean(process.send);
 
 
 export class BotError extends Error {
