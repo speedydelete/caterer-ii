@@ -1,8 +1,7 @@
 
 import {DiscordAPIError, Message as _Message, PartialMessage, MessageReaction, PartialMessageReaction, TextChannel} from 'discord.js';
 
-import {BotError, Response, Message, config} from '../base.js';
-import {readFile, writeFile, findRLEFromText} from '../util.js';
+import {readFile, writeFile, findPatternInText, config} from '../base.js';
 import {client} from '../index.js';
 
 
@@ -209,7 +208,7 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
         text += ` **${countStr}** `;
         if (msg.author?.id === client.user.id && msg.attachments.size === 1) {
             let msg2 = await msg.fetchReference();
-            let data = findRLEFromText(msg2.content);
+            let data = findPatternInText(msg2.content);
             if (data) {
                 text += `Pattern by <@${msg2.author.id}> in \`${data.rule.str}\``;
             } else {
@@ -300,21 +299,21 @@ let interval = setInterval(async () => {
 }, 1000);
 
 
-export async function cmdStarboardPrevent(msg: Message, argv: string[]): Promise<Response> {
-    if (!msg.reference) {
-        throw new BotError('!starboardprevent must be used when replying to a message');
-    }
-    let msg2 = await msg.fetchReference();
-    if (msg2.guildId && msg2.guildId in config.starboardServers) {
-        let boardName = config.starboardServers[msg2.guildId];
-        let entry = starboard[boardName].data.get(msg2.id);
-        starboard[boardName].forbidden.add(msg2.id);
-        if (entry) {
-            await deleteStarboardEntry(boardName, msg2, entry);
-        }
-        await saveStarboard();
-    } else {
-        throw new BotError('!starboardprevent must be used in servers witih starboards');
-    }
-    return 'Prevented!';
-}
+// export async function cmdStarboardPrevent(msg: Message, argv: string[]): Promise<Response> {
+//     if (!msg.reference) {
+//         throw new BotError('!starboardprevent must be used when replying to a message');
+//     }
+//     let msg2 = await msg.fetchReference();
+//     if (msg2.guildId && msg2.guildId in config.starboardServers) {
+//         let boardName = config.starboardServers[msg2.guildId];
+//         let entry = starboard[boardName].data.get(msg2.id);
+//         starboard[boardName].forbidden.add(msg2.id);
+//         if (entry) {
+//             await deleteStarboardEntry(boardName, msg2, entry);
+//         }
+//         await saveStarboard();
+//     } else {
+//         throw new BotError('!starboardprevent must be used in servers witih starboards');
+//     }
+//     return 'Prevented!';
+// }

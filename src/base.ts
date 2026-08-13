@@ -1,9 +1,15 @@
 
-import {MessageOptions, SendHandle} from 'node:child_process';
-import {Message as _Message, OmitPartialGroupDMChannel} from 'discord.js';
+
+import * as fs from 'node:fs/promises';
+import {join} from 'node:path';
+
+import {DiscordAPIError, ColorResolvable, EmbedBuilder, MessageReferenceType, MessageCreateOptions, Message as _Message, OmitPartialGroupDMChannel} from 'discord.js';
+import {Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
+import {RPFPattern, RPFParser} from '../lifeweb/lib/editor/rpf.js';
 
 import {sendMessage} from './ipc_and_error_setup.js';
-import {readFile} from './util.js';
+import {aclData, matchesACL} from './acl.js';
+import {aliases} from './commands/aliases.js';
 
 
 export class BotError extends Error {
@@ -16,10 +22,131 @@ export class BotError extends Error {
 
 export type Message = OmitPartialGroupDMChannel<_Message>;
 
-export type Response = undefined | void | Parameters<Message['reply']>[0] | Message | [Parameters<Message['reply']>[0] | Message, string[]];
+
+export const BASE_PATH = join(import.meta.dirname, '..');
+
+export function resolvePath(path: string): string {
+    return join(BASE_PATH, path);
+}
+
+export async function readFile(path: string): Promise<string> {
+    return (await fs.readFile(resolvePath(path))).toString();
+}
+
+export async function writeFile(path: string, data: Parameters<typeof fs.writeFile>[1]): Promise<void> {
+    await fs.writeFile(resolvePath(path), data);
+}
 
 
-export type CommandCategory = 'sub' | 'secret' | 'meta' | 'sim' | 'identify' | 'patterns' | 'rules' | '5s' | 'stats' | 'aliases' | 'names' | 'other';
+export interface PatternArgData {
+    p: Pattern;
+    msg: Message;
+    msgInChannel: Message;
+}
+
+export const RLE_HEADER = /\s*x\s*=\s*\d+\s*,?\s*y\s*=\s*\d+/;
+
+export function findRLEInText(data: string): Pattern | undefined {
+    let match = data.match(RLE_HEADER);
+    if (!match) {
+        return;
+    }
+    data = data.slice(match.index);
+    let index = data.indexOf('!');
+    if (index === -1) {
+        return;
+    }
+    return parse(data.slice(0, index + 1), aliases);
+}
+
+export function findRPFInText(data: string): RPFPattern | undefined {
+    let index = data.indexOf('```rpf\n');
+    if (index === -1) {
+        return;
+    }
+    data = data.slice(index + '```rpf\n'.length);
+    index = data.indexOf('```');
+    if (index === -1) {
+        return;
+    }
+    data = data.slice(0, index);
+    let parser = new RPFParser(PLACEHOLDER_PATTERN, '/index.rpf', data);
+    return parser.pattern();
+}
+
+export function findPatternInText(data: string): Pattern | undefined {
+    let out = findRLEInText(data);
+    if (out) {
+        return out;
+    } else {
+        return findRPFInText(data);
+    }
+}
+
+export async function findPatternInMessage(msg: Message, msgInChannel: Message): Promise<PatternArgData | undefined> {
+    let out = findPatternInText(msg.content);
+    if (out) {
+        return {p: out, msg, msgInChannel};
+    }
+    if (msg.reference && msg.reference.type === MessageReferenceType.Forward) {
+        let msg2 = await msg.fetchReference();
+        let out = await findPatternInMessage(msg2, msg);
+        if (out) {
+            return out;
+        }
+    }
+    if (!msg.author.bot && msg.attachments.size > 0) {
+        for (let [_, attachment] of msg.attachments) {
+            let file = attachment.name;
+            let index = file.lastIndexOf('.');
+            if (index === -1) {
+                continue;
+            }
+            let ext = file.slice(index);
+            if (ext === '.rle' || ext === '.txt') {
+                let data = await (await fetch(attachment.url)).text();
+                let out = findRLEInText(data);
+                if (out) {
+                    return {p: out, msg, msgInChannel};
+                }
+            } else if (ext === '.rpf') {
+                let data = await (await fetch(attachment.url)).text();
+                let parser = new RPFParser(PLACEHOLDER_PATTERN, '/index.rpf', data);
+                return {p: parser.pattern(), msg, msgInChannel};
+            }
+        }
+    }
+}
+
+export async function findPatternInChannel(msg: Message): Promise<PatternArgData | undefined> {
+    let out: PatternArgData | undefined;
+    if (msg.reference) {
+        let reply: Message | undefined = undefined;
+        try {
+            reply = await msg.fetchReference();
+        } catch (error) {
+            if (!(error instanceof DiscordAPIError && error.message.includes('Could not resolve channel'))) {
+                throw error;
+            }
+        }
+        if (reply) {
+            out = await findPatternInMessage(reply, reply);
+            if (out) {
+                return out;
+            }
+        }
+    }
+    let msgs = await msg.channel.messages.fetch({limit: 50});
+    for (let msg of msgs.values() as MapIterator<Message>) {
+        let out = await findPatternInMessage(msg, msg);
+        if (out) {
+            return out;
+        }
+    }
+}
+
+
+export type CommandCategory = 'sub' | 'secret' | 'meta' | 'sim' | 'identify' | 'patterns' | 'rules' | '5s' | 'aliases' | 'other';
 
 export const CATEGORY_NAMES: {[K in CommandCategory]: string} = {
     'sub': 'Subcommands',
@@ -30,16 +157,21 @@ export const CATEGORY_NAMES: {[K in CommandCategory]: string} = {
     'patterns': 'Patterns',
     'rules': 'Rules',
     '5s': '5S',
-    'stats': 'Statistics',
     'aliases': 'Aliases',
-    'names': 'Names',
     'other': 'Other',
 };
 
 
 export type Validator = (arg: string) => string | {name: string, reason?: string};
 
-export type SingleArgType = 'string' | 'number' | 'boolean' | Validator | {name: string, value: (string | number | boolean)[] | RegExp};
+export type SingleArgType = 
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | Validator
+    | {name: string, value: (string | number | boolean)[] | RegExp}
+;
+
 export type ArgType = SingleArgType | SingleArgType[];
 
 export type BaseArg<Name extends string = string> = {name: Name, desc: string};
@@ -49,14 +181,16 @@ export type RequiredVariadicArg<Name extends string = string, Type extends Singl
 export type RequiredRestArg<Name extends string = string, Type extends SingleArgType = SingleArgType> = BaseArg<Name> & {kind: 'required-rest', type: Type};
 export type OptionalArg<Name extends string = string, Type extends ArgType = ArgType, HasDefault extends boolean = boolean> = BaseArg<Name> & {kind: 'optional', type: Type} & (boolean extends HasDefault ? {default?: ValueOfArgType<Type>} : (HasDefault extends true ? {default: ValueOfArgType<Type>} : {}));
 export type OptionalVariadicArg<Name extends string = string, Type extends SingleArgType = SingleArgType, HasDefault extends boolean = boolean> = BaseArg<Name> & {kind: 'optional-variadic', type: Type} & (boolean extends HasDefault ? {default?: ValueOfArgType<Type>[]} : (HasDefault extends true ? {default: ValueOfArgType<Type>[]} : {}));
-export type OptionalRestArg<Name extends string = string, Type extends SingleArgType = SingleArgType, HasDefault extends boolean = boolean> = BaseArg<Name> & {kind: 'optional-rest', type: Type, default?: ValueOfArgType<Type>} & (boolean extends HasDefault ? {default?: ValueOfArgType<Type>} : (HasDefault extends true ? {default: ValueOfArgType<Type>} : {}));
+export type OptionalRestArg<Name extends string = string, Type extends SingleArgType = SingleArgType, HasDefault extends boolean = boolean> = BaseArg<Name> & {kind: 'optional-rest', type: Type} & (boolean extends HasDefault ? {default?: ValueOfArgType<Type>} : (HasDefault extends true ? {default: ValueOfArgType<Type>} : {}));
 export type PosArg<Name extends string = string> = RequiredArg<Name> | RequiredVariadicArg<Name> | RequiredRestArg<Name> | OptionalArg<Name> | OptionalVariadicArg<Name> | OptionalRestArg<Name>;
 
 export type Flag<Name extends string = string> = BaseArg<Name> & {aliases: string[], kind: 'flag', default?: boolean};
 export type Option<Name extends string = string, Args extends PosArg | PosArg[] = PosArg | PosArg[], HasDefault extends boolean = boolean> = BaseArg<Name> & {aliases: string[], kind: 'option', default?: (boolean extends HasDefault ? {default?: Args extends PosArg ? ValueOfArg<Args> : (Args extends infer U extends PosArg[] ? {[K in keyof U]: K extends number | `${number}` ? ValueOfArg<U[K]> : U[K]} : never)} : (HasDefault extends true ? {default: Args extends PosArg ? ValueOfArg<Args> : (Args extends infer U extends PosArg[] ? {[K in keyof U]: K extends number | `${number}` ? ValueOfArg<U[K]> : U[K]} : never)} : {}))} & (Args extends PosArg[] ? {args: Args} : {arg: Args});
 export type OptionArg<Name extends string = string> = Flag<Name> | Option<Name>;
 
-export type Arg<Name extends string = string> = PosArg<Name> | OptionArg<Name>;
+export type PatternArg<Name extends string = string> = {name: Name, kind: 'pattern'};
+
+export type Arg<Name extends string = string> = PosArg<Name> | OptionArg<Name> | PatternArg<Name>;
 export type ArgKind = Arg['kind'];
 
 
@@ -65,8 +199,8 @@ export type ValueOfSingleArgType<T extends SingleArgType> =
     T extends 'number' ? number :
     T extends 'boolean' ? boolean :
     T extends ((arg: string) => true | string) ? string :
-    T extends {options: Set<infer U>} ? U :
-    T extends {options: RegExp} ? string :
+    T extends {name: string, value: (infer U)[]} ? U :
+    T extends {name: string, value: RegExp} ? string :
     never
 ;
 
@@ -82,16 +216,15 @@ export type ValueOfArg<T extends Arg> =
     T extends RequiredRestArg<string, infer U> ? ValueOfSingleArgType<U> :
     T extends OptionalArg<string, infer U> ? (T extends OptionalArg<string, U, true> ? ValueOfArgType<U> : ValueOfArgType<U> | undefined) :
     T extends OptionalVariadicArg<string, infer U> ? (T extends OptionalVariadicArg<string, U, true> ? ValueOfArgType<U>[] : ValueOfArgType<U>[] | undefined) :
-    T extends OptionalRestArg<string, infer U> ? (T extends OptionalVariadicArg<string, U, true> ? ValueOfArgType<U> : ValueOfArgType<U> | undefined) :
+    T extends OptionalRestArg<string, infer U> ? (T extends OptionalRestArg<string, U, true> ? ValueOfArgType<U> : ValueOfArgType<U> | undefined) :
     T extends Flag ? boolean | undefined :
     T extends Option<string, infer U extends PosArg, true> ? ValueOfArg<U> :
     T extends Option<string, infer U extends PosArg[], true> ? {[K in keyof U]: K extends number | `${number}` ? ValueOfArg<U[K]> : U[K]} :
     T extends Option<string, infer U extends PosArg, false> ? ValueOfArg<U> | undefined :
     T extends Option<string, infer U extends PosArg[], false> ? {[K in keyof U]: K extends number | `${number}` ? ValueOfArg<U[K]> : U[K]} | undefined :
+    T extends PatternArg ? PatternArgData :
     never
 ;
-
-type X = ValueOfArg<OptionalArg<string, 'number', true>>;
 
 
 export function requiredArg<Name extends string, Type extends ArgType>(name: Name, type: Type, desc: string): RequiredArg<Name, Type> {
@@ -112,10 +245,14 @@ export function optionalArg<Name extends string, Type extends ArgType>(name: Nam
     return {name, desc, kind: 'optional', type, default: defaultValue};
 }
 
+export function optionalVariadicArg<Name extends string, Type extends SingleArgType>(name: Name, type: Type, desc: string): OptionalVariadicArg<Name, Type, false>
+export function optionalVariadicArg<Name extends string, Type extends SingleArgType>(name: Name, type: Type, desc: string, defaultValue: ValueOfArgType<Type>[]): OptionalVariadicArg<Name, Type, true>;
 export function optionalVariadicArg<Name extends string, Type extends SingleArgType>(name: Name, type: Type, desc: string, defaultValue?: ValueOfArgType<Type>[]): OptionalVariadicArg<Name, Type> {
     return {name, desc, kind: 'optional-variadic', type, default: defaultValue};
 }
 
+export function optionalRestArg<Name extends string, Type extends SingleArgType>(name: Name, type: Type, desc: string): OptionalRestArg<Name, Type, false>
+export function optionalRestArg<Name extends string, Type extends SingleArgType>(name: Name, type: Type, desc: string, defaultValue: ValueOfArgType<Type>): OptionalRestArg<Name, Type, true>;
 export function optionalRestArg<Name extends string, Type extends SingleArgType>(name: Name, type: Type, desc: string, defaultValue?: ValueOfArgType<Type>): OptionalRestArg<Name, Type> {
     return {name, desc, kind: 'optional-rest', type, default: defaultValue};
 }
@@ -132,10 +269,24 @@ export function optionArg<Name extends string, Args extends PosArg | PosArg[]>(n
     }
 }
 
+export function patternArg<Name extends string>(name: Name): PatternArg<Name> {
+    return {name, kind: 'pattern'};
+}
+
 
 type KebabToCamel<T extends string> = T extends `${infer U}-${infer V}` ? `${U}${Capitalize<KebabToCamel<V>>}` : T;
 
 export type ParsedArgs<T extends Arg[] = Arg[]> = {[A in T[number] as KebabToCamel<A['name']>]: ValueOfArg<A>};
+
+
+export type Response = undefined | void | ((
+    | {type: 'already-sent', value: Message}
+    | {type: 'message-spec', value: MessageCreateOptions}
+    | {type: 'string', value: string}
+    | {type: 'number', value: number}
+    | {type: 'boolean', value: boolean}
+    | {type: 'pattern', value: Pattern}
+) & {deleters?: string[]});
 
 
 export type CommandFunc<T extends Arg[] = Arg[]> = (args: ParsedArgs<T> & {msg: Message, argv: string[], rawArgs: string}) => Promise<Response>;
@@ -149,6 +300,7 @@ export interface BasicCommand<T extends Arg[] = Arg[]> {
     args: T;
     posArgs: PosArg[];
     optionArgs: OptionArg[];
+    patternArg?: PatternArg;
     func: CommandFunc<T>;
     sendTyping?: boolean;
     extraHelp?: string;
@@ -174,13 +326,19 @@ export function addCommand<T extends Arg[]>(name: string, category: CommandCateg
     // compile argument data and sanity check the argument names
     let posArgs: PosArg[] = [];
     let optionArgs: OptionArg[] = [];
+    let patternArg: PatternArg | undefined = undefined;
     let foundArgNames = new Set<string>();
     for (let arg of args) {
         if (foundArgNames.has(arg.name)) {
             throw new Error(`Duplicate argument name '${arg.name}' detected in command '${name}'`);
         }
         foundArgNames.add(arg.name);
-        if (!('aliases' in arg)) {
+        if (arg.kind === 'pattern') {
+            if (patternArg !== undefined) {
+                throw new Error(`More than 1 pattern argument provided in command '${name}'`);
+            }
+            patternArg = arg;
+        } else if (!('aliases' in arg)) {
             posArgs.push(arg);
         } else {
             optionArgs.push(arg);
@@ -218,6 +376,7 @@ export function addCommand<T extends Arg[]>(name: string, category: CommandCateg
         args,
         posArgs,
         optionArgs,
+        patternArg,
         func,
         ...otherOptions,
     };
@@ -266,6 +425,7 @@ export class ArgumentError extends BotError {
     [Symbol.toStringTag]: string = 'ArgumentError';
 
 }
+
 
 const ESCAPES: {[key: string]: string} = {
     'a': '\x07',
@@ -556,7 +716,14 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
     return pos;
 }
 
-function parseArgs(out: ParsedArgs, cmd: BasicCommand, argv: Argv): void {
+async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv: Argv, useThisPattern?: Pattern): Promise<void> {
+    if (!cmd.patternArg) {
+        if (useThisPattern) {
+            for (let arg of parseArgv(useThisPattern.toRLE())) {
+                argv.push(arg);
+            }
+        }
+    }
     let posArgsPos = 0;
     for (let pos = 0; pos < argv.length; pos++) {
         let [value, isFlag] = argv[pos];
@@ -603,28 +770,131 @@ function parseArgs(out: ParsedArgs, cmd: BasicCommand, argv: Argv): void {
             out[name] = arg.default as any;
         }
     }
+    // add the pattern arg
+    if (cmd.patternArg) {
+        if (useThisPattern) {
+            out[cmd.patternArg.name] = {p: useThisPattern, msg, msgInChannel: msg};
+        } else {
+            let data = await findPatternInChannel(msg);
+            if (data === undefined) {
+                throw new BotError(`Cannot find pattern!`);
+            }
+            out[cmd.patternArg.name] = data;
+        }
+    }
 }
 
-function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number): Promise<Response> {
+async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, useThisPattern?: Pattern): Promise<Response> {
+    if (!matchesACL(msg, aclData.commands[cmd.name])) {
+        return {type: 'string', value: 'Error: You do not have permission to run this command'};
+    }
     if (cmd.type === 'super') {
         let subCmd = cmd.name + ' ' + argv[nestLevel][0].toLowerCase().replaceAll('_', '');
         if (!(subCmd in COMMANDS)) {
             throw new BotError(`Nonexistent subcommand: '${cmd.name} ${argv[nestLevel]}'`);
         }
-        return _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1);
+        return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, useThisPattern);
     }
     let args: ParsedArgs = {};
-    parseArgs(args, cmd, argv);
-    return cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs}));
+    parseArgs(args, cmd, msg, argv, useThisPattern);
+    return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs}));
 }
 
-export function internalRunTextCommand(msg: Message, rawArgs: string): Promise<Response> | undefined {
+const STUPID_COMMAND_TEMPLATES: {[key: string]: string} = {
+    'no': 'This is NOT a $$$ server. Please do NOT discuss $$$ here.',
+    'yes': 'This IS a $$$ server. Please DO discuss $$$ here.',
+    'maybe': 'This MIGHT BE a $$$ server. Please MAYBE discuss $$$ here.',
+    'gno': 'This is GNOT a $$$ server. Please do GNOT discuss $$$ here.',
+};
+
+function tryStupidCommand(cmd: string): Response {
+    let match = cmd.match(/^(no|yes|maybe|gno)((?:no|yes|maybe|gno)*math)$/);
+    if (!match) {
+        return; 
+    }
+    let template = STUPID_COMMAND_TEMPLATES[match[1]];
+    let replace = match[2] === 'math' ? 'mathematics' : `!${match[2]}`;
+    let out = template.replaceAll('$$$', replace);
+    return {type: 'string', value: out};
+}
+
+async function runPipe(msg: Message, rawArgs: string, argv: Argv): Promise<Response> {
+    let argvs: Argv[] = [];
+    let current: Argv = [];
+    for (let i = 0; i < argv.length; i++) {
+        let value = argv[i];
+        if (value[0] === '|') {
+            argvs.push(current);
+            current = [];
+        } else {
+            current.push(value);
+        }
+    }
+    argvs.push(current);
+    let prevResp: Response;
+    let extraArgv: Argv = [];
+    let pattern: Pattern | undefined = undefined;
+    let deleters: string[] = [];
+    for (let argv of argvs) {
+        let value: Response;
+        let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
+        if (!(cmd in COMMANDS)) {
+            let stupid = tryStupidCommand(cmd);
+            if (stupid === undefined) {
+                return;
+            } else {
+                value = stupid;
+            }
+        } else {
+            for (let arg of extraArgv) {
+                argv.push(arg);
+            }
+            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 1, pattern);
+        }
+        pattern = undefined;
+        if (value && value.deleters) {
+            deleters.push(...value.deleters);
+        }
+        type Response = undefined | void | ((
+            | {type: 'already-sent', value: Message}
+            | {type: 'message-spec', value: MessageCreateOptions}
+            | {type: 'string', value: string}
+            | {type: 'number', value: number}
+            | {type: 'boolean', value: boolean}
+            | {type: 'pattern', value: Pattern}
+        ) & {deleters?: string[]});
+        if (value === undefined) {
+            extraArgv = [];
+        } else if (value.type === 'already-sent' || value.type === 'message-spec') {
+            extraArgv = [];
+        } else if (value.type === 'string') {
+            extraArgv = parseArgv(value.value);
+        } else if (value.type === 'number') {
+            extraArgv = parseArgv(String(value.value));
+        } else if (value.type === 'boolean') {
+            extraArgv = parseArgv(String(value.value));
+        } else if (value.type === 'pattern') {
+            extraArgv = [];
+            pattern = value.value;
+        } else {
+            throw new Error(`This error should not occur (invalid response type: '${(value as {type: 'string'}).type}')`);
+        }
+        prevResp = value;
+    }
+    return prevResp;
+}
+
+export async function internalRunTextCommand(msg: Message, rawArgs: string): Promise<Response> {
     let argv = parseArgv(rawArgs);
+    // pipes!
+    if (argv.some(x => x[0] === '|')) {
+        return await runPipe(msg, rawArgs, argv);
+    }
     let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
     if (!(cmd in COMMANDS)) {
-        return;
+        return tryStupidCommand(cmd);
     }
-    return _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 1);
+    return await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 1);
 }
 
 
@@ -672,9 +942,105 @@ export interface Config {
 
 export const config: Config = Object.freeze(JSON.parse(await readFile('config.json')));
 
+export function sentByAdmin(msg: Message): boolean {
+    return config.admins.includes(msg.author.id);
+}
 
-// ethylene glycol
 
-setInterval(async () => {
-    await sendMessage({type: 'heartbeat'});
-}, config.antiFreeze.sendInterval * 1000);
+export interface Signal {
+    number: number;
+    name: string;
+    desc: string;
+    isError?: boolean;
+};
+
+const SIGNAL_LIST = [
+    [0, 'no signal', 'completed successfully'],
+    [1, 'SIGHUP', 'hangup'],
+    [2, 'SIGINT', 'interrupt'],
+    [3, 'SIGQUIT', 'quit'],
+    [4, 'SIGILL', 'illegal instruction', true],
+    [5, 'SIGTRAP', 'trace/breakpoint trap', true],
+    [6, 'SIGABRT', 'aborted', true],
+    [7, 'SIGBUS', 'bus error', true],
+    [8, 'SIGFPE', 'floating point exception', true],
+    [9, 'SIGKILL', 'killed'],
+    [10, 'SIGUSR1', 'user-defined signal 1'],
+    [11, 'SIGSEGV', 'segmentation fault', true],
+    [12, 'SIGUSR2', 'user-defined signal 2'],
+    [13, 'SIGPIPE', 'broken pipe'],
+    [14, 'SIGALRM', 'alarm clock'],
+    [15, 'SIGTERM', 'terminated'],
+    [16, 'SIGSTKFLT', 'stack fault'],
+    [17, 'SIGCHLD', 'child exited'],
+    [18, 'SIGCONT', 'continued'],
+    [19, 'SIGSTOP', 'stopped (signal)'],
+    [20, 'SIGTSTP', 'stopped'],
+    [21, 'SIGTTIN', 'stopped (tty input)'],
+    [22, 'SIGTTOU', 'stopped (tty output)'],
+    [23, 'SIGURG', 'urgent I/O condition'],
+    [24, 'SIGXCPU', 'CPU time limit exceeded'],
+    [25, 'SIGXFSZ', 'file size limit exceeded'],
+    [26, 'SIGVTALRM', 'virtual timer exceeded'],
+    [27, 'SIGPROF', 'profiling timer exceeded'],
+    [28, 'SIGWINCH', 'window changed'],
+    [29, 'SIGPOLL', 'I/O possible'],
+    [30, 'SIGPWR', 'power faliure'],
+    [31, 'SIGSYS', 'bad system call', true],
+] as const satisfies ([number, 'no signal' | NodeJS.Signals, string] | [number, 'no signal' | NodeJS.Signals, string, true])[] as ([number, string, string] | [number, string, string, boolean])[];
+
+export const SIGNALS = SIGNAL_LIST.map<Signal>(value => {
+    let out: Signal = {number: value[0], name: value[1], desc: value[2]};
+    if (value.length === 4 && value[3]) {
+        out.isError = true;
+    }
+    return out;
+});
+
+export function lookupSignal(value: number | string): Signal {
+    for (let signal of SIGNALS) {
+        if (signal.number === value || signal.name === value || signal.desc === value) {
+            return signal;
+        }
+    }
+    if (typeof value === 'number') {
+        return {number: value, name: 'unknown signal', desc: 'unknown signal'};
+    } else if (value.toUpperCase().startsWith('SIG')) {
+        value = value.toUpperCase();
+        return {number: -1, name: value, desc: 'unknown signal'};
+    } else {
+        return {number: -1, name: 'unknown signal', desc: value};
+    }
+}
+
+
+if (process.send) {
+
+    // ethylene glycol
+
+    setInterval(async () => {
+        await sendMessage({type: 'heartbeat'});
+    }, config.antiFreeze.sendInterval * 1000);
+
+    // signal catching logic
+    // this isn't in ipc_and_error_setup.ts because there could be an error in the signal list setup code
+
+    for (let signal of SIGNALS) {
+        if (signal.isError) {
+            let message = `${signal.desc[0].toUpperCase()}${signal.desc.slice(1)} (${signal.name}, signal ${signal.number})`;
+            process.on(signal.name, () => {
+                sendMessage({type: 'system-error', message});
+            });
+        }
+    }
+
+}
+
+
+export function createEmbed(title: string, desc: string, color: ColorResolvable = '#ff9fe2'): EmbedBuilder {
+    let out = (new EmbedBuilder()).setTitle(title).setDescription(desc);
+    if (color) {
+        out.setColor(color);
+    }
+    return out;
+}

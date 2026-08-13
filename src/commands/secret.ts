@@ -179,6 +179,6 @@ addCommand(
         for (let [name, users] of servers) {
             out += `* ${name}: ${users} users\n`;
         }
-        return out;
+        return {type: 'string', value: out};
     },
 );

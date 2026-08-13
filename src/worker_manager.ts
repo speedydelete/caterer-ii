@@ -6,7 +6,7 @@ import {LifewebError, Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/
 import {RPFParser, RPFPattern} from '../lifeweb/lib/editor/rpf.js';
 
 import {BotError} from './base.js';
-import {aliases} from './db.js';
+import {aliases} from './commands/aliases.js';
 
 
 // this interface is augmented to define new worker tasks!

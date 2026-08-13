@@ -484,9 +484,9 @@ addCommand(
         try {
             let out = runExpression(parseExpression(args.expression));
             if (typeof out === 'string') {
-                return `'${out.replaceAll(`'`, `\\'`)}'`;
+                return {type: 'string', value: `'${out.replaceAll(`'`, `\\'`)}'`};
             } else {
-                return String(out);
+                return {type: 'string', value: String(out)};
             }
         } catch (error) {
             if (error instanceof Error) {

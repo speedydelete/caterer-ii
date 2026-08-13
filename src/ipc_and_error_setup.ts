@@ -27,5 +27,7 @@ async function onError(error: unknown): Promise<void> {
     }
 }
 
-process.on('uncaughtException', onError);
-process.on('unhandledRejection', onError);
+if (process.send) {
+    process.on('uncaughtException', onError);
+    process.on('unhandledRejection', onError);
+}

@@ -2,87 +2,24 @@
 import {DiscordAPIError, GatewayIntentBits, MessageReplyOptions, Message as _Message, TextChannel, Partials, Client} from 'discord.js';
 import {LifewebError} from '../lifeweb/lib/index.js';
 
-import {BotError, Response, Message, readFile, writeFile, config, aliases, noReplyPings, findRLE} from './base.js';
-import {aclData, matchesACL, cmdAcl} from './acl.js';
-import {cmdSim, cmdIdentify, cmdBasicIdentify, cmdMinmax, cmdIdentifyConduit, cmdBasis} from './core.js';
-import {cmdHashsoup, cmdApgencode, cmdApgdecode, cmdPopulation, cmdToMAP, cmdRuleInfo, cmdNormalizeRule, cmdBlackWhiteReverse, cmdCheckerboardDual} from './ca.js';
-import {cmdSssss, cmdSssssInfo, cmdDyk, cmdName, cmdRename, cmdDeleteName, cmdSimStats, cmdSaveSimStats, cmdAlias, cmdRealias, cmdUnalias, cmdLookupAlias, cmdListAliases} from './db.js';
-import {cmdWiki} from './commands/wiki.js';
-import {check5S} from './notifier.js';
-import {starboardChannels, cmdStarboardPrevent} from './starboard.js';
-import {CalcError, cmdCalc} from './commands/calc.js';
+import {BotError, Message, readFile, internalRunTextCommand, config} from './base.js';
+
+import './commands/meta.js';
+import './commands/sim.js';
+import './commands/identify.js';
+import './commands/patterns.js';
+import './commands/rules.js';
+import './commands/5s.js';
+import './commands/aliases.js';
+import './commands/wiki.js';
+import {CalcError} from './commands/calc.js';
+import './commands/secret.js';
+
+import {starboardChannels} from './other/starboard.js';
+import {check5S} from './other/notifier.js';
 
 
-export const COMMANDS: {[key: string]: string | ((msg: Message, argv: string[]) => Promise<Response>)} = Object.assign(Object.create(null), {
-
-    'calc': cmdCalc,
-    'roll': 'calc',
-
-    'acl': cmdAcl,
-    'acl show': () => {throw new Error('hi');},
-    'acl get': () => {throw new Error('hi');},
-    'acl set': () => {throw new Error('hi');},
-    'acl delete': () => {throw new Error('hi');},
-    'acl list': () => {throw new Error('hi');},
-    'acl uses': () => {throw new Error('hi');},
-    'acl showcmd': () => {throw new Error('hi');},
-    'acl getcmd': () => {throw new Error('hi');},
-    'acl deletecmd': () => {throw new Error('hi');},
-
-    'sim': cmdSim,
-
-    'identify': cmdIdentify,
-    'basicidentify': cmdBasicIdentify,
-    'minmax': cmdMinmax,
-    'identifyconduit': cmdIdentifyConduit,
-
-    'hashsoup': cmdHashsoup,
-    'apgencode': cmdApgencode,
-    'apgdecode': cmdApgdecode,
-    'population': cmdPopulation,
-    'pop': 'population',
-
-    'tomap': cmdToMAP,
-
-    'ruleinfo': cmdRuleInfo,
-    'normalizerule': cmdNormalizeRule,
-    'blackwhitereverse': cmdBlackWhiteReverse,
-    'blackwhitereversal': 'blackwhitereverse',
-    'bwreverse': 'blackwhitereverse',
-    'bwreversal': 'blackwhitereverse',
-    'checkerboarddual': cmdCheckerboardDual,
-    'cbdual': 'checkerboarddual',
-    'basis': cmdBasis,
-
-    'sssss': cmdSssss,
-    '5s': 'sssss',
-    'sssssinfo': cmdSssssInfo,
-    '5sinfo': 'sssssinfo',
-
-    'dyk': cmdDyk,
-
-    'name': cmdName,
-    'rename': cmdRename,
-    'deletename': cmdDeleteName,
-
-    'simstats': cmdSimStats,
-    'savesimstats': cmdSaveSimStats,
-
-    'alias': cmdAlias,
-    'upload': 'alias',
-    'realias': cmdRealias,
-    'reupload': 'realias',
-    'unalias': cmdUnalias,
-    'deletealias': cmdUnalias,
-    'lookupalias': cmdLookupAlias,
-    'listaliases': cmdListAliases,
-    'aliases': 'listaliases',
-
-    'wiki': cmdWiki,
-
-    'starboardprevent': cmdStarboardPrevent,
-
-});
+export let noReplyPings: string[] = JSON.parse(await readFile('data/no_reply_pings.json'));
 
 
 let previousMsgs: [string, Message][] = [];
@@ -114,92 +51,77 @@ async function runCommand(msg: Message): Promise<void> {
         cmd = data.slice(0, index);
         data = data.slice(index + 1);
     }
-    cmd = cmd.toLowerCase().replaceAll('_', '');
-    // if (Reflect.has(COMMANDS, cmd)) {
-    if (cmd in COMMANDS) {
-        let resolvedCommandFunc = COMMANDS[cmd];
-        let resolvedCommandName = cmd;
-        while (typeof resolvedCommandFunc === 'string') {
-            resolvedCommandName = resolvedCommandFunc;
-            resolvedCommandFunc = COMMANDS[resolvedCommandFunc];
-            if (resolvedCommandFunc === undefined) {
-                await msg.channel.send(`<@1253852708826386518> nonexistent alias detected for command '${cmd}'`);
-                return;
-            }
-        }
-        if (!matchesACL(msg, aclData.commands[resolvedCommandName])) {
-            previousMsgs.push([msg.id, await msg.reply({content: 'Error: You do not have permission to run this command', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
-            return;
-        }
-        runningCommands.add(msg.id);
-        try {
-            let value = await resolvedCommandFunc(msg, argv);
-            if (value) {
-                let out: Message;
-                let newDeleters: string[] = [msg.author.id];
-                if (Array.isArray(value)) {
-                    for (let id of value[1]) {
-                        newDeleters.push(id);
-                    }
-                    value = value[0];
-                }
-                if (typeof value === 'string') {
-                    out = await msg.reply({content: value, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}});
-                } else if (value instanceof _Message) {
-                    out = value;
-                } else {
-                    (value as MessageReplyOptions).allowedMentions = {repliedUser: !noReplyPings.includes(msg.author.id), parse: []};
-                    out = await msg.reply(value);
-                }
-                previousMsgs.push([msg.id, out]);
-                if (previousMsgs.length > 4096) {
-                    previousMsgs.shift();
-                }
-                for (let id of newDeleters) {
-                    deleters.push([id, out.id]);
-                }
-                if (deleters.length > 65536) {
-                    deleters.shift();
+    runningCommands.add(msg.id);
+    try {
+        let value = await internalRunTextCommand(msg, data);
+        if (value) {
+            let out: Message;
+            let newDeleters: string[] = [msg.author.id];
+            if (value.deleters) {
+                for (let deleter of value.deleters) {
+                    newDeleters.push(deleter);
                 }
             }
-        } catch (error) {
-            if (error instanceof BotError || error instanceof LifewebError || error instanceof SyntaxError) {
-                let content: string;
-                if (error instanceof CalcError || error.message.startsWith('SymmetryError: ')) {
-                    content = error.message;
-                } else {
-                    content = `${error.name}: ${error.message}`;
-                }
-                previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
-            } else if (error instanceof Error && (error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim.gif'` || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim_base.gif'`)) {
-                previousMsgs.push([msg.id, await msg.reply({content: `${error.name}: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
-            } else if ((error instanceof DiscordAPIError && error.message.match(/Must be (2|4)000 or fewer in length/)) || (error instanceof Error && error.message === 'Received one or more errors' && typeof error.stack === 'string' && error.stack.toLowerCase().includes('sapphire'))) {
-                previousMsgs.push([msg.id, await msg.reply({content: 'Error: Message too long!', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+            if (value.type === 'already-sent') {
+                out = value.value;
             } else {
-                let str: string;
-                if (error && typeof error === 'object' && 'stack' in error) {
-                    str = String(error.stack);
-                    if (str.length > 1900) {
-                        str = str.slice(0, 1900) + '... (truncated)';
-                    }
+                let data: MessageReplyOptions = {allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}};
+                if (value.type === 'message-spec') {
+                    Object.assign(data, value.value);
+                } else if (value.type === 'string' || value.type === 'number' || value.type === 'boolean') {
+                    data.content = String(value.value);
+                } else if (value.type === 'pattern') {
+                    data.content = value.value.toRLE();
                 } else {
-                    str = String(error);
+                    throw new Error(`This error should not occur (invalid response type: '${(value as {type: 'string'}).type}')`);
                 }
-                console.log(str);
-                let content = '```' + str + '```';
-                if (msg.author.id !== '1253852708826386518') {
-                    content = '<@1253852708826386518>\n' + content;
-                }
-                previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: ['users']}})]);
+                out = await msg.reply(data);
             }
-        } finally {
-            runningCommands.delete(msg.id);
+            previousMsgs.push([msg.id, out]);
+            if (previousMsgs.length > 4096) {
+                previousMsgs.shift();
+            }
+            for (let id of newDeleters) {
+                deleters.push([id, out.id]);
+            }
+            if (deleters.length > 65536) {
+                deleters.shift();
+            }
         }
+    } catch (error) {
+        if (error instanceof BotError || error instanceof LifewebError || error instanceof SyntaxError) {
+            let content: string;
+            if (error instanceof CalcError || error.message.startsWith('SymmetryError: ')) {
+                content = error.message;
+            } else {
+                content = `${error.name}: ${error.message}`;
+            }
+            previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+        } else if (error instanceof Error && (error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim.gif'` || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim_base.gif'`)) {
+            previousMsgs.push([msg.id, await msg.reply({content: `${error.name}: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+        } else if ((error instanceof DiscordAPIError && error.message.match(/Must be (2|4)000 or fewer in length/)) || (error instanceof Error && error.message === 'Received one or more errors' && typeof error.stack === 'string' && error.stack.toLowerCase().includes('sapphire'))) {
+            previousMsgs.push([msg.id, await msg.reply({content: 'Error: Message too long!', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+        } else {
+            let str: string;
+            if (error && typeof error === 'object' && 'stack' in error) {
+                str = String(error.stack);
+                if (str.length > 1900) {
+                    str = str.slice(0, 1900) + '... (truncated)';
+                }
+            } else {
+                str = String(error);
+            }
+            console.log(str);
+            let content = '```' + str + '```';
+            if (msg.author.id !== '1253852708826386518') {
+                content = '<@1253852708826386518>\n' + content;
+            }
+            previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: ['users']}})]);
+        }
+    } finally {
+        runningCommands.delete(msg.id);
     }
 }
-
-
-export let noReplyPings: string[] = JSON.parse(await readFile('data/no_reply_pings.json'));
 
 
 export let client = new Client({

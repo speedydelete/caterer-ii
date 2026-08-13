@@ -3,9 +3,8 @@ import {Node, Expression, PrivateName} from '@babel/types';
 import {parseExpression} from '@babel/parser';
 import {CategoryChannel, Guild} from 'discord.js';
 
-import {BotError, Message, Response} from './base.js';
-import {readFile, writeFile, sentByAdmin} from './util.js';
-import {COMMANDS, client} from './index.js';
+import {BotError, Message, readFile, sentByAdmin} from './base.js';
+import {client} from './index.js';
 
 
 export type ACL = 
@@ -285,67 +284,4 @@ export function getACLUses(name: string): string[] {
         }
     }
     return out;
-}
-
-
-export async function cmdAcl(msg: Message, argv: string[]): Promise<Response> {
-    let cmd = argv[1].toLowerCase().replaceAll(/[ _]/g, '').replaceAll('command', 'cmd');
-    if (!matchesACL(msg, aclData.commands[`acl ${cmd}`])) {
-        throw new BotError(`You do not have permission to run this subcommand`);
-    }
-    let args = argv.slice(2);
-    if (cmd === 'show') {
-
-    } else if (cmd === 'get') {
-
-    } else if (cmd === 'set') {
-
-    } else if (cmd === 'delete') {
-
-    } else if (cmd === 'list') {
-
-    } else if (cmd === 'uses') {
-        let name = args.join(' ');
-
-    } else if (cmd === 'showcmd') {
-        let name = args.join(' ');
-        if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
-            throw new BotError(`Command '${name}' does not exist or is an alias`);
-        }
-        if (!(name in aclData.commands)) {
-            throw new BotError(`Command '${name}' is not bound to an ACL`);
-        }
-        return await aclToString(aclData.commands[name], true);
-    } else if (cmd === 'getcmd') {
-        let name = args.join(' ');
-        if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
-            throw new BotError(`Command '${name}' does not exist or is an alias`);
-        }
-        if (!(name in aclData.commands)) {
-            throw new BotError(`Command '${name}' is not bound to an ACL`);
-        }
-        return '`' + (await aclToString(aclData.commands[name], false)) + '`';
-    } else if (cmd === 'setcmd') {
-        let name = args[0];
-        if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
-            throw new BotError(`Command '${name}' does not exist or is an alias`);
-        }
-        let acl = await parseACL(args.slice(1).join(' '), msg.guild as Guild);
-        aclData.commands[name] = acl;
-        await writeFile('data/acls.json', JSON.stringify(aclData));
-        return 'Command ACL set!';
-    } else if (cmd === 'deletecmd') {
-        let name = args.join(' ');
-        if (!(name in COMMANDS && typeof COMMANDS[name] === 'function')) {
-            throw new BotError(`Command '${name}' does not exist or is an alias`);
-        }
-        if (!(name in aclData.commands)) {
-            throw new BotError(`Command '${name}' is not bound to an ACL`);
-        }
-        delete aclData.commands[name];
-        await writeFile('data/acls.json', JSON.stringify(aclData));
-        return 'Command ACL deleted!';
-    } else {
-        throw new BotError(`Invalid subcommand: '${argv[1]}'`);
-    }
 }

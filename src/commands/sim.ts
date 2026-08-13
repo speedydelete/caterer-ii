@@ -4,11 +4,10 @@ import {execSync} from 'node:child_process';
 
 import {Pattern, TreePattern, HistoryPattern, SuperPattern, InvestigatorPattern, TorusPattern, identifyPeriodic, getDescription, INTSeparator, Separator, createPattern} from '../../lifeweb/lib/index.js';
 
-import {BotError, Message, optionalVariadicArg, flagArg, optionArg, addCommand} from '../base.js';
-import {readFile, writeFile, findRLE} from '../util.js';
+import {BotError, resolvePath, readFile, writeFile, requiredArg, optionalArg, optionalVariadicArg, flagArg, patternArg, addCommand, createEmbed} from '../base.js';
 import {deserialize, registerWorkerTask} from '../worker.js';
 import {serialize, runWorkerTask} from '../worker_manager.js';
-import {aliases} from '../db.js';
+import {aliases} from './aliases.js';
 
 
 const HISTORY_COLORS: [number, number, number][] = [[0, 255, 0], [0, 0, 128], [216, 255, 216], [255, 0, 0], [255, 255, 0], [96, 96, 96]];
@@ -19,76 +18,6 @@ const SUPER_COLORS: [number, number, number][] = [[0, 255, 0], [0, 0, 160], [255
 const INVESTIGATOR_COLORS: [number, number, number][] = [[0, 236, 91], [0, 192, 255], [255, 0, 0], [255, 255, 255], [75, 75, 75], [233, 41, 255], [64, 0, 128], [255, 230, 0], [150, 128, 0], [130, 200, 0], [120, 40, 0], [255, 140, 0], [140, 70, 0], [0, 0, 255], [192, 192, 192], [128, 128, 128], [255, 112, 140], [249, 237, 249], [0, 152, 127], [0, 73, 59]];
 
 const SEPARATOR_COLORS: [number, number, number][] = [[0, 255, 0], [0, 0, 255], [255, 0, 0], [255, 37, 179], [255, 225, 120], [0, 255, 255], [0, 127, 255], [255, 202, 240], [0, 112, 7], [135, 60, 0], [15, 0, 82], [15, 255, 157], [127, 0, 67], [217, 255, 0], [0, 157, 210], [150, 172, 142], [142, 44, 202], [255, 142, 0], [255, 120, 127], [135, 97, 165], [127, 120, 0], [150, 210, 82], [255, 0, 255], [255, 150, 255], [0, 52, 7], [157, 105, 97], [0, 179, 135], [255, 195, 165], [179, 232, 255], [255, 0, 112], [187, 255, 187], [67, 7, 0], [187, 7, 30], [0, 112, 105], [255, 217, 0], [0, 187, 0], [0, 52, 105], [0, 75, 255], [150, 22, 135], [210, 142, 67], [44, 0, 37], [217, 97, 157], [75, 60, 0], [165, 179, 255], [142, 142, 165], [0, 52, 172], [255, 255, 232], [255, 112, 67], [165, 22, 255], [165, 120, 247], [89, 120, 60], [150, 255, 67], [0, 179, 82], [0, 179, 187], [179, 179, 22], [172, 187, 105], [240, 89, 240], [44, 112, 187], [165, 60, 60], [240, 255, 105], [22, 97, 127], [105, 60, 89], [0, 0, 165], [82, 255, 202], [157, 135, 82], [0, 255, 105], [210, 157, 0], [142, 225, 202], [232, 150, 165], [0, 22, 0], [89, 15, 89], [0, 7, 30], [97, 97, 75], [89, 7, 135], [195, 37, 89], [210, 150, 217], [210, 187, 187], [97, 142, 0], [195, 97, 0], [255, 0, 67], [247, 247, 179], [210, 120, 89], [97, 165, 82], [60, 60, 142], [0, 120, 75], [150, 255, 150], [0, 165, 255], [195, 0, 120], [67, 217, 255], [187, 97, 187], [165, 112, 142], [157, 210, 0], [135, 135, 232], [0, 0, 52], [255, 89, 0], [105, 60, 37], [217, 247, 142], [112, 0, 0], [82, 105, 255], [142, 97, 7], [75, 7, 217], [225, 187, 120], [37, 15, 7], [195, 0, 172], [135, 179, 187], [89, 89, 127], [22, 67, 52], [30, 150, 0], [172, 75, 105], [127, 75, 179], [255, 240, 255], [150, 67, 127], [255, 105, 202], [127, 195, 142], [210, 67, 255], [37, 82, 0], [195, 195, 232], [97, 225, 89], [255, 82, 150], [135, 202, 255], [172, 52, 0], [247, 82, 82], [97, 127, 127], [112, 37, 52], [210, 217, 0], [82, 165, 142], [187, 165, 60], [89, 217, 142], [112, 97, 105], [60, 52, 30], [255, 7, 217], [179, 75, 202], [112, 142, 195], [210, 30, 0], [210, 195, 157], [157, 142, 127], [195, 225, 179], [255, 187, 89], [255, 150, 210], [135, 82, 255], [22, 142, 165], [0, 0, 120], [37, 217, 195], [52, 44, 75], [195, 217, 210], [30, 89, 195], [195, 255, 97], [255, 150, 97], [135, 247, 255], [157, 97, 52], [195, 142, 112], [157, 217, 127], [67, 60, 210], [82, 89, 0], [52, 30, 89], [89, 127, 97], [60, 75, 30], [202, 82, 60], [210, 0, 67], [202, 150, 255], [195, 157, 195], [67, 232, 37], [105, 179, 7], [240, 202, 60], [255, 157, 142], [120, 142, 52], [135, 0, 44], [255, 0, 142], [0, 150, 82], [82, 0, 44], [142, 0, 157], [195, 105, 255], [89, 60, 60], [255, 127, 165], [195, 105, 105], [255, 82, 120], [255, 172, 0], [0, 52, 75], [247, 150, 60], [202, 60, 165], [202, 210, 89], [187, 142, 150], [0, 82, 89], [187, 15, 202], [150, 15, 105], [105, 97, 44], [60, 30, 0], [187, 120, 0], [217, 187, 247], [255, 195, 202], [255, 179, 120], [150, 172, 52], [255, 247, 0], [89, 37, 127], [22, 89, 142], [210, 255, 232], [97, 37, 0], [187, 97, 44], [37, 89, 52], [112, 210, 105], [82, 75, 135], [60, 30, 44], [105, 210, 7], [97, 89, 210], [157, 142, 202], [89, 150, 97], [89, 179, 210], [255, 60, 52], [112, 67, 7], [210, 75, 89], [82, 150, 255], [127, 97, 67], [150, 255, 210], [89, 7, 165], [210, 120, 240], [135, 157, 97], [89, 97, 179], [217, 82, 7], [37, 30, 127], [195, 112, 172], [157, 7, 217], [75, 112, 0], [120, 255, 0], [89, 135, 165], [255, 127, 105], [255, 240, 75], [187, 217, 67], [179, 255, 15], [157, 112, 210], [44, 112, 44], [135, 82, 225], [255, 127, 44], [112, 60, 127], [165, 127, 7], [172, 22, 52], [142, 82, 97], [179, 172, 112], [142, 179, 0], [52, 0, 15], [0, 75, 150], [142, 67, 44], [255, 225, 172], [89, 172, 60], [195, 225, 150], [255, 217, 202], [247, 112, 232], [75, 89, 89], [7, 232, 112], [179, 52, 112], [75, 30, 75], [112, 15, 255], [165, 255, 120], [225, 225, 135], [105, 0, 195], [172, 135, 60]];
-
-
-function parseFill(fill: string, p: Pattern): number[] {
-    let originalFill = fill;
-    fill = fill.replaceAll('', '');
-    let weightSpec = '';
-    let index = fill.indexOf(',');
-    if (index !== -1) {
-        weightSpec = fill.slice(index + 1);
-        fill = fill.slice(0, index);
-    }
-    if (!fill.endsWith('%')) {
-        throw new BotError(`Invalid fill (expected %): '${originalFill}'`);
-    }
-    let fillPercent = Number(fill.slice(0, -1)) / 100;
-    if (Number.isNaN(fillPercent)) {
-        throw new BotError(`Invalid fill (percentage is not a number): '${originalFill}'`);
-    }
-    let weights: number[] = [0];
-    for (let i = 1; i < p.rule.states; i++) {
-        // for the empty specifier, make them all 1
-        weights.push(weightSpec === '' ? 1 : 0);
-    }
-    for (let specifier of weightSpec.split(',')) {
-        if (specifier === '') {
-            continue;
-        }
-        let data = specifier.split('=');
-        if (data.length !== 2) {
-            throw new BotError(`Invalid weight specifier (expected exactly 1 equals sign): '${specifier}'`);
-        }
-        let states = data[0];
-        let start: number;
-        let end: number;
-        if (states.includes('-')) {
-            let range = states.split('-');
-            if (range.length !== 2) {
-                throw new BotError(`Invalid weight specifier (expected 0 or 1 dashes): '${specifier}'`);
-            }
-            start = Number(range[0]);
-            if (Number.isNaN(start)) {
-                throw new BotError(`Invalid weight specifier (range start is not a number): '${specifier}'`);
-            }
-            end = Number(range[1]);
-            if (Number.isNaN(end)) {
-                throw new BotError(`Invalid weight specifier (range end is not a number): '${specifier}'`);
-            }
-        } else {
-            start = Number(states);
-            if (Number.isNaN(start)) {
-                throw new BotError(`Invalid weight specifier (state is not a number): '${specifier}'`);
-            }
-            end = start;
-        }
-        start = Math.max(start, 0);
-        end = Math.min(end, p.rule.states);
-        let weight = Number(data[1]);
-        for (let i = start; i <= end; i++) {
-            weights[i] = weight;
-        }
-    }
-    let weightDiv = weights.reduce((x, y) => x + y) / fillPercent;
-    let out: number[] = [1 - fillPercent];
-    let total = 1 - fillPercent;
-    for (let i = 1; i < p.rule.states; i++) {
-        total += weights[i] / weightDiv;
-        out.push(total);
-    }
-    return out;
-}
 
 
 interface Frame<T extends boolean = boolean> {
@@ -488,7 +417,9 @@ function parseSim(pattern: string, argv: string[]): SimData {
     return {frames: frames.map(({p, time}) => ({p, time: Math.max(time ?? defaultTime, 2)})), gifSize, minX, minY, width, height, useAdvancedColors: data.useAdvancedColors, customColors: data.customColors, text: data.text};
 }
 
-async function runSim(input: {pattern: string, argv: string[]}): Promise<{parseTime: number, text?: string}> {
+const SIM_BASE_PATH = resolvePath('sim_base.gif');
+
+async function runSim(input: {pattern: string, argv: string[], outFilePath: string}): Promise<{parseTime: number, text?: string}> {
     let startTime = performance.now();
     let {frames, gifSize, minX, minY, width, height, useAdvancedColors, customColors, text} = parseSim(input.pattern, input.argv);
     let parseTime = performance.now() - startTime;
@@ -692,17 +623,17 @@ async function runSim(input: {pattern: string, argv: string[]}): Promise<{parseT
         out.set(array, offset);
         offset += array.length;
     }
-    await fs.writeFile('sim_base.gif', out);
+    await fs.writeFile(SIM_BASE_PATH, out);
     let scale = Math.ceil(gifSize / Math.min(width, height));
     gifSize = Math.min(width, height) * scale;
-    execSync(`gifsicle --resize-${width < height ? 'width' : 'height'} ${gifSize} -O3 sim_base.gif > sim.gif`);
+    execSync(`gifsicle --resize-${width < height ? 'width' : 'height'} ${gifSize} -O3 '${SIM_BASE_PATH}' > '${input.outFilePath}'`);
     return {parseTime, text};
 }
 
 
 declare module '../worker_manager.js' {
     export interface WorkerTaskTypes {
-        sim: [{pattern: string, argv: string[]}, {parseTime: number, text?: string}];
+        sim: [{pattern: string, argv: string[], outFilePath: string}, {parseTime: number, text?: string}];
     }
 }
 
@@ -710,110 +641,199 @@ registerWorkerTask('sim', runSim);
 
 
 export let simStats: {[key: string]: number} = JSON.parse(await readFile('data/sim_stats.json'));
-let simCounter = 0;
+
+async function runSimCommand(p: Pattern, argv: string[], showTime?: boolean): Promise<string | undefined> {
+    p.shrinkToFit();
+    let startTime = performance.now();
+    try {
+        let {parseTime, text} = await runWorkerTask('sim', {pattern: serialize(p), argv, outFilePath: 'sim.gif'});
+        let rule = p.rule.str;
+        if (rule in simStats) {
+            simStats[rule]++;
+        } else {
+            simStats[rule] = 1;
+        }
+        await writeFile('data/sim_stats.json', JSON.stringify(simStats, undefined, 4));
+        let out: string | undefined = undefined;
+        if (showTime) {
+            let total = Math.round(performance.now() - startTime) / 1000;
+            let parse = Math.round(parseTime) / 1000;
+            out = `Took ${total} seconds (${parse} to parse)`;
+            if (text) {
+                out += '\n' + text;
+            }
+        } else if (text) {
+            out = text;
+        }
+        return out;
+    } finally {
+        try {
+            await fs.rm('sim_base.gif');
+        } catch {}
+        try {
+            await fs.rm('sim.gif');
+        } catch {}
+    }
+}
 
 addCommand(
     'sim', 'sim', [],
-    'Simulate a RLE and output a GIF.',
+    'Simulate a pattern and output a GIF.',
     [
-        optionalVariadicArg('parts', 'string', 'Specifies how to simulate (see https://discord.com/channels/357922255553953794/404518331605975040/1489678824932380774 for documentation)'),
-        flagArg('time', [], 'Shows how much time it took'),
+        patternArg('pattern'),
+        optionalVariadicArg('parts', 'string', 'Specifies how to simulate (see https://discord.com/channels/357922255553953794/404518331605975040/1489678824932380774 for documentation).'),
+        flagArg('time', [], 'Shows how much time it took.'),
     ],
     async args => {
         let argv = args.parts ?? [];
-        let startTime = performance.now();
-        let p: Pattern;
-        let replyTo: Message;
-        if (argv[1] === 'rand') {
-            let height = 16;
-            let width = 16;
-            if (!argv[2]) {
-                throw new BotError('No arguments provided for rand!');
-            }
-            if (argv[2].match(/^\d+x\d+$/)) {
-                let data = argv[2].split('x');
-                width = Number(data[0]);
-                height = Number(data[1]);
-                argv = argv.slice(1);
-            }
-            let fill = '50%';
-            if (!argv[2]) {
-                throw new BotError('No arguments provided for rand!');
-            }
-            if (argv[2].includes('%')) {
-                fill = argv[2];
-                argv = argv.slice(1);
-            }
-            let rule = argv[2];
-            if (rule === undefined) {
-                throw new BotError('No rule provided for rand!');
-            }
-            argv = argv.slice(2);
-            p = createPattern(rule, aliases);
-            let weights = parseFill(fill, p);
-            if (p instanceof TorusPattern && (p.height < height || p.width < width)) {
-                height = p.height;
-                width = p.width;
-            }
-            let size = height * width;
-            let data = new Uint8Array(size);
-            for (let i = 0; i < size; i++) {
-                let value = Math.random();
-                for (let state = 0; state < weights.length; state++) {
-                    if (value < weights[state]) {
-                        data[i] = state;
-                        break;
-                    }
-                }
-            }
-            p.setData(height, width, data);
-            replyTo = args.msg;
-        } else {
-            let data = await findRLE(args.msg);
-            p = data.p;
-            replyTo = data.replyTo;
+        if (argv[0] === 'rand') {
+            throw new BotError(`Use !simrand, not !sim rand`);
         }
-        p.shrinkToFit();
-        try {
-            let {parseTime, text} = await runWorkerTask('sim', {pattern: serialize(p), argv});
-            let rule = p.rule.str;
-            if (rule in simStats) {
-                simStats[rule]++;
-            } else {
-                simStats[rule] = 1;
-            }
-            simCounter++;
-            if (simCounter === 4) {
-                simCounter = 0;
-                await writeFile('data/sim_stats.json', JSON.stringify(simStats, undefined, 4));
-            }
-            let content: string | undefined = undefined;
-            if (args.time) {
-                let total = Math.round(performance.now() - startTime) / 1000;
-                let parse = Math.round(parseTime) / 1000;
-                content = `Took ${total} seconds (${parse} to parse)`;
-                if (text) {
-                    content += '\n' + text;
-                }
-            } else if (text) {
-                content = text;
-            }
-            let out = [await replyTo.reply({
+        let content = await runSimCommand(args.pattern.p, argv, args.time);
+        let replyTo = args.pattern.msgInChannel;
+        return {
+            type: 'already-sent',
+            value: await replyTo.reply({
                 content,
                 files: ['sim.gif'],
                 allowedMentions: {repliedUser: false},
-            }), [replyTo.author.id]] as [Message, [string]];
-            return out;
-        } finally {
-            try {
-                await fs.rm('sim_base.gif');
-            } catch {}
-            try {
-                await fs.rm('sim.gif');
-            } catch {}
-        }
+            }),
+            deleters: [replyTo.author.id],
+        };
     },
     {
         sendTyping: true,
+    },
+);
+
+
+function parseRandFill(p: Pattern, fill: string): number[] {
+    let originalFill = fill;
+    fill = fill.replaceAll('', '');
+    let weightSpec = '';
+    let index = fill.indexOf(',');
+    if (index !== -1) {
+        weightSpec = fill.slice(index + 1);
+        fill = fill.slice(0, index);
+    }
+    if (!fill.endsWith('%')) {
+        throw new BotError(`Invalid fill (expected %): '${originalFill}'`);
+    }
+    let fillPercent = Number(fill.slice(0, -1)) / 100;
+    if (Number.isNaN(fillPercent)) {
+        throw new BotError(`Invalid fill (percentage is not a number): '${originalFill}'`);
+    }
+    let weights: number[] = [0];
+    for (let i = 1; i < p.rule.states; i++) {
+        // for the empty specifier, make them all 1
+        weights.push(weightSpec === '' ? 1 : 0);
+    }
+    for (let specifier of weightSpec.split(',')) {
+        if (specifier === '') {
+            continue;
+        }
+        let data = specifier.split('=');
+        if (data.length !== 2) {
+            throw new BotError(`Invalid weight specifier (expected exactly 1 equals sign): '${specifier}'`);
+        }
+        let states = data[0];
+        let start: number;
+        let end: number;
+        if (states.includes('-')) {
+            let range = states.split('-');
+            if (range.length !== 2) {
+                throw new BotError(`Invalid weight specifier (expected 0 or 1 dashes): '${specifier}'`);
+            }
+            start = Number(range[0]);
+            if (Number.isNaN(start)) {
+                throw new BotError(`Invalid weight specifier (range start is not a number): '${specifier}'`);
+            }
+            end = Number(range[1]);
+            if (Number.isNaN(end)) {
+                throw new BotError(`Invalid weight specifier (range end is not a number): '${specifier}'`);
+            }
+        } else {
+            start = Number(states);
+            if (Number.isNaN(start)) {
+                throw new BotError(`Invalid weight specifier (state is not a number): '${specifier}'`);
+            }
+            end = start;
+        }
+        start = Math.max(start, 0);
+        end = Math.min(end, p.rule.states);
+        let weight = Number(data[1]);
+        for (let i = start; i <= end; i++) {
+            weights[i] = weight;
+        }
+    }
+    let weightDiv = weights.reduce((x, y) => x + y) / fillPercent;
+    let out: number[] = [1 - fillPercent];
+    let total = 1 - fillPercent;
+    for (let i = 1; i < p.rule.states; i++) {
+        total += weights[i] / weightDiv;
+        out.push(total);
+    }
+    return out;
+}
+
+addCommand(
+    'simrandom', 'sim', ['simrand'],
+    'Simulate a random pattern and output a GIF.',
+    [
+        patternArg('pattern'),
+        requiredArg('rule', 'string', 'The rule to use.'),
+        optionalArg('size', {name: 'wxh', value: /^\d+x\d+$/}, 'The size of the pattern, such as 20x20 or 8x32 (default 16x16).', '16x16'),
+        optionalArg('fill', {name: 'percent', value: /%$/}, 'The percentage to fill the pattern (default 50%). Must start with a percent (such as 50%), can optionally be followed by  a comma then state weights, such as "50%,1-2=1,3=3" (sets states 1 and 2 to weight 1 but state 3 to weight 3). Ranges are inclusive, all states by default have weight 0.', '50%'),
+        optionalVariadicArg('parts', 'string', 'Specifies how to simulate (see https://discord.com/channels/357922255553953794/404518331605975040/1489678824932380774 for documentation).'),
+        flagArg('time', [], 'Shows how much time it took.'),
+    ],
+    async args => {
+        let argv = args.parts ?? [];
+        let [height, width] = args.size.split('x').map(Number);
+        let p = createPattern(args.rule, aliases);
+        let weights = parseRandFill(p, args.fill);
+        if (p instanceof TorusPattern && (p.height < height || p.width < width)) {
+            height = p.height;
+            width = p.width;
+        }
+        let size = height * width;
+        let data = new Uint8Array(size);
+        for (let i = 0; i < size; i++) {
+            let value = Math.random();
+            for (let state = 0; state < weights.length; state++) {
+                if (value < weights[state]) {
+                    data[i] = state;
+                    break;
+                }
+            }
+        }
+        p.setData(height, width, data);
+        let content = await runSimCommand(args.pattern.p, argv, args.time);
+        return {type: 'message-spec', value: {content, files: ['sim.gif']}};
+    },
+    {
+        sendTyping: true,
+    },
+);
+
+
+addCommand(
+    'simstats', 'sim', [],
+    'Get statistics on the most popular rules simulated.',
+    [
+        requiredArg('page', 'number', 'The page to get data for, defaults to 1.'),
+    ],
+    async args => {
+        let page = args.page;
+        let realPage = page - 1;
+        let data = Object.entries(simStats).sort((x, y) => y[1] - x[1]);
+        let maxPage = Math.floor(data.length / 10) + 1;
+        if (realPage * 10 > data.length) {
+            throw new BotError(`Page does not exist (highest page is ${maxPage})`);
+        }
+        let pageData = data.slice(realPage * 10, (realPage + 1) * 10);
+        let title = `Most popular rules (page ${page} of ${maxPage})`;
+        let out = pageData.map(x => x[0] + ': ' + x[1]).join('\n');
+        return {type: 'message-spec', value: {embeds: [createEmbed(title, out)]}};
     },
 );

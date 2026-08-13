@@ -2,7 +2,7 @@
 import * as fs from 'node:fs/promises';
 import {EmbedBuilder} from 'discord.js';
 
-import {BotError, Response, addCommand, requiredRestArg} from '../base.js';
+import {BotError, readFile, optionalArg, requiredRestArg, Response, addCommand} from '../base.js';
 
 
 const NAMESPACES: {[key: string]: number} = {
@@ -196,9 +196,9 @@ export async function queryWiki(query: string): Promise<Response> {
     }
     let embed = (new EmbedBuilder()).setTitle(title).setDescription(text).setURL(url);
     if (useImage) {
-        return {embeds: [embed.setThumbnail('attachment://image.gif')], files: ['./image.gif']};
+        return {type: 'message-spec', value: {embeds: [embed.setThumbnail('attachment://image.gif')], files: ['./image.gif']}};
     } else {
-        return {embeds: [embed]};
+        return {type: 'message-spec', value: {embeds: [embed]}};
     }
 }
 
@@ -214,5 +214,25 @@ addCommand(
     {
         sendTyping: true,
         noArgvParse: true,
+    },
+);
+
+
+let dyks = (await readFile('data/dyk.txt')).split('\n').slice(1);
+
+addCommand(
+    'dyk', 'other', [],
+    'Show a \'Did You Know\' from the ConwayLife.com wiki',
+    [
+        optionalArg('number', 'number', 'The number of the DYK to show'),
+    ],
+    async args => {
+        let num: number;
+        if (args.number) {
+            num = args.number;
+        } else {
+            num = Math.floor(Math.random() * dyks.length) + 1;
+        }
+        return {type: 'string', value: `Did you know... (#${num}): ${dyks[num - 1]}\n-# Licensed under the [GNU Free Documentation License 1.2](https://www.gnu.org/licenses/fdl-1.3.html)`};
     },
 );

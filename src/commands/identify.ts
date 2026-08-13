@@ -3,11 +3,10 @@ import {EmbedBuilder} from 'discord.js';
 
 import {Pattern, Minmax, findMinmax, PatternType, identifyPeriodic, getApgcode, getDescription, ALTERNATE_SYMMETRIES, Identified, identify, toCatagolueRule} from '../../lifeweb/lib/index.js';
 
-import {requiredArg, optionalArg, flagArg, addCommand} from '../base.js';
-import {findRLE} from '../util.js';
+import {requiredArg, optionalArg, flagArg, addCommand, createEmbed, patternArg} from '../base.js';
 import {deserialize, registerWorkerTask} from '../worker.js';
 import {serialize, runWorkerTask} from '../worker_manager.js';
-import {names} from '../db.js';
+// import {names} from './names.js';
 
 
 function embedIdentified(original: Pattern, type: PatternType | Identified, isOutput?: boolean): EmbedBuilder[] {
@@ -72,19 +71,19 @@ function embedIdentified(original: Pattern, type: PatternType | Identified, isOu
         out += '](https://catagolue.hatsya.com/object/' + apgcode + '/' + toCatagolueRule(type.phases[0].rule.str) + ')';
     }
     let title = 'desc' in type ? type.desc : getDescription(type);
-    let name: string | undefined = undefined;
-    if (apgcode.startsWith('x') || apgcode.startsWith('y')) {
-        name = names.get(apgcode);
-    } else {
-        name = names.get(type.phases[0].toCanonicalApgcode(1, 'x'));
-    }
-    if (name !== undefined) {
-        title = name + ' (' + title + ')';
-    }
+    // let name: string | undefined = undefined;
+    // if (apgcode.startsWith('x') || apgcode.startsWith('y')) {
+    //     name = names.get(apgcode);
+    // } else {
+    //     name = names.get(type.phases[0].toCanonicalApgcode(1, 'x'));
+    // }
+    // if (name !== undefined) {
+    //     title = name + ' (' + title + ')';
+    // }
     if (isOutput) {
         title = 'Output: ' + title;
     }
-    let embeds = [(new EmbedBuilder()).setTitle(title).setDescription(out)];
+    let embeds = [createEmbed(title, out)];
     if ('output' in type && type.output) {
         for (let embed of embedIdentified(Object.assign(original.clearedCopy(), type.output.phases[0]), type.output, true)) {
             embeds.push(embed);
@@ -110,19 +109,20 @@ addCommand(
     'identify', 'identify', [],
     'Identify a pattern.',
     [
+        patternArg('pattern'),
         optionalArg('limit', 'number', 'Number of generations to run the identifier for (default 4096).', 4096),
         flagArg('only-periodic', ['p'], 'Whether to only accept periodic patterns (and not linear growth)'),
         flagArg('only-real', ['r'], 'Whether to not accept patterns that stabilize into others'),
     ],
     async args => {
-        let p = (await findRLE(args.msg)).p;
+        let p = args.pattern.p;
         let out = await runWorkerTask('identify', {
             pattern: serialize(p),
             limit: args.limit,
             checkLinear: !args.onlyPeriodic,
             acceptStabilized: !args.onlyReal,
         });
-        return {embeds: embedIdentified(p, out)};
+        return {type: 'message-spec', value: {embeds: embedIdentified(p, out)}};
     },
     {
         sendTyping: true,
@@ -133,19 +133,20 @@ addCommand(
     'basicidentify', 'identify', [],
     'Identify a pattern, but provide less information (can be faster).',
     [
+        patternArg('pattern'),
         optionalArg('limit', 'number', 'Number of generations to run the identifier for (default 4096).', 4096),
         flagArg('only-periodic', ['p'], 'Whether to only accept periodic patterns (and not linear growth)'),
         flagArg('only-real', ['r'], 'Whether to not accept patterns that stabilize into others'),
     ],
     async args => {
-        let p = (await findRLE(args.msg)).p;
+        let p = args.pattern.p;
         let out = await runWorkerTask('basicIdentify', {
             pattern: serialize(p),
             limit: args.limit,
             checkLinear: !args.onlyPeriodic,
             acceptStabilized: !args.onlyReal,
         });
-        return {embeds: embedIdentified(p, out)};
+        return {type: 'message-spec', value: {embeds: embedIdentified(p, out)}};
     },
     {
         sendTyping: true,
@@ -156,15 +157,15 @@ addCommand(
     'minmax', 'identify', [],
     'Find the minimum and maximum rule of a pattern.',
     [
+        patternArg('pattern'),
         requiredArg('gens', 'number', 'Number of generations to run the pattern for.'),
     ],
     async args => {
-        let p = (await findRLE(args.msg)).p;
         let out = await runWorkerTask('minmax', {
-            pattern: serialize(p),
+            pattern: serialize(args.pattern.p),
             gens: args.gens,
         });
-        return `Min: ${out.min}\nMax: ${out.max}\n2^${out.versatility} rules`;
+        return {type: 'string', value: `Min: ${out.min}\nMax: ${out.max}\n2^${out.versatility} rules`};
     },
     {
         sendTyping: true,

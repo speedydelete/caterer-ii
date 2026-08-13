@@ -1,16 +1,16 @@
 
 import {inspect} from 'node:util';
 
-import {EmbedBuilder, Guild} from 'discord.js';
+import {Guild} from 'discord.js';
+import {Pattern} from '../../lifeweb/lib/index.js';
 import * as lifeweb from '../../lifeweb/lib/index.js';
 import * as lifewebRPF from '../../lifeweb/lib/editor/rpf.js';
 import * as lifewebRuleSymmetries from '../../lifeweb/lib/rule_symmetries/index.js';
 
-import {BotError, CommandCategory, CATEGORY_NAMES, Arg, requiredArg, requiredRestArg, optionalArg, Command, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandValidator} from '../base.js';
-import {readFile, writeFile, findRLE} from '../util.js';
+import {BotError, readFile, writeFile, CommandCategory, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, Command, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, findPatternInChannel, commandValidator, createEmbed} from '../base.js';
 import {aclData, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses} from '../acl.js';
-import {aliases} from '../db.js';
-import {client, noReplyPings} from '../index.js';
+import {aliases} from './aliases.js';
+import {client} from '../index.js';
 
 
 const HELP_TEMPLATE = `A cellular automata bot for the ConwayLife Lounge Discord server.
@@ -18,13 +18,13 @@ const HELP_TEMPLATE = `A cellular automata bot for the ConwayLife Lounge Discord
 Commands:
 $$$
 
-This bot permanently stores your user ID when you use \`!noreplypings\`, and deletes it when you use \`!yesreplypings\`. So, to delete all your personal information that is stored by the bot, use \`!yesreplypings\`.
+This bot permanently stores your user ID when you use \`!replypings false\`, and deletes it when you use \`!replypings true\`. So, to delete all your personal information that is stored by the bot, use \`!replypings true\`. If it errors, you didn't have any personal information stored.
 
 You can use Bash-style quoting and escaping in commands.
 
 Type \`!help <command>\` for help for a specific command!`;
 
-function formatArgUsage(arg: Arg): string {
+function formatArgUsage(arg: Exclude<Arg, PatternArg>): string {
     let out: string;
     if (arg.kind === 'required') {
         out = `<${arg.name}>`;
@@ -83,7 +83,7 @@ addCommand(
     'help', 'meta', [],
     `Display a help message.`,
     [
-        optionalArg('command', 'string', 'Command to display infomation for. If omitted or invalid, displays generic help/info message.'),
+        optionalArg('command', 'string', 'A command to display infomation for. If omitted, displays generic help/info message.'),
     ],
     async args => {
         if (args.command === undefined) {
@@ -94,27 +94,39 @@ addCommand(
                 }
                 out.push(`* ${CATEGORY_NAMES[category as CommandCategory]}: ${commands.map(cmd => cmd.name).join(', ')}`);
             }
-            return HELP_TEMPLATE.replace('$$$', out.join('\n'));
+            return {type: 'string', value: HELP_TEMPLATE.replace('$$$', out.join('\n'))};
         } else {
             let cmdName = args.command.toLowerCase().replaceAll('_', '');
-            let data = COMMANDS[cmdName];
+            if (!(cmdName in COMMANDS)) {
+                throw new BotError(`Command '${cmdName}' does not exist`);
+            }
+            let cmd = COMMANDS[cmdName];
             let title = `\`${cmdName}\` command documentation`;
-            if (data.aliases.length > 0) {
-                title += ` (aliases ${data.aliases.map(alias => `\`${alias}\``).join(', ')})`;
+            if (cmd.aliases.length > 0) {
+                title += ` (aliases ${cmd.aliases.map(alias => `\`${alias}\``).join(', ')})`;
             }
             let desc: string;
-            if (data.type === 'basic') {
-                let usage: string[] = [];
+            if (cmd.type === 'basic') {
+                let usage: string[] = [`${cmd.name}`];
                 let argStrs: string[] = [];
-                for (let [name, arg] of Object.entries(data.args)) {
+                for (let [name, arg] of Object.entries(cmd.args)) {
+                    if (arg.kind === 'pattern') {
+                        continue;
+                    }
                     usage.push(formatArgUsage(arg));
                     argStrs.push(`* \`${name}\`: ${arg.desc}`);
                 }
-                desc = `Usage: \`${usage.join(' ')}\`\n${data.desc}\nArguments:\n${argStrs.join('\n')}`;
+                desc = `Usage: \`${usage.join(' ')}\`\n${cmd.desc}`;
+                if (argStrs.length > 0) {
+                    desc += `\nArguments:\n${argStrs.join('\n')}`;
+                }
+                if (cmd.patternArg) {
+                    desc += `\nThis command finds a pattern posted farther up to use, if it cannot find one it will fail.`;
+                }
             } else {
-                desc = `${data.desc}\nSubcommands:\n${data.subCommands.map(cmd => `* \`${cmd}\``).join('\n')}`;
+                desc = `${cmd.desc}\nSubcommands:\n${cmd.subCommands.map(subCmd => `* \`${cmd.name} ${subCmd}\``).join('\n')}`;
             }
-            return {embeds: [(new EmbedBuilder()).setTitle(title).setDescription(desc)]};
+            return {type: 'message-spec', value: {embeds: [createEmbed(title, desc)]}};
         }
     },
 );
@@ -126,7 +138,7 @@ addCommand(
     'eval', 'meta', [],
     `Evaluates code (admin only).`,
     [
-        requiredArg('code', 'string', 'The code to run'),
+        requiredArg('code', 'string', 'The code to run.'),
     ],
     async args => {
         if (args.msg.author.id !== '1253852708826386518') {
@@ -137,15 +149,21 @@ addCommand(
             code = 'return ' + code;
         }
         code = `return (async () => {${code}})()`;
-        let out = await (new Function('client', 'msg', 'lifeweb', 'lifewebRPF', 'lifewebRuleSymmetries', 'aliases', 'findRLE', 'readFile', 'writeFile', '"use strict";' + EVAL_PREFIX + code))(client, args.msg, lifeweb, lifewebRPF, lifewebRuleSymmetries, aliases, findRLE, readFile, writeFile);
+        let out = await (new Function('client', 'msg', 'lifeweb', 'lifewebRPF', 'lifewebRuleSymmetries', 'aliases', 'readFile', 'writeFile', 'getPattern', '"use strict";' + EVAL_PREFIX + code))(client, args.msg, lifeweb, lifewebRPF, lifewebRuleSymmetries, aliases, readFile, writeFile, async (): Promise<Pattern> => {
+            let out = await findPatternInChannel(args.msg);
+            if (!out) {
+                throw new BotError(`Cannot find pattern!`);
+            }
+            return out.p;
+        });
         if (typeof out === 'string') {
-            return '```\n' + out + '\n```';
+            return {type: 'string', value: '```\n' + out + '\n```'};
         } else {
-            return '```ansi\n' + inspect(out, {
+            return {type: 'string', value: '```ansi\n' + inspect(out, {
                 colors: true,
                 depth: 2,
                 breakLength: 120,
-            }).replaceAll('\x1b[22m', '\x1b[0m').replaceAll('\x1b[39m', '\x1b[0m') + '\n```';
+            }).replaceAll('\x1b[22m', '\x1b[0m').replaceAll('\x1b[39m', '\x1b[0m') + '\n```'};
         }
     },
     {
@@ -199,10 +217,10 @@ addCommand(
     'acl show', 'sub', [],
     `Pretty-print an ACL.`,
     [
-        requiredArg('acl', aclAndExistsValidator, 'The ACL to show'),
+        requiredArg('acl', aclAndExistsValidator, 'The ACL to show.'),
     ],
     async args => {
-        return await aclToString(aclData.acls[args.acl], true);
+        return {type: 'string', value: await aclToString(aclData.acls[args.acl], true)};
     },
 );
 
@@ -210,10 +228,10 @@ addCommand(
     'acl get', 'sub', [],
     `Print an ACL in the format used to input them.`,
     [
-        requiredArg('acl', aclAndExistsValidator, 'The ACL to get'),
+        requiredArg('acl', aclAndExistsValidator, 'The ACL to get.'),
     ],
     async args => {
-        return await aclToString(aclData.acls[args.acl], true);
+        return {type: 'string', value: await aclToString(aclData.acls[args.acl], true)};
     },
 );
 
@@ -221,14 +239,14 @@ addCommand(
     'acl set', 'sub', [],
     `Set an ACL.`,
     [
-        requiredArg('acl', aclValidator, 'The ACL to set'),
-        requiredRestArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation'),
+        requiredArg('acl', aclValidator, 'The ACL to set.'),
+        requiredRestArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation.'),
     ],
     async args => {
         let parsed = await parseACL(args.value, args.msg.guild as Guild);
         aclData.acls[args.acl] = parsed;
         await saveACLs();
-        return 'ACL set!';
+        return {type: 'string', value: 'ACL set!'};
     }
 );
 
@@ -236,7 +254,7 @@ addCommand(
     'acl delete', 'sub', [],
     `Delete an ACL, if it's unused.`,
     [
-        requiredArg('acl', aclAndExistsValidator, 'The ACL to delete'),
+        requiredArg('acl', aclAndExistsValidator, 'The ACL to delete.'),
     ],
     async args => {
         let acl = args.acl;
@@ -247,7 +265,7 @@ addCommand(
             throw new BotError(`Cannot delete ACL '${acl}' because it is used in these places: ${uses.join(', ')}`);
         }
         await saveACLs();
-        return 'ACL deleted!';
+        return {type: 'string', value: 'ACL deleted!'};
     },
 );
 
@@ -256,7 +274,7 @@ addCommand(
     'List all the ACLs.',
     [],
     async () => {
-        return Object.keys(aclData.acls).join(', ');
+        return {type: 'string', value: Object.keys(aclData.acls).join(', ')};
     },
 );
 
@@ -264,14 +282,14 @@ addCommand(
     'acl uses', 'sub', [],
     'Show the places where an ACL is used.',
     [
-        requiredArg('acl', aclAndExistsValidator, 'The ACL to check'),
+        requiredArg('acl', aclAndExistsValidator, 'The ACL to check.'),
     ],
     async args => {
         let uses = getACLUses(args.acl);
         if (uses.length === 0) {
-            return `ACL is not used`;
+            return {type: 'string', value: `ACL is not used`};
         } else {
-            return uses.join(', ');
+            return {type: 'string', value: uses.join(', ')};
         }
     },
 );
@@ -280,14 +298,14 @@ addCommand(
     'acl showcmd', 'sub', [],
     `Pretty-print a command ACL.`,
     [
-        requiredArg('command', commandValidator, 'The command to show the ACL for'),
+        requiredArg('command', commandValidator, 'The command to show the ACL for.'),
     ],
     async args => {
         let cmd = args.command;
         if (!(cmd in aclData.commands)) {
             throw new BotError(`Command '${cmd}' is not bound to an ACL`);
         }
-        return await aclToString(aclData.commands[cmd], true);
+        return {type: 'string', value: await aclToString(aclData.commands[cmd], true)};
     },
 );
 
@@ -295,14 +313,14 @@ addCommand(
     'acl getcmd', 'sub', [],
     `Print a command ACL in the format used to input them.`,
     [
-        requiredArg('command', commandValidator, 'The command to get the ACL for'),
+        requiredArg('command', commandValidator, 'The command to get the ACL for.'),
     ],
     async args => {
         let cmd = args.command;
         if (!(cmd in aclData.commands)) {
             throw new BotError(`Command '${cmd}' is not bound to an ACL`);
         }
-        return await aclToString(aclData.acls[cmd], true);
+        return {type: 'string', value: await aclToString(aclData.acls[cmd], true)};
     },
 );
 
@@ -310,14 +328,14 @@ addCommand(
     'acl setcmd', 'sub', [],
     `Set a command ACL.`,
     [
-        requiredArg('command', commandValidator, 'The command to set the ACL for'),
-        requiredRestArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation'),
+        requiredArg('command', commandValidator, 'The command to set the ACL for.'),
+        requiredRestArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation.'),
     ],
     async args => {
         let parsed = await parseACL(args.value, args.msg.guild as Guild);
         aclData.acls[args.command] = parsed;
         await saveACLs();
-        return 'ACL set!';
+        return {type: 'string', value: 'ACL set!'};
     },
 );
 
@@ -325,7 +343,7 @@ addCommand(
     'acl deletecmd', 'sub', [],
     `Delete a command ACL, making it unusable by everyone except for admins.`,
     [
-        requiredArg('command', commandValidator, 'The command to delete the ACL for'),
+        requiredArg('command', commandValidator, 'The command to delete the ACL for.'),
     ],
     async args => {
         let cmd = args.command;
@@ -334,10 +352,12 @@ addCommand(
         }
         delete aclData.commands[args.command];
         await saveACLs();
-        return 'ACL deleted!';
+        return {type: 'string', value: 'ACL deleted!'};
     },
 );
 
+
+export let noReplyPings: string[] = JSON.parse(await readFile('data/no_reply_pings.json'));
 
 addCommand(
     'noreplypings', 'meta', [],
@@ -349,7 +369,7 @@ addCommand(
         } else {
             noReplyPings.push(args.msg.author.id);
             await writeFile('data/no_reply_pings.json', JSON.stringify(noReplyPings, undefined, 4));
-            return 'Pings disabled!';
+            return {type: 'string', value: 'Pings disabled!'};
         }
     },
 );
@@ -365,319 +385,7 @@ addCommand(
         } else {
             noReplyPings.splice(index, 1);
             await writeFile('data/no_reply_pings.json', JSON.stringify(noReplyPings, undefined, 4));
-            return 'Pings enabled!';
+            return {type: 'string', value: 'Pings enabled!'};
         }
     },
 );
-
-
-const HELP = {
-
-    'sim rand': {
-        desc: 'Simulate a random pattern',
-        args: [
-            {
-                name: 'size',
-                optional: true,
-                desc: 'The size of the pattern, such as 20x20 or 8x32 (default 16x16).',
-            },
-            {
-                name: 'percent',
-                optional: true,
-                desc: 'The percentage to fill the pattern. Must start with a percent (such as 50%), can optionally be followed by  a comma then state weights, such as "50%,1-2=1,3=3" (sets states 1 and 2 to weight 1 but state 3 to weight 3). Ranges are inclusive, all states by default have weight 0.',
-            },
-            {
-                name: 'rule',
-                desc: 'The rule to simulate it in.'
-            },
-            {
-                name: '\'time\'',
-                optional: true,
-                desc: 'Also show how much time it takes',
-            },
-            {
-                name: 'parts',
-                desc: 'How to run it. See !help sim.',
-            },
-        ],
-    },
-
-    minmax: {
-        desc: 'Find the minimum and maximum rule of a pattern',
-        args: [
-            {
-                name: 'generations',
-                desc: 'Number of generations to run the pattern for.',
-            },
-        ],
-    },
-
-    identifyconduit: {
-        desc: 'Identify a conduit (only works for B3/S23)',
-        args: [
-            {
-                name: 'min_time',
-                desc: 'Minimum number of generations before it can take it as a conduit',
-            },
-            {
-                name: 'sep_gens',
-                desc: 'Number of generations to run object separation for (default 0).',
-            },
-            {
-                name: 'max_time',
-                desc: 'Maximum time the conduit can take to work (default 512), also the maximum repeat time.',
-            },
-            {
-                name: 'identify_gens',
-                desc: 'Number of generations to identify for (default 256).',
-            },
-        ],
-    },
-
-    hashsoup: {
-        desc: 'Get a Catagolue hashsoup',
-        args: [
-            {
-                name: 'symmetry',
-                desc: 'The symmetry to use.',
-            },
-            {
-                name: 'seed',
-                desc: 'The seed for the soup (k_whatever).',
-            },
-            {
-                name: 'rule',
-                desc: 'The rule to use.',
-            },
-        ],
-    },
-
-    apgencode: {
-        desc: 'Get an unprefixed apgcode for any pattern. For prefixed apgcodes, use `!identify`.',
-        args: [
-            {
-                name: '\'canonical\'',
-                optional: true,
-                desc: 'Whether to canonicalize the apgcode (by rotation/reflection). Can also be `canon` or `c`.',
-            },
-            {
-                name: 'gens',
-                optional: true,
-                desc: 'Only valid with the canonical option. How many generations to run to find the canonicalized apgcode.',
-            },
-        ],
-    },
-
-    apgdecode: {
-        desc: 'Decode an apgcode.',
-        args: [
-            {
-                name: 'apgcode',
-                desc: 'The apgcode to decode.',
-            },
-            {
-                name: 'rule',
-                optional: true,
-                desc: 'The rule to use (default B3/S23).',
-            },
-        ],
-    },
-
-    population: {
-        desc: 'Get the population of a pattern.',
-        args: [],
-        aliases: ['pop'],
-    },
-
-    inttomap: {
-        desc: 'Converts an INT rule to a MAP rule.',
-        args: [
-            {
-                name: 'rule',
-                desc: 'The INT rule to convert.',
-            },
-        ],
-    },
-
-    ruleinfo: {
-        desc: 'Gets information about a rule.',
-        args: [
-            {
-                name: 'rule',
-                desc: 'The rule to use.',
-            },
-        ],
-    },
-
-    normalizerule: {
-        desc: 'Normalize a rulestring.',
-        args: [],
-    },
-
-    blackwhitereverse: {
-        desc: 'Gets the black/white reversal of a rule.',
-        args: [
-            {
-                name: 'rule',
-                desc: 'The rule to use.',
-            },
-        ],
-        aliases: ['blackwhitereversal', 'bwreverse', 'bwreversal'],
-    },
-
-    checkerboarddual: {
-        desc: 'Gets the checkerboard dual of a rule.',
-        args: [
-            {
-                name: 'rule',
-                desc: 'The rule to use.',
-            },
-        ],
-        aliases: ['cbdual'],
-    },
-
-    sssss: {
-        desc: 'Query the 5S database',
-        args: [
-            {
-                name: 'type',
-                optional: true,
-                desc: 'The rulespace to use: int/intb0/ot/otb0/intgen/otgen, default int.',
-            },
-            {
-                name: 'speed',
-                desc: 'A speed, such as c/2, c/2o, c/2d, (2, 1)c/5, etc.',
-            },
-            {
-                name: 'adjustables',
-                optional: true,
-                desc: `Whether to search for adjustable spaceships, can be 'yes', 'no', or 'only'.`,
-            },
-        ],
-        aliases: ['5s'],
-    },
-
-    sssssinfo: {
-        desc: 'Query the status of a specific rulespace in 5S',
-        args: [
-            {
-                name: 'type',
-                optional: true,
-                desc: 'The rulespace to use: int/intb0/ot/otb0/intgen/otgen, default int.',
-            },
-        ],
-        aliases: ['5sinfo'],
-    },
-
-    name: {
-        desc: 'Find or set the name of a pattern',
-        args: [
-            {
-                name: 'new_name',
-                optional: true,
-                desc: 'The new name. If provided, it will set the name. If omitted, it will just show the current name.'
-            },
-        ],
-    },
-
-    rename: {
-        desc: 'Change the name of a pattern',
-        args: [
-            {
-                name: 'new_name',
-                desc: 'The new name.',
-            },
-        ],
-        aliases: ['rename'],
-    },
-
-    deletename: {
-        desc: 'Delete the name of a pattern',
-        args: [],
-    },
-
-    simstats: {
-        desc: 'Get statistics on the most popular rules used by !sim',
-        args: [
-            {
-                name: 'page',
-                optional: true,
-                desc: 'The page to get data for, defaults to 0.'
-            },
-        ],
-    },
-
-    savesimstats: {
-        desc: 'Save the !sim stats',
-        args: [],
-    },
-
-    alias: {
-        desc: 'Alias a rule',
-        args: [
-            {
-                name: 'alias',
-                desc: 'The new alias for the rule.',
-            },
-            {
-                name: 'rule',
-                desc: 'The rule being aliased to. Must be on a new line. Can be a file.',
-            },
-        ],
-        aliases: ['upload'],
-    },
-
-    realias: {
-        desc: 'Change an alias',
-        args: [
-            {
-                name: 'alias',
-                desc: 'The new alias for the rule.',
-            },
-            {
-                name: 'rule',
-                newline: true,
-                desc: 'The rule being aliased to. Must be on a new line. Can be a file.',
-            },
-        ],
-        aliases: ['upload'],
-    },
-
-    unalias: {
-        desc: 'Remove an alias for a rule',
-        args: [
-            {
-                name: 'alias',
-                desc: 'The alias to remove.',
-            },
-        ],
-        aliases: ['deletealias'],
-    },
-
-    lookupalias: {
-        desc: 'Looks up an alias for a rule',
-        args: [
-            {
-                name: 'alias',
-                desc: 'The alias to look up.',
-            },
-        ],
-    },
-
-    listaliases: {
-        desc: 'Lists all the aliases',
-        args: [],
-        aliases: ['aliases'],
-    },
-
-    wiki: {
-        desc: 'Look up something on the ConwayLife.com wiki',
-        args: [
-            {
-                name: 'page',
-                desc: 'The page to look up',
-            },
-        ],
-    },
-
-};

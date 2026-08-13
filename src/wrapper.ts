@@ -3,8 +3,7 @@ import {ChildProcess, spawn, execSync} from 'node:child_process';
 import {Client, GatewayIntentBits, TextChannel} from 'discord.js';
 
 import {CatererIPCMessage} from './ipc_and_error_setup.js';
-import {BotError, Message, config} from './base.js';
-import {lookupSignal, sentByAdmin} from './util.js';
+import {BotError, Message, config, sentByAdmin, lookupSignal} from './base.js';
 
 
 let client = new Client({intents: [
