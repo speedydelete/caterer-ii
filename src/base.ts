@@ -141,7 +141,7 @@ export const CATEGORY_NAMES: {[K in CommandCategory]: string} = {
 };
 
 
-export type Validator = (arg: string) => string | {name: string, reason?: string};
+export type Validator<T = any> = (arg: string) => T | {name: string, reason?: string};
 
 export type SingleArgType = 
     | 'string'
@@ -177,7 +177,7 @@ export type ValueOfSingleArgType<T extends SingleArgType> =
     T extends 'string' ? string :
     T extends 'number' ? number :
     T extends 'boolean' ? boolean :
-    T extends ((arg: string) => true | string) ? string :
+    T extends Validator<infer U> ? U :
     T extends {name: string, value: (infer U)[]} ? U :
     T extends {name: string, value: RegExp} ? string :
     never
