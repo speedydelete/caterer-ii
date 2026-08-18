@@ -17,8 +17,8 @@ export function registerWorkerTask<T extends WorkerTaskType>(type: T, func: (dat
     }
 }
 
+// register everything
 if (ME === 'worker') {
-    // register everything
     await import('./index.js');
 }
 
