@@ -23,7 +23,7 @@ if (ME === 'worker') {
 }
 
 
-console.log('i am', ME);
+console.log('worker: i am', ME);
 
 
 function sendMessage(msg: WorkerToBotMessage): void {
