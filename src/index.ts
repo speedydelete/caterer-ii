@@ -238,6 +238,21 @@ if (!IS_WORKER) {
         });
     }
 
+    function formatMemory(value: number): string {
+        if (value > 2**30) {
+            return (value / 2**30).toFixed(3) + ' GiB';
+        } else if (value > 2**20) {
+            return (value / 2**20).toFixed(3) + ' MiB';
+        } else {
+            return (value / 2**10).toFixed(3) + ' KiB';
+        }
+    }
+
+    setInterval(() => {
+        let data = process.memoryUsage();
+        console.log(`Memory: ${formatMemory(data.heapUsed)} heap (${formatMemory(data.heapTotal)} allocated), ${formatMemory(data.arrayBuffers)} of array buffers, ${formatMemory(data.rss)} resident`);
+    }, 1000);
+
     client.login(config.token);
 
 }
