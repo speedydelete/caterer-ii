@@ -17,13 +17,18 @@ export function registerWorkerTask<T extends WorkerTaskType>(type: T, func: (dat
     }
 }
 
+
+console.log('worker: i am', ME);
+
+
 // register everything
 if (ME === 'worker') {
-    await import('./index.js');
+    await import('./commands/sim.js');
+    await import('./commands/identify.js');
 }
 
 
-console.log('worker: i am', ME);
+console.log('worker 2: i am', ME);
 
 
 function sendMessage(msg: WorkerToBotMessage): void {

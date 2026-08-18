@@ -95,7 +95,6 @@ function restartWorker() {
 
 console.log('manager: i am', ME);
 if (ME === 'bot') {
-    console.log('RESTARTING WORKER');
     restartWorker();
 }
 

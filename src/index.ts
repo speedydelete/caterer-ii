@@ -5,8 +5,7 @@ import {LifewebError} from '../lifeweb/lib/index.js';
 import {IS_TESTING, ME, BotError, Message, internalRunTextCommand, config} from './base.js';
 
 import './commands/meta.js';
-import './commands/sim.js';
-import './commands/identify.js';
+
 import './commands/patterns.js';
 import './commands/rules.js';
 import './commands/5s.js';
