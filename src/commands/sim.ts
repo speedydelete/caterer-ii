@@ -779,7 +779,6 @@ addCommand(
     'simrandom', 'sim', ['simrand'],
     'Simulate a random pattern and output a GIF.',
     [
-        patternArg('pattern'),
         requiredArg('rule', 'string', 'The rule to use.'),
         optionalArg('size', {name: 'wxh', value: /^\d+x\d+$/}, 'The size of the pattern, such as 20x20 or 8x32 (default 16x16).', '16x16'),
         optionalArg('fill', {name: 'percent', value: /%$/}, 'The percentage to fill the pattern (default 50%). Must start with a percent (such as 50%), can optionally be followed by  a comma then state weights, such as "50%,1-2=1,3=3" (sets states 1 and 2 to weight 1 but state 3 to weight 3). Ranges are inclusive, all states by default have weight 0.', '50%'),

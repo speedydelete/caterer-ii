@@ -747,6 +747,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
                 parseMultiFlagArg(out, cmd, value, flagValue);
                 continue;
             }
+            pos++;
             pos = parseOptionArg(out, cmd, argv, pos, option, value, mustBeFlag, flagValue) - 1;
         }
     }
