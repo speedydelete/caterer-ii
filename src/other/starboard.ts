@@ -1,7 +1,7 @@
 
 import {DiscordAPIError, Message as _Message, PartialMessage, MessageReaction, PartialMessageReaction, TextChannel} from 'discord.js';
 
-import {readFile, writeFile, Message, findPatternInText, config} from '../base.js';
+import {ME, Message, readFile, writeFile, config, findPatternInText} from '../base.js';
 import {client} from '../index.js';
 
 
@@ -309,7 +309,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
 
 
 let interval = setInterval(async () => {
-    if (client.isReady()) {
+    if (ME === 'bot' && client.isReady()) {
         clearInterval(interval);
         loadStarboard();
         client.on('messageReactionAdd', updateStarboard);
