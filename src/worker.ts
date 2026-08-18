@@ -28,6 +28,7 @@ function sendMessage(msg: WorkerToBotMessage): void {
 }
 
 async function onMessage(data: BotToWorkerMessage): Promise<void> {
+    console.log('MESSAGE RECEIVED');
     let id = data.id;
     try {
         if (!(data.type in workerTaskFunctions)) {
