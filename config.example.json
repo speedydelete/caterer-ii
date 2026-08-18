@@ -1,12 +1,12 @@
 {
-    "token": "your token",
     "admins": [
         "your user id"
     ],
-    "accepterers":[
-        "the accepterer role"
-    ],
-    "wrapperToken": "the wrapper token",
-    "wrapperInfoChannel": ["guild id", "channel id"],
+    "token": "your token",
+    "wrapper": {
+        "token": "the wrapper token",
+        "logsChannelServerID": "the id of the server the wrapper logs channel is in",
+        "logsChannelID": "the id of the wrapper logs channel"
+    },
     "sssssChannel": "the 5s notifier channel"
 }

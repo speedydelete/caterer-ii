@@ -1,5 +1,5 @@
 
-import {DiscordAPIError, GatewayIntentBits, MessageReplyOptions, Message as _Message, TextChannel, Partials, Client} from 'discord.js';
+import {DiscordAPIError, GatewayIntentBits, MessageReplyOptions, Message as _Message, PartialGroupDMChannel, OmitPartialGroupDMChannel, TextBasedChannel, Partials, Client} from 'discord.js';
 import {LifewebError} from '../lifeweb/lib/index.js';
 
 import {IS_TESTING, ME, BotError, Message, internalRunTextCommand, config} from './base.js';
@@ -23,8 +23,8 @@ let previousMsgs: [string, Message][] = [];
 let deleters: [string, string][] = [];
 let runningCommands = new Set<string>();
 
-async function runCommand(msg: Message): Promise<void> {
-    if (msg.author.bot || msg.createdTimestamp < config.initTime || runningCommands.has(msg.id)) {
+async function runCommand(msg: OmitPartialGroupDMChannel<_Message>): Promise<void> {
+    if (msg.author.bot || !msg.inGuild() || msg.createdTimestamp < config.initTime || runningCommands.has(msg.id)) {
         return;
     }
     let data = msg.content;
@@ -117,6 +117,8 @@ async function runCommand(msg: Message): Promise<void> {
 
 
 export let client: Client<true>;
+
+export let sssssChannel: TextBasedChannel | undefined;
 
 if (ME === 'bot') {
 
@@ -216,27 +218,32 @@ if (ME === 'bot') {
         return;
     });
 
-    if (config.sssssChannel !== undefined) {
-        client.once('ready', async () => {
-            let sssssChannel = await client.channels.fetch(config.sssssChannel) as TextChannel;
-            setInterval(async () => {
-                try {
-                    await check5S(sssssChannel);
-                } catch (error) {
-                    let str: string;
-                    if (error && typeof error === 'object' && 'stack' in error) {
-                        str = String(error.stack);
-                        if (str.length > 1900) {
-                            str = str.slice(0, 1900) + '... (truncated)';
-                        }
-                    } else {
-                        str = String(error);
+    client.once('ready', async () => {
+        if (config.sssssChannel === undefined) {
+            return;
+        }
+        let channel = await client.channels.fetch(config.sssssChannel);
+        if (!channel || !channel.isTextBased() || channel instanceof PartialGroupDMChannel) {
+            return;
+        }
+        sssssChannel = channel;
+        setInterval(async () => {
+            try {
+                await check5S(channel);
+            } catch (error) {
+                let str: string;
+                if (error && typeof error === 'object' && 'stack' in error) {
+                    str = String(error.stack);
+                    if (str.length > 1900) {
+                        str = str.slice(0, 1900) + '... (truncated)';
                     }
-                    await sssssChannel.send('<@1253852708826386518>\n```' + str + '```');
+                } else {
+                    str = String(error);
                 }
-            }, 300000);
-        });
-    }
+                await channel.send('<@1253852708826386518>\n```' + str + '```');
+            }
+        }, 300000);
+    });
 
     client.login(config.token);
 

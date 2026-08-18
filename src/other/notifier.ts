@@ -1,5 +1,5 @@
 
-import {TextChannel} from 'discord.js';
+import {PartialGroupDMChannel, TextBasedChannel} from 'discord.js';
 import {parseSpeed} from '../../lifeweb/lib/index.js';
 import {Type, TYPE_NAMES, shipIsOptimal} from '../../sssss/lib/index.js';
 
@@ -63,7 +63,7 @@ function formatShips(category: 'speed' | 'period', changeType: 'new' | 'improved
 
 type ShipGroup = {newSpeeds: [string, number][], newPeriods: [string, number][], improvedSpeeds: [string, number, number][], improvedPeriods: [string, number, number][]};
 
-export async function check5S(channel: TextChannel): Promise<void> {
+export async function check5S(channel: Exclude<TextBasedChannel, PartialGroupDMChannel>): Promise<void> {
     let resp = await fetch('https://speedydelete.com/5s/api/getnewships');
     if (!resp.ok) {
         await channel.send(`<@1253852708826386518> ${resp.status} ${resp.statusText} while fetching new ships`);

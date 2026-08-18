@@ -1,40 +1,59 @@
 
 import {DiscordAPIError, Message as _Message, PartialMessage, MessageReaction, PartialMessageReaction, TextChannel} from 'discord.js';
 
-import {readFile, writeFile, findPatternInText, config} from '../base.js';
+import {readFile, writeFile, Message, findPatternInText, config} from '../base.js';
 import {client} from '../index.js';
 
 
-export let starboard: {[key: string]: {data: Map<string, [string, string]>, forbidden: Set<string>}} = {};
+interface StarboardData {
+    data: Map<string, [string, string]>;
+    forbidden: Set<string>;
+}
+
+let starboardData: {[key: string]: StarboardData} = {};
 
 type StarboardFile = {[key: string]: {data: [string, [string, string]][], forbidden: string[]}};
 
-let starboardData = JSON.parse(await readFile('data/starboard.json')) as StarboardFile;
-for (let [key, value] of Object.entries(starboardData)) {
-    starboard[key] = {
+let starboardFileData = JSON.parse(await readFile('data/starboard.json')) as StarboardFile;
+for (let [key, value] of Object.entries(starboardFileData)) {
+    starboardData[key] = {
         data: new Map(value.data),
         forbidden: new Set(value.forbidden),
     };
 }
 
 async function saveStarboard(): Promise<void> {
-    let data: StarboardFile = {};
-    for (let [key, value] of Object.entries(starboard)) {
-        data[key] = {
+    let out: StarboardFile = {};
+    for (let [key, value] of Object.entries(starboardData)) {
+        out[key] = {
             data: Array.from(value.data.entries()),
             forbidden: Array.from(value.forbidden),
         };
     }
-    await writeFile('data/starboard.json', JSON.stringify(data));
+    await writeFile('data/starboard.json', JSON.stringify(out));
+}
+
+let added = false;
+for (let serverID of Object.keys(config.starboards)) {
+    if (!(serverID in starboardData)) {
+        added = true;
+        starboardData[serverID] = {
+            data: new Map(),
+            forbidden: new Set(),
+        };
+    }
+}
+if (added) {
+    await saveStarboard();
 }
 
 export let starboardChannels: {[key: string]: TextChannel} = {};
 let starReactions = new Set<string>();
 
 async function loadStarboard(): Promise<void> {
-    for (let x of Object.values(config.starboards)) {
-        starboardChannels[x.channel] = await (await client.guilds.fetch(x.server)).channels.fetch(x.channel) as TextChannel;
-        for (let emoji in x.emojis) {
+    for (let [serverID, data] of Object.entries(config.starboards)) {
+        starboardChannels[serverID] = await (await client.guilds.fetch(serverID)).channels.fetch(data.channel) as TextChannel;
+        for (let emoji of Object.keys(data.emojis)) {
             starReactions.add(emoji);
         }
     }
@@ -64,11 +83,18 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
     }
 }
 
-async function deleteStarboardEntry(boardName: string, msg: _Message | PartialMessage, entry: [string, string]): Promise<void> {
-    starboard[boardName].data.delete(msg.id);
+async function deleteStarboardEntry(msg: _Message | PartialMessage, entry: [string, string]): Promise<void> {
+    if (!msg.guildId) {
+        return;
+    }
+    let data = starboardData[msg.guildId];
+    if (!data) {
+        return;
+    }
+    data.data.delete(msg.id);
     for (let id of entry) {
         try {
-            await starboardChannels[config.starboards[boardName].channel].messages.delete(id);
+            await starboardChannels[msg.guildId].messages.delete(id);
         } catch (error) {
             if (error instanceof DiscordAPIError) {
                 console.error(error);
@@ -80,49 +106,63 @@ async function deleteStarboardEntry(boardName: string, msg: _Message | PartialMe
     await saveStarboard();
 }
 
-async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
-    if (msg.partial) {
-        msg = await msg.fetch();
+async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> {
+    if (_msg.partial) {
+        _msg = await _msg.fetch();
     }
-    if (msg.system || msg.poll || msg.activity) {
+    if (_msg.system || _msg.poll || _msg.activity|| !_msg.inGuild()) {
         return;
     }
-    let boardName: string;
-    if (msg.guildId && msg.guildId in config.starboardServers) {
-        boardName = config.starboardServers[msg.guildId];
-    } else {
+    let msg: Message = _msg;
+    // seriously
+    if (msg.channelId === config.sssssChannel && msg.content.includes('<@1253852708826386518>')) {
         return;
     }
-    let board = config.starboards[boardName];
-    if (starboard[boardName].forbidden.has(msg.id)) {
+    let serverID = msg.guildId;
+    let board = config.starboards[serverID];
+    if (!board) {
+        return;
+    }
+    let boardData = starboardData[serverID];
+    if (!boardData) {
+        return;
+    }
+    if (!boardData || boardData.forbidden.has(msg.id)) {
         return;
     }
     while (msg.reference && msg.reference.type === 1 && msg.channelId !== board.channel) {
         let msg2 = await msg.fetchReference();
-        if (!msg2) {
+        if (!msg2 || !msg2.inGuild() || msg2.guildId !== serverID) {
             break;
         }
         msg = msg2;
     }
-    if (msg.createdTimestamp < board.startTime || msg.createdTimestamp < config.initTime || msg.system || msg.flags.has('Ephemeral')) {
+    if (!msg.inGuild() || msg.createdTimestamp < board.startTime || msg.createdTimestamp < config.initTime || msg.system || msg.flags.has('Ephemeral')) {
         return;
     }
-    let channel = starboardChannels[board.channel];
+    let channel = starboardChannels[serverID];
     let reacts: {[key: string]: Set<string>} = {};
     if (msg.channel.id === board.channel) {
         if (msg.author.id !== client.user?.id) {
             return;
         } else if (msg.reference) {
             msg = await msg.fetchReference();
-            await getReactions(msg, board.emojis, reacts);
-        } else {
-            msg = Array.from((await msg.channel.messages.fetch({limit: 1, after: msg.id})).values())[0];
-            if (msg.reference) {
-                msg = await msg.fetchReference();
-                await getReactions(msg, board.emojis, reacts);
-            } else {
+            if (!msg.inGuild()) {
                 return;
             }
+            await getReactions(msg, board.emojis, reacts);
+        } else {
+            let match = msg.content.match(/\/(\d+)\/(\d+)\)$/);
+            if (!match || !msg.guild) {
+                return;
+            }
+            let channelID = match[0];
+            let messageID = match[1];
+            let msg2Channel = await msg.guild.channels.fetch(match[0]);
+            if (!msg2Channel || !msg2Channel.isTextBased()) {
+                return;
+            }
+            let msg2 = await msg2Channel.messages.fetch('');
         }
     }
     await getReactions(msg, board.emojis, reacts);
@@ -132,7 +172,7 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
     } else {
         return;
     }
-    let entry = starboard[boardName].data.get(msg.id);
+    let entry = boardData.data.get(msg.id);
     if (entry) {
         for (let id of entry) {
             try {
@@ -233,10 +273,10 @@ async function _updateStarboard(msg: _Message | PartialMessage): Promise<void> {
         }
         let msg0 = await channel.send({content: text, allowedMentions: {parse: []}});
         let msg1 = await msg.forward(channel);
-        starboard[boardName].data.set(msg.id, [msg0.id, msg1.id]);
+        boardData.data.set(msg.id, [msg0.id, msg1.id]);
         await saveStarboard();
     } else if (entry) {
-        await deleteStarboardEntry(boardName, msg, entry);
+        await deleteStarboardEntry(msg, entry);
         await saveStarboard();
     }
 }
@@ -275,22 +315,28 @@ let interval = setInterval(async () => {
         client.on('messageReactionAdd', updateStarboard);
         client.on('messageReactionRemove', updateStarboard);
         client.on('messageReactionRemoveAll', async msg => {
-            if (msg.guildId && msg.guildId in config.starboardServers) {
-                let boardName = config.starboardServers[msg.guildId];
-                let entry = starboard[boardName].data.get(msg.id);
+            if (msg.inGuild()) {
+                let boardData = starboardData[msg.guildId];
+                if (!boardData) {
+                    return;
+                }
+                let entry = boardData.data.get(msg.id);
                 if (entry) {
-                    await deleteStarboardEntry(boardName, msg, entry);
+                    await deleteStarboardEntry(msg, entry);
                     await saveStarboard();
                 }
             }
         });
         client.on('messageDelete', async msg => {
-            if (msg.guildId && msg.guildId in config.starboardServers) {
-                let boardName = config.starboardServers[msg.guildId];
-                let entry = starboard[boardName].data.get(msg.id);
+            if (msg.inGuild()) {
+                let boardData = starboardData[msg.guildId];
+                if (!boardData) {
+                    return;
+                }
+                let entry = boardData.data.get(msg.id);
                 if (entry) {
-                    starboard[boardName].forbidden.add(msg.id);
-                    await deleteStarboardEntry(boardName, msg, entry);
+                    boardData.forbidden.add(msg.id);
+                    await deleteStarboardEntry(msg, entry);
                     await saveStarboard();
                 }
             }

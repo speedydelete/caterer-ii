@@ -108,7 +108,7 @@ async function startBot(manual: boolean = false): Promise<void> {
                 restartsToday = 1;
                 lastRestartDay = currentDay;
             }
-            if (restartsToday > config.wrapperMaxRestartsPerDay) {
+            if (restartsToday > config.wrapper.maxRestartsPerDay) {
                 log('Maximum restarts exceeded for today, not restarting');
                 isSupposedToBeOn = false;
                 return;
@@ -194,7 +194,7 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
 
 
 client.on('messageCreate', async msg => {
-    if (msg.author.bot || !sentByAdmin(msg) || !msg.content.startsWith(IS_TESTING ? '$$' : '!!')) {
+    if (msg.author.bot || !msg.inGuild() || !sentByAdmin(msg) || !msg.content.startsWith(IS_TESTING ? '$$' : '!!')) {
         return;
     }
     try {
@@ -219,10 +219,10 @@ client.on('messageCreate', async msg => {
 
 client.once('clientReady', async () => {
     console.log('Logged in');
-    let server = await client.guilds.fetch(config.wrapperInfoChannel[0]);
-    messageChannel = server.channels.cache.get(config.wrapperInfoChannel[1]) as TextChannel;
+    let server = await client.guilds.fetch(config.wrapper.logsChannelServerID);
+    messageChannel = server.channels.cache.get(config.wrapper.logsChannelID) as TextChannel;
     log('Wrapper started!');
     await startBot();
 });
 
-client.login(config.wrapperToken);
+client.login(config.wrapper.token);

@@ -23,7 +23,7 @@ export class BotError extends Error {
 }
 
 
-export type Message = OmitPartialGroupDMChannel<_Message>;
+export type Message = OmitPartialGroupDMChannel<_Message<true>>;
 
 
 export const BASE_PATH = join(import.meta.dirname, '..');
@@ -44,9 +44,12 @@ export async function writeFile(path: string, data: Parameters<typeof fs.writeFi
 export interface Config {
     readonly admins: string[];
     readonly token: string;
-    readonly wrapperToken: string;
-    readonly wrapperInfoChannel: [string, string];
-    readonly wrapperMaxRestartsPerDay: number;
+    readonly wrapper: {
+        readonly token: string;
+        readonly logsChannelServerID: string;
+        readonly logsChannelID: string;
+        readonly maxRestartsPerDay: number;
+    };
     readonly antiFreeze: {
         readonly sendInterval: number;
         readonly checkInterval: number;
@@ -54,8 +57,8 @@ export interface Config {
     };
     readonly initTime: number;
     readonly serverNames: {[key: string]: string};
+    readonly sssssChannel: string;
     readonly starboards: {[key: string]: {
-        readonly server: string;
         readonly channel: string;
         readonly threshold: number;
         readonly negativeThreshold?: number;
@@ -65,8 +68,6 @@ export interface Config {
         readonly boardLowEmoji: string;
         readonly boardEmojis: [number, string][];
     }};
-    readonly starboardServers: {[key: string]: string};
-    readonly sssssChannel: string;
 }
 
 export const config: Config = Object.freeze(JSON.parse(await readFile('config.json')));
