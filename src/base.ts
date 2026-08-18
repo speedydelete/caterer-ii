@@ -380,6 +380,9 @@ export function addCommand<T extends Arg[]>(name: string, category: CommandCateg
 }
 
 export function addSuperCommand(name: string, category: CommandCategory, aliases: string[], desc: string, subCommands: string[], extraHelp?: string) {
+    if (IS_WORKER) {
+        return;
+    }
     let command: SuperCommand = {
         type: 'super',
         name,
