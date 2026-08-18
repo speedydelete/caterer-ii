@@ -774,9 +774,6 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
 }
 
 async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, isInsidePipe: boolean, useThisPattern?: Pattern): Promise<Response> {
-    if (argv[0][0] === 'printargv') {
-        return {type: 'string', value: argv.map(x => `\`${x[0]}\` (${x[1] ? 'flag' : 'not flag'})`).join('\n')};
-    }
     if (!matchesACL(msg, aclData.commands[cmd.name])) {
         return {type: 'string', value: 'Error: You do not have permission to run this command'};
     }
@@ -795,13 +792,14 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         argv = parseArgv(rawArgs, true);
     }
     let args: ParsedArgs = {};
-    await parseArgs(args, cmd, msg, argv, nestLevel, useThisPattern);
-    if (cmd.sendTyping) {
-        try {
-            await msg.channel.sendTyping();
-        } catch {}
-    }
-    return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs, isInsidePipe}));
+    throw new Error(JSON.stringify(argv));
+    // await parseArgs(args, cmd, msg, argv, nestLevel, useThisPattern);
+    // if (cmd.sendTyping) {
+    //     try {
+    //         await msg.channel.sendTyping();
+    //     } catch {}
+    // }
+    // return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs, isInsidePipe}));
 }
 
 const STUPID_COMMAND_TEMPLATES: {[key: string]: string} = {
@@ -846,9 +844,6 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
         } else {
             for (let arg of extraArgv) {
                 argv.push(arg);
-            }
-            if (i === 2) {
-                throw new Error(JSON.stringify(argv));
             }
             value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, i !== parsedPipe.length - 1, pattern);
         }
