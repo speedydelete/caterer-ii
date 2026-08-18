@@ -5,7 +5,7 @@ import {Worker} from 'node:worker_threads';
 import {LifewebError, Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
 import {RPFParser, RPFPattern} from '../lifeweb/lib/editor/rpf.js';
 
-import {BotError, aliases} from './base.js';
+import {ME, BotError, aliases} from './base.js';
 
 
 // this interface is augmented to define new worker tasks!
@@ -93,7 +93,9 @@ function restartWorker() {
     workerAlive = true;
 }
 
-restartWorker();
+if (ME === 'bot') {
+    restartWorker();
+}
 
 function workerHandleFatal(error: Error): void {
     let rejects: ((reason: any) => void)[] = [];
@@ -140,6 +142,9 @@ export function deserialize(value: string): Pattern {
 
 
 export function runWorkerTask<T extends WorkerTaskType>(type: T, data: WorkerTaskTypes[T][0]): Promise<WorkerTaskTypes[T][1]> {
+    if (ME !== 'bot') {
+        throw new Error(`runWorkerTask called inside ${ME}`);
+    }
     let {promise, resolve, reject} = Promise.withResolvers<WorkerTaskTypes[T][1]>();
     let id = nextTaskID++;
     let timeout = setTimeout(() => {

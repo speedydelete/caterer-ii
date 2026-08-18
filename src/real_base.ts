@@ -12,6 +12,8 @@ export const IS_WORKER = Boolean(!isMainThread);
 
 export const IS_TESTING = Boolean(process.argv.includes('testing=true'));
 
+export const ME = IS_WRAPPER ? 'wrapper' : (IS_WORKER ? 'worker' : 'bot');
+
 
 export class BotError extends Error {
 

@@ -3,7 +3,7 @@ import {DiscordAPIError, ColorResolvable, EmbedBuilder, MessageReferenceType, Me
 import {Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
 import {RPFPattern, RPFParser} from '../lifeweb/lib/editor/rpf.js';
 
-import {IS_WORKER, BotError, Message, readFile, writeFile} from './real_base.js';
+import {ME, BotError, Message, readFile, writeFile} from './real_base.js';
 import {aclData, matchesACL} from './acl.js';
 
 export * from './ipc_and_error_setup.js';
@@ -302,7 +302,7 @@ export const COMMANDS: {[key: string]: Command} = Object.create(null);
 export const COMMANDS_BY_CATEGORY: {[key: string]: Command[]} = Object.create(null);
 
 export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, otherOptions: Partial<Pick<BasicCommand, 'sendTyping' | 'extraHelp' | 'noArgvParse'>> = {}): void {
-    if (IS_WORKER) {
+    if (ME !== 'bot') {
         return;
     }
     // compile argument data and sanity check the argument names
@@ -380,7 +380,7 @@ export function addCommand<T extends Arg[]>(name: string, category: CommandCateg
 }
 
 export function addSuperCommand(name: string, category: CommandCategory, aliases: string[], desc: string, subCommands: string[], extraHelp?: string) {
-    if (IS_WORKER) {
+    if (ME !== 'bot') {
         return;
     }
     let command: SuperCommand = {

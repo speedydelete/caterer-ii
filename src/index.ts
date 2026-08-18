@@ -2,7 +2,7 @@
 import {DiscordAPIError, GatewayIntentBits, MessageReplyOptions, Message as _Message, TextChannel, Partials, Client} from 'discord.js';
 import {LifewebError} from '../lifeweb/lib/index.js';
 
-import {IS_WORKER, IS_TESTING, BotError, Message, internalRunTextCommand, config} from './base.js';
+import {IS_TESTING, ME, BotError, Message, internalRunTextCommand, config} from './base.js';
 
 import './commands/meta.js';
 import './commands/sim.js';
@@ -118,7 +118,7 @@ async function runCommand(msg: Message): Promise<void> {
 
 export let client: Client<true>;
 
-if (!IS_WORKER) {
+if (ME === 'bot') {
 
     client = new Client({
         intents: [
@@ -237,21 +237,6 @@ if (!IS_WORKER) {
             }, 300000);
         });
     }
-
-    function formatMemory(value: number): string {
-        if (value > 2**30) {
-            return (value / 2**30).toFixed(3) + ' GiB';
-        } else if (value > 2**20) {
-            return (value / 2**20).toFixed(3) + ' MiB';
-        } else {
-            return (value / 2**10).toFixed(3) + ' KiB';
-        }
-    }
-
-    setInterval(() => {
-        let data = process.memoryUsage();
-        console.log(`Memory: ${formatMemory(data.heapUsed)} heap (${formatMemory(data.heapTotal)} allocated), ${formatMemory(data.arrayBuffers)} of array buffers, ${formatMemory(data.rss)} resident`);
-    }, 1000);
 
     client.login(config.token);
 
