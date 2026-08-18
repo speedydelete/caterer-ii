@@ -316,6 +316,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         }
         updatingStarboardFor.add(msg.id);
         currentID = msg.id;
+        console.log('UPDATING');
         await _updateStarboard(msg);
         updatingStarboardFor.delete(msg.id);
     } catch (error) {
