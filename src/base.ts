@@ -781,7 +781,10 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         return {type: 'string', value: 'Error: You do not have permission to run this command'};
     }
     if (cmd.type === 'super') {
-        let rawSubCmd = cmd.name + ' ' + argv[nestLevel - 1][0];
+        if (argv[nestLevel + 1] === undefined) {
+            throw new ArgumentError(`No subcommand provided for supercommand ${cmd.name}`);
+        }
+        let rawSubCmd = cmd.name + ' ' + argv[nestLevel + 1][0];
         let subCmd = rawSubCmd.toLowerCase().replaceAll('_', '');
         if (!(subCmd in COMMANDS)) {
             throw new ArgumentError(`Nonexistent subcommand: '${rawSubCmd}'`);
