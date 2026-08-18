@@ -84,7 +84,7 @@ async function runCommand(msg: OmitPartialGroupDMChannel<_Message>): Promise<voi
         console.log('hi');
         if (error instanceof BotError || error instanceof LifewebError || error instanceof SyntaxError) {
             let content: string;
-            if (error instanceof CalcError || error.message.startsWith('SymmetryError: ')) {
+            if (error instanceof CalcError) {
                 content = error.message;
             } else {
                 content = `${error.name}: ${error.message}`;
