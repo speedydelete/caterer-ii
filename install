@@ -9,7 +9,7 @@ pushd lifeweb > /dev/null
 popd > /dev/null
 
 git clone https://github.com/speedydelete/sssss
-pushd lifeweb > /dev/null
+pushd sssss > /dev/null
 ./install
 popd > /dev/null
 
