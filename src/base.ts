@@ -793,7 +793,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         extraArgs += useThisPattern.toRLE();
     }
     if (extraArgs !== undefined) {
-        let parsedExtra = parseArgv(extraArgs);
+        let parsedExtra = parseArgv(extraArgs, cmd.noArgvParse);
         let found = false;
         let match: RegExpMatchArray | null;
         while (match = rawArgs.match(/\{(\d*)\}/)) {
