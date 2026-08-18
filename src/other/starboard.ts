@@ -327,18 +327,8 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         if (data.partial) {
             data = await data.fetch();
         }
-        if ((data.emoji.name && !starReactions.has(data.emoji.name)) || (data.emoji.id && !starReactions.has(data.emoji.id))) {
-            if (data.emoji.name === '❌' || data.emoji.name === '🗑️') {
-                let msg = data.message;
-                if (updatingStarboardFor.has(msg.id)) {
-                    setTimeout(() => updateStarboard(data), 2000);
-                }
-                updatingStarboardFor.add(msg.id);
-                await _checkStarboardDeletion(msg);
-                updatingStarboardFor.delete(msg.id);
-            } else {
-                return;
-            }
+        if (!(data.emoji.name && (starReactions.has(data.emoji.name) || data.emoji.name === '❌' || data.emoji.name === '🗑️')) && !(data.emoji.id && starReactions.has(data.emoji.id))) {
+            return;
         }
         let msg = data.message;
         if (updatingStarboardFor.has(msg.id)) {
@@ -353,7 +343,11 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         }
         updatingStarboardFor.add(msg.id);
         currentID = msg.id;
-        await _updateStarboard(msg);
+        if (data.emoji.name === '❌' || data.emoji.name === '🗑️') {
+            await _checkStarboardDeletion(msg);
+        } else {
+            await _updateStarboard(msg);
+        }
         updatingStarboardFor.delete(msg.id);
     } catch (error) {
         if (currentID !== undefined) {
