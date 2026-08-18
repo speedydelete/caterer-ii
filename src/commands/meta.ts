@@ -18,8 +18,6 @@ const HELP_TEMPLATE = `A cellular automata bot for the ConwayLife Lounge Discord
 Commands:
 $$$
 
-This bot permanently stores your user ID when you use \`!replypings false\`, and deletes it when you use \`!replypings true\`. So, to delete all your personal information that is stored by the bot, use \`!replypings true\`. If it errors, you didn't have any personal information stored.
-
 You can use Bash-style quoting and escaping in commands.
 
 Type \`!help <command>\` for help for a specific command!`;
@@ -179,8 +177,8 @@ addCommand(
     [],
     async args => {
         let msg = args.msg;
-        let msg2 = await msg.reply({content: 'Pong!', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}});
-        msg2.edit({content: `Pong! Latency: ${Math.round(msg2.createdTimestamp - msg.createdTimestamp)} ms (Discord WebSocket: ${Math.round(client.ws.ping)} ms)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})
+        let msg2 = await msg.reply({content: 'Pong!', allowedMentions: {repliedUser: true, parse: []}});
+        msg2.edit({content: `Pong! Latency: ${Math.round(msg2.createdTimestamp - msg.createdTimestamp)} ms (Discord WebSocket: ${Math.round(client.ws.ping)} ms)`, allowedMentions: {repliedUser: true, parse: []}});
     },
 );
 
@@ -353,39 +351,5 @@ addCommand(
         delete aclData.commands[args.command];
         await saveACLs();
         return {type: 'string', value: 'ACL deleted!'};
-    },
-);
-
-
-export let noReplyPings: string[] = JSON.parse(await readFile('data/no_reply_pings.json'));
-
-addCommand(
-    'noreplypings', 'meta', [],
-    `Disables reply pings when using commands.`,
-    [],
-    async args => {
-        if (noReplyPings.includes(args.msg.author.id)) {
-            throw new BotError(`You already have reply pings disabled!`);
-        } else {
-            noReplyPings.push(args.msg.author.id);
-            await writeFile('data/no_reply_pings.json', JSON.stringify(noReplyPings, undefined, 4));
-            return {type: 'string', value: 'Pings disabled!'};
-        }
-    },
-);
-
-addCommand(
-    'yesreplypings', 'meta', [],
-    `Enables reply pings when using commands.`,
-    [],
-    async args => {
-        let index = noReplyPings.indexOf(args.msg.author.id);
-        if (index === -1) {
-            throw new BotError(`You already have reply pings enabled!`);
-        } else {
-            noReplyPings.splice(index, 1);
-            await writeFile('data/no_reply_pings.json', JSON.stringify(noReplyPings, undefined, 4));
-            return {type: 'string', value: 'Pings enabled!'};
-        }
     },
 );

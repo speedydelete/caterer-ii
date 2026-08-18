@@ -19,9 +19,6 @@ import {starboardChannels} from './other/starboard.js';
 import {check5S} from './other/notifier.js';
 
 
-export let noReplyPings: string[] = JSON.parse(await readFile('data/no_reply_pings.json'));
-
-
 let previousMsgs: [string, Message][] = [];
 let deleters: [string, string][] = [];
 let runningCommands = new Set<string>();
@@ -73,7 +70,7 @@ async function runCommand(msg: Message): Promise<void> {
             if (value.type === 'already-sent') {
                 out = value.value;
             } else {
-                let data: MessageReplyOptions = {allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}};
+                let data: MessageReplyOptions = {allowedMentions: {repliedUser: true, parse: []}};
                 if (value.type === 'message-spec') {
                     Object.assign(data, value.value);
                 } else if (value.type === 'string' || value.type === 'number' || value.type === 'boolean') {
@@ -104,11 +101,11 @@ async function runCommand(msg: Message): Promise<void> {
             } else {
                 content = `${error.name}: ${error.message}`;
             }
-            previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+            previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: true, parse: []}})]);
         } else if (error instanceof Error && (error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim.gif'` || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim_base.gif'`)) {
-            previousMsgs.push([msg.id, await msg.reply({content: `${error.name}: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+            previousMsgs.push([msg.id, await msg.reply({content: `${error.name}: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: true, parse: []}})]);
         } else if ((error instanceof DiscordAPIError && error.message.match(/Must be (2|4)000 or fewer in length/)) || (error instanceof Error && error.message === 'Received one or more errors' && typeof error.stack === 'string' && error.stack.toLowerCase().includes('sapphire'))) {
-            previousMsgs.push([msg.id, await msg.reply({content: 'Error: Message too long!', allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: []}})]);
+            previousMsgs.push([msg.id, await msg.reply({content: 'Error: Message too long!', allowedMentions: {repliedUser: true, parse: []}})]);
         } else {
             let str: string;
             if (error && typeof error === 'object' && 'stack' in error) {
@@ -124,7 +121,7 @@ async function runCommand(msg: Message): Promise<void> {
             if (msg.author.id !== '1253852708826386518') {
                 content = '<@1253852708826386518>\n' + content;
             }
-            previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: ['users']}})]);
+            previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: true, parse: ['users']}})]);
         }
     } finally {
         runningCommands.delete(msg.id);
@@ -187,7 +184,7 @@ client.on('messageUpdate', async (old, msg) => {
         if (msg.author.id !== '1253852708826386518') {
             content = '<@1253852708826386518>\n' + content;
         }
-        await msg.reply({content, allowedMentions: {repliedUser: !noReplyPings.includes(msg.author.id), parse: ['users']}});
+        await msg.reply({content, allowedMentions: {repliedUser: true, parse: ['users']}});
     }
 });
 
