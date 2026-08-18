@@ -291,34 +291,6 @@ async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> 
     }
 }
 
-async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise<void> {
-    if (_msg.partial) {
-        _msg = await _msg.fetch();
-    }
-    if (!_msg.inGuild()) {
-        return;
-    }
-    let msg: Message = _msg;
-    let serverID = msg.guild.id;
-    let board = config.starboards[serverID];
-    if (!board || msg.channel.id !== board.channel) {
-        console.log(msg.channel.id, board?.channel);
-        return;
-    }
-    let msg2 = await resolveMessageFromStarboard(msg);
-    if (!msg2) {
-        return;
-    }
-    let boardData = starboardData[serverID];
-    let entry = boardData.data.get(msg2.id);
-    boardData.forbidden.add(msg2.id);
-    console.log(msg2.id, entry);
-    if (entry) {
-        await deleteStarboardEntry(msg2, entry);
-    }
-    await saveStarboard();
-}
-
 let updatingStarboardFor = new Set<string>();
 let queuedUpdatingStarboardFor = new Set<string>();
 
@@ -328,7 +300,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         if (data.partial) {
             data = await data.fetch();
         }
-        if (!(data.emoji.name && (starReactions.has(data.emoji.name) || data.emoji.name === '❌' || data.emoji.name === '🗑️')) && !(data.emoji.id && starReactions.has(data.emoji.id))) {
+        if (!(data.emoji.name && (starReactions.has(data.emoji.name))) && !(data.emoji.id && starReactions.has(data.emoji.id))) {
             return;
         }
         let msg = data.message;
@@ -344,11 +316,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         }
         updatingStarboardFor.add(msg.id);
         currentID = msg.id;
-        if (data.emoji.name === '❌' || data.emoji.name === '🗑️') {
-            await _checkStarboardDeletion(msg);
-        } else {
-            await _updateStarboard(msg);
-        }
+        await _updateStarboard(msg);
         updatingStarboardFor.delete(msg.id);
     } catch (error) {
         if (currentID !== undefined) {
@@ -387,6 +355,17 @@ let interval = setInterval(async () => {
                 if (entry) {
                     boardData.forbidden.add(msg.id);
                     await deleteStarboardEntry(msg, entry);
+                    await saveStarboard();
+                } else if (msg.channel.id === starboardChannels[msg.guild.id].id) {
+                    let msg2 = await resolveMessageFromStarboard(msg);
+                    if (!msg2) {
+                        return;
+                    }
+                    let entry = boardData.data.get(msg2.id);
+                    boardData.forbidden.add(msg2.id);
+                    if (entry) {
+                        await deleteStarboardEntry(msg2, entry);
+                    }
                     await saveStarboard();
                 }
             }

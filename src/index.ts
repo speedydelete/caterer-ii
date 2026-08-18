@@ -194,11 +194,11 @@ if (ME === 'bot') {
         if (!msg.author || (msg.author.id !== client.user?.id) || !msg.deletable) {
             return;
         }
-        for (let channel of Object.values(starboardChannels)) {
-            if (msg.channel.id === channel.id) {
-                return;
-            }
-        }
+        // for (let channel of Object.values(starboardChannels)) {
+        //     if (msg.channel.id === channel.id) {
+        //         return;
+        //     }
+        // }
         for (let admin of config.admins) {
             if (data.users.cache.has(admin)) {
                 msg.delete();
