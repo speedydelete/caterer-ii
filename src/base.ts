@@ -391,9 +391,9 @@ export function addSuperCommand(name: string, category: CommandCategory, aliases
         COMMANDS[alias] = command;
     }
     if (category in COMMANDS_BY_CATEGORY) {
-        COMMANDS_BY_CATEGORY[name].push(command);
+        COMMANDS_BY_CATEGORY[category].push(command);
     } else {
-        COMMANDS_BY_CATEGORY[name] = [command];
+        COMMANDS_BY_CATEGORY[category] = [command];
     }
 }
 
