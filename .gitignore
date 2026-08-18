@@ -1,6 +1,7 @@
 /node_modules
 /lib
 /*.json
+!/config.example.json
 /lifeweb
 /data/sssss
 /data/sim_stats.json
