@@ -826,7 +826,7 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
         parsedPipe.push(value);
     }
     let prevResp: Response;
-    let extraArgv: Argv = [];
+    let extraArgs: string | undefined = undefined;
     let pattern: Pattern | undefined = undefined;
     let deleters: string[] = [];
     for (let i = 0; i < parsedPipe.length; i++) {
@@ -842,9 +842,14 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
                 value = stupid;
             }
         } else {
-            for (let arg of extraArgv) {
-                argv.push(arg);
-                rawArgs += ' ' + arg[0];
+            if (extraArgs !== undefined) {
+                let index = rawArgs.indexOf('{}');
+                if (index !== -1) {
+                    rawArgs = rawArgs.slice(0, index) + extraArgs + rawArgs.slice(index + 2);
+                } else {
+                    rawArgs += ' ' + extraArgs;
+                }
+                argv = parseArgv(rawArgs);
             }
             value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, i !== parsedPipe.length - 1, pattern);
         }
@@ -852,26 +857,18 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
         if (value && value.deleters) {
             deleters.push(...value.deleters);
         }
-        type Response = undefined | void | ((
-            | {type: 'already-sent', value: Message}
-            | {type: 'message-spec', value: MessageCreateOptions}
-            | {type: 'string', value: string}
-            | {type: 'number', value: number}
-            | {type: 'boolean', value: boolean}
-            | {type: 'pattern', value: Pattern}
-        ) & {deleters?: string[]});
+        extraArgs = undefined;
         if (value === undefined) {
-            extraArgv = [];
+            // do nothing
         } else if (value.type === 'already-sent' || value.type === 'message-spec') {
-            extraArgv = [];
+            // do nothing
         } else if (value.type === 'string') {
-            extraArgv = parseArgv(value.value);
+            extraArgs = value.value;
         } else if (value.type === 'number') {
-            extraArgv = parseArgv(String(value.value));
+            extraArgs = String(value.value);
         } else if (value.type === 'boolean') {
-            extraArgv = parseArgv(String(value.value));
+            extraArgs = String(value.value);
         } else if (value.type === 'pattern') {
-            extraArgv = [];
             pattern = value.value;
         } else {
             throw new Error(`This error should not occur (invalid response type: '${(value as {type: 'string'}).type}')`);
