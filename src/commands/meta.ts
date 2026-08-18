@@ -17,7 +17,7 @@ const HELP_TEMPLATE = `A cellular automata bot for the ConwayLife Lounge Discord
 Commands:
 $$$
 
-You can use Bash-style quoting and escaping in commands.
+You can use Bash-style quoting, escaping, and pipes in commands.
 
 Type \`!help <command>\` for help for a specific command!`;
 
@@ -89,7 +89,7 @@ addCommand(
                 if (category === 'sub' || category === 'secret') {
                     continue;
                 }
-                out.push(`* ${CATEGORY_NAMES[category as CommandCategory]}: ${commands.map(cmd => cmd.name).join(', ')}`);
+                out.push(`* ${CATEGORY_NAMES[category as CommandCategory]}: ${commands.map(cmd => `\`${cmd.name}\``).join(', ')}`);
             }
             return {type: 'string', value: HELP_TEMPLATE.replace('$$$', out.join('\n'))};
         } else {
@@ -106,12 +106,12 @@ addCommand(
             if (cmd.type === 'basic') {
                 let usage: string[] = [`${cmd.name}`];
                 let argStrs: string[] = [];
-                for (let [name, arg] of Object.entries(cmd.args)) {
+                for (let arg of cmd.args) {
                     if (arg.kind === 'pattern') {
                         continue;
                     }
                     usage.push(formatArgUsage(arg));
-                    argStrs.push(`* \`${name}\`: ${arg.desc}`);
+                    argStrs.push(`* \`${arg.name}\`: ${arg.desc}`);
                 }
                 desc = `Usage: \`${usage.join(' ')}\`\n${cmd.desc}`;
                 if (argStrs.length > 0) {
