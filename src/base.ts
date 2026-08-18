@@ -531,7 +531,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
             } else {
                 msg += ` (expected ${result.name})`;
             }
-            throw new BotError(msg);
+            throw new ArgumentError(msg);
         }
     } else {
         if (Array.isArray(type.value)) {
@@ -571,7 +571,7 @@ function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: numbe
             return {pos, posArgsPos};
         }
         if (posArgsPos > posArgs.length) {
-            throw new BotError(`Too many positional arguments provided`);
+            throw new ArgumentError(`Too many positional arguments provided`);
         }
         let arg = posArgs[posArgsPos];
         posArgsPos++;
@@ -585,7 +585,7 @@ function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: numbe
             }
             // enforce that they have to have something
             if ((arg.kind === 'required-variadic' || arg.kind === 'required-rest') && found.length === 0) {
-                throw new BotError(`Empty value provided for required argument ${arg.name}`);
+                throw new ArgumentError(`Empty value provided for required argument ${arg.name}`);
             }
             if (arg.kind === 'required-variadic' || arg.kind === 'optional-variadic') {
                 out[kebabToCamel(arg.name)] = found.map(value => validate(value, arg, arg.type));
@@ -605,7 +605,7 @@ function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: numbe
                         }
                         got++;
                     }
-                    throw new BotError(`Not enough values provided for argument '${arg.name}' (expected ${type.length}, got ${got})`);
+                    throw new ArgumentError(`Not enough values provided for argument '${arg.name}' (expected ${type.length}, got ${got})`);
                 }
                 out[kebabToCamel(arg.name)] = found.map((value, i) => validate(value[0], arg, type[i]));
                 pos += type.length - 1;
@@ -630,7 +630,7 @@ function afterPosArgsParsed(out: ParsedArgs, posArgs: PosArg[]): void {
         let name = kebabToCamel(arg.name);
         if (!(name in out)) {
             if (arg.kind === 'required' || arg.kind === 'required-variadic' || arg.kind === 'required-rest') {
-                throw new BotError(`No value provided for required argument ${arg.name}`);
+                throw new ArgumentError(`No value provided for required argument ${arg.name}`);
             } else if ('default' in arg) {
                 out[name] = arg.default;
             }
@@ -673,13 +673,13 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
         }
     }
     if (!foundArg) {
-        throw new BotError(`Nonexistent option: '${option}'`);
+        throw new ArgumentError(`Nonexistent option: '${option}'`);
     }
     let arg = foundArg;
     if (arg.kind === 'flag') {
         out[kebabToCamel(arg.name)] = flagValue;
     } else if (mustBeFlag) {
-        throw new BotError(`Option ${option} is not a flag but was provided as '${rawOption}'`);
+        throw new ArgumentError(`Option ${option} is not a flag but was provided as '${rawOption}'`);
     } else {
         pos++;
         let result: ParsedArgs<PosArg[]> = {};
@@ -762,7 +762,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
         } else {
             let data = await findPatternInChannel(msg);
             if (data === undefined) {
-                throw new BotError(`Cannot find pattern!`);
+                throw new ArgumentError(`Cannot find pattern!`);
             }
             out[cmd.patternArg.name] = data;
         }
@@ -779,7 +779,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
     if (cmd.type === 'super') {
         let subCmd = cmd.name + ' ' + argv[nestLevel][0].toLowerCase().replaceAll('_', '');
         if (!(subCmd in COMMANDS)) {
-            throw new BotError(`Nonexistent subcommand: '${cmd.name} ${argv[nestLevel]}'`);
+            throw new ArgumentError(`Nonexistent subcommand: '${cmd.name} ${argv[nestLevel]}'`);
         }
         return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, useThisPattern);
     }

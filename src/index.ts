@@ -81,6 +81,7 @@ async function runCommand(msg: OmitPartialGroupDMChannel<_Message>): Promise<voi
             }
         }
     } catch (error) {
+        console.log('hi');
         if (error instanceof BotError || error instanceof LifewebError || error instanceof SyntaxError) {
             let content: string;
             if (error instanceof CalcError || error.message.startsWith('SymmetryError: ')) {
@@ -218,7 +219,7 @@ if (ME === 'bot') {
         return;
     });
 
-    client.once('ready', async () => {
+    client.once('clientReady', async () => {
         if (config.sssssChannel === undefined) {
             return;
         }
