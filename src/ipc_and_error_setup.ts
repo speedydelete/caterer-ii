@@ -28,6 +28,7 @@ async function onError(error: unknown): Promise<void> {
     } else {
         await sendMessageToWrapper({type: 'js-error', data: String(error)});
     }
+    process.exit(1);
 }
 
 if (process.send && !IS_WRAPPER) {
