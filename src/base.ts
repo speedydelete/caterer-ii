@@ -843,10 +843,24 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
             }
         } else {
             if (extraArgs !== undefined) {
-                let index = rawArgs.indexOf('{}');
-                if (index !== -1) {
-                    rawArgs = rawArgs.slice(0, index) + extraArgs + rawArgs.slice(index + 2);
-                } else {
+                let parsedExtra = parseArgv(extraArgs);
+                let found = false;
+                let match: RegExpMatchArray | null;
+                while (match = rawArgs.match(/\{(\d*)\}/)) {
+                    if (match.index === undefined) {
+                        break;
+                    }
+                    found = true;
+                    let value = match[1];
+                    let before = rawArgs.slice(0, match.index);
+                    let after = rawArgs.slice(match.index + match[0].length);
+                    if (value === '') {
+                        rawArgs = before + extraArgs + after;
+                    } else {
+                        rawArgs = before + parsedExtra[Number(value)] + after;
+                    }
+                }
+                if (!found) {
                     rawArgs += ' ' + extraArgs;
                 }
                 argv = parseArgv(rawArgs);
