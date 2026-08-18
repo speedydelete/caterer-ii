@@ -2,7 +2,7 @@
 import {DiscordAPIError, GatewayIntentBits, MessageReplyOptions, Message as _Message, TextChannel, Partials, Client} from 'discord.js';
 import {LifewebError} from '../lifeweb/lib/index.js';
 
-import {IS_TESTING, BotError, Message, readFile, internalRunTextCommand, config} from './base.js';
+import {IS_TESTING, BotError, Message, internalRunTextCommand, config} from './base.js';
 
 import './commands/meta.js';
 import './commands/sim.js';
@@ -133,7 +133,6 @@ export let client = new Client({
     intents: [
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMessageReactions,
     ],
