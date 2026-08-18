@@ -318,6 +318,7 @@ async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise
 }
 
 let updatingStarboardFor = new Set<string>();
+let queuedUpdatingStarboardFor = new Set<string>();
 
 async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
     let currentID: string | undefined;
@@ -340,7 +341,14 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         }
         let msg = data.message;
         if (updatingStarboardFor.has(msg.id)) {
-            setTimeout(() => updateStarboard(data), 2000);
+            if (!queuedUpdatingStarboardFor.has(msg.id)) {
+                queuedUpdatingStarboardFor.add(msg.id);
+                setTimeout(() => {
+                    updateStarboard(data);
+                    queuedUpdatingStarboardFor.delete(msg.id);
+                }, 2000);
+            }
+            return;
         }
         updatingStarboardFor.add(msg.id);
         currentID = msg.id;
