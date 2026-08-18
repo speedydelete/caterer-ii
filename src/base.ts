@@ -704,7 +704,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
         }
     }
     let posArgsPos = 0;
-    for (let pos = 0; pos < argv.length; pos++) {
+    for (let pos = 1; pos < argv.length; pos++) {
         let [value, isFlag] = argv[pos];
         if (!isFlag) {
             let data = parsePosArgs(out, cmd.posArgs, argv, pos, posArgsPos);
@@ -764,6 +764,9 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
 }
 
 async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, useThisPattern?: Pattern): Promise<Response> {
+    if (argv[0][0] === 'printargv') {
+        return {type: 'string', value: argv.map(x => `\`${x[0]}\` (${x[1] ? 'flag' : 'not flag'})`).join('\n')};
+    }
     if (!matchesACL(msg, aclData.commands[cmd.name])) {
         return {type: 'string', value: 'Error: You do not have permission to run this command'};
     }
@@ -865,7 +868,6 @@ async function runPipe(msg: Message, rawArgs: string, argv: Argv): Promise<Respo
 
 export async function internalRunTextCommand(msg: Message, rawArgs: string): Promise<Response> {
     let argv = parseArgv(rawArgs);
-    throw new Error(argv.join('\n'));
     // pipes!
     if (argv.some(x => x[0] === '|')) {
         return await runPipe(msg, rawArgs, argv);
