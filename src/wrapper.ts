@@ -79,7 +79,7 @@ async function startBot(manual: boolean = false): Promise<void> {
     if (caterer) {
         throw new BotError('Bot is running!');
     }
-    caterer = spawn('/home/caterer/.nvm/versions/node/v26.2.0/bin/node', [`${import.meta.dirname}/index.js`], {stdio: ['inherit', 'inherit', 'inherit', 'ipc']});
+    caterer = spawn('/home/caterer/.nvm/versions/node/v26.2.0/bin/node', [`${import.meta.dirname}/index.js`, 'testing=true'], {stdio: ['inherit', 'inherit', 'inherit', 'ipc']});
     let {promise, resolve} = Promise.withResolvers<void>();
     caterer.on('spawn', () => {
         if (manual) {
