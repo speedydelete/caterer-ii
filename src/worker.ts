@@ -12,7 +12,7 @@ export {deserialize} from './worker_manager.js';
 export let workerTaskFunctions: {[key: string]: (data: any) => WorkerTaskTypes[string][1]} = Object.create(null);
 
 export function registerWorkerTask<T extends WorkerTaskType>(type: T, func: (data: WorkerTaskTypes[T][0]) => (WorkerTaskTypes[T][1] | Promise<WorkerTaskTypes[T][1]>)): void {
-    if (import.meta.main) {
+    if (ME === 'worker') {
         workerTaskFunctions[type] = Object.create(null);
     }
 }
@@ -28,7 +28,7 @@ function sendMessage(msg: WorkerToBotMessage): void {
 }
 
 async function onMessage(data: BotToWorkerMessage): Promise<void> {
-  let id = data.id;
+    let id = data.id;
     try {
         if (!(data.type in workerTaskFunctions)) {
             throw new Error(`Worker task type '${data.type}' does not have a registered function`);
@@ -41,7 +41,7 @@ async function onMessage(data: BotToWorkerMessage): Promise<void> {
     }
 }
 
-if (import.meta.main) {
+if (ME === 'worker') {
     if (!parentPort) {
         throw new Error('Worker is not being run as worker');
     }

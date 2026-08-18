@@ -786,6 +786,11 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
     }
     let args: ParsedArgs = {};
     await parseArgs(args, cmd, msg, argv, useThisPattern);
+    if (cmd.sendTyping) {
+        try {
+            await msg.channel.sendTyping();
+        } catch {}
+    }
     return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs}));
 }
 
