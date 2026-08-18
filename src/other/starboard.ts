@@ -311,6 +311,7 @@ async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise
     let boardData = starboardData[serverID];
     let entry = boardData.data.get(msg2.id);
     boardData.forbidden.add(msg2.id);
+    console.log(msg2.id, entry);
     if (entry) {
         await deleteStarboardEntry(msg2, entry);
     }
