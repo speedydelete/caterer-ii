@@ -17,6 +17,9 @@ export function registerWorkerTask<T extends WorkerTaskType>(type: T, func: (dat
     }
 }
 
+// register everything
+await import('./index.js');
+
 
 function sendMessage(msg: WorkerToBotMessage): void {
     (parentPort as MessagePort).postMessage(msg);
