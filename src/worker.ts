@@ -9,14 +9,11 @@ import {WorkerTaskTypes, WorkerTaskType, BotToWorkerMessage, WorkerToBotMessage}
 export {deserialize} from './worker_manager.js';
 
 
-export let workerTaskFunctions: {[key: string]: (data: any) => WorkerTaskTypes[string][1]};
+export let workerTaskFunctions: {[key: string]: (data: any) => WorkerTaskTypes[string][1]} = Object.create(null);
 
 export function registerWorkerTask<T extends WorkerTaskType>(type: T, func: (data: WorkerTaskTypes[T][0]) => (WorkerTaskTypes[T][1] | Promise<WorkerTaskTypes[T][1]>)): void {
     if (import.meta.main) {
-        if (!workerTaskFunctions) {
-            workerTaskFunctions = Object.create(null);
-        }
-        workerTaskFunctions[type] = func;
+        workerTaskFunctions[type] = Object.create(null);
     }
 }
 

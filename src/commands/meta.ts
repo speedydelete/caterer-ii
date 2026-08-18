@@ -217,7 +217,7 @@ addCommand(
         requiredArg('acl', aclAndExistsValidator, 'The ACL to show.'),
     ],
     async args => {
-        return {type: 'string', value: await aclToString(aclData.acls[args.acl], true)};
+        return {type: 'string', value: await aclToString(client, aclData.acls[args.acl], true)};
     },
 );
 
@@ -228,7 +228,7 @@ addCommand(
         requiredArg('acl', aclAndExistsValidator, 'The ACL to get.'),
     ],
     async args => {
-        return {type: 'string', value: await aclToString(aclData.acls[args.acl], true)};
+        return {type: 'string', value: await aclToString(client, aclData.acls[args.acl], true)};
     },
 );
 
@@ -302,7 +302,7 @@ addCommand(
         if (!(cmd in aclData.commands)) {
             throw new BotError(`Command '${cmd}' is not bound to an ACL`);
         }
-        return {type: 'string', value: await aclToString(aclData.commands[cmd], true)};
+        return {type: 'string', value: await aclToString(client, aclData.commands[cmd], true)};
     },
 );
 
@@ -317,7 +317,7 @@ addCommand(
         if (!(cmd in aclData.commands)) {
             throw new BotError(`Command '${cmd}' is not bound to an ACL`);
         }
-        return {type: 'string', value: await aclToString(aclData.acls[cmd], true)};
+        return {type: 'string', value: await aclToString(client, aclData.acls[cmd], true)};
     },
 );
 

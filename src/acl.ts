@@ -4,7 +4,6 @@ import {parseExpression} from '@babel/parser';
 import {CategoryChannel, Guild, Client} from 'discord.js';
 
 import {BotError, Message, readFile, sentByAdmin} from './base.js';
-import {client} from './index.js';
 
 
 export type ACL = 
@@ -158,9 +157,9 @@ async function expressionToACL(node: Expression | PrivateName, guild: Guild): Pr
             if (arg.match(/^\d+$/) && arg.length > 16) {
                 return {type: 'server', id: arg};
             }
-            for (let [_, guild] of await client.guilds.fetch()) {
-                if (guild.name === arg) {
-                    return {type: 'server', id: guild.id};
+            for (let [_, guild2] of await guild.client.guilds.fetch()) {
+                if (guild2.name === arg) {
+                    return {type: 'server', id: guild2.id};
                 }
             }
             throwParsingError(node, `Could not find server: '${arg}'`);
@@ -181,7 +180,7 @@ export async function parseACL(data: string, guild: Guild): Promise<ACL> {
 }
 
 
-export async function aclToString(acl: ACL, pretty: boolean): Promise<string> {
+export async function aclToString(client: Client<true>, acl: ACL, pretty: boolean): Promise<string> {
     if (acl.type === 'everyone') {
         return 'everyone';
     } else if (acl.type === 'user') {
@@ -203,13 +202,13 @@ export async function aclToString(acl: ACL, pretty: boolean): Promise<string> {
     } else if (acl.type === 'acl') {
         return acl.acl;
     } else if (acl.type === 'not') {
-        return `!${await aclToString(acl.value, pretty)}`;
+        return `!${await aclToString(client, acl.value, pretty)}`;
     } else if (acl.type === 'and') {
-        return `(${await aclToString(acl.left, pretty)} & ${await aclToString(acl.right, pretty)})`;
+        return `(${await aclToString(client, acl.left, pretty)} & ${await aclToString(client, acl.right, pretty)})`;
     } else if (acl.type === 'or') {
-        return `(${await aclToString(acl.left, pretty)} | ${await aclToString(acl.right, pretty)})`;
+        return `(${await aclToString(client, acl.left, pretty)} | ${await aclToString(client, acl.right, pretty)})`;
     } else if (acl.type === 'xor') {
-        return `(${await aclToString(acl.left, pretty)} ^ ${await aclToString(acl.right, pretty)})`;
+        return `(${await aclToString(client, acl.left, pretty)} ^ ${await aclToString(client, acl.right, pretty)})`;
     } else {
         throw new Error(`Invalid ACL type: '${(acl as any).type}'`);
     }
