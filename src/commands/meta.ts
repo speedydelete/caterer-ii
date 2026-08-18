@@ -335,7 +335,7 @@ addCommand(
         let parsed = await parseACL(args.value, args.msg.guild as Guild);
         aclData.acls[args.command] = parsed;
         await saveACLs();
-        return {type: 'string', value: 'ACL set!'};
+        return {type: 'string', value: 'Command ACL set!'};
     },
 );
 
@@ -352,6 +352,6 @@ addCommand(
         }
         delete aclData.commands[args.command];
         await saveACLs();
-        return {type: 'string', value: 'ACL deleted!'};
+        return {type: 'string', value: 'Command ACL deleted!'};
     },
 );
