@@ -81,7 +81,6 @@ async function runCommand(msg: OmitPartialGroupDMChannel<_Message>): Promise<voi
             }
         }
     } catch (error) {
-        console.log('hi');
         if (error instanceof BotError || error instanceof LifewebError || error instanceof SyntaxError) {
             let content: string;
             if (error instanceof CalcError) {

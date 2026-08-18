@@ -592,6 +592,7 @@ function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: numbe
             } else {
                 out[kebabToCamel(arg.name)] = validate(found.join(' '), arg, arg.type);
             }
+            continue;
         }
         try {
             let type = arg.type;
@@ -614,13 +615,13 @@ function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: numbe
             }
         } catch (error) {
             if (error instanceof ArgumentError && arg.kind === 'optional') {
+                pos--;
                 continue;
             } else {
                 throw error;
             }
         }
     }
-    console.log(argv, {pos, posArgsPos});
     return {pos, posArgsPos};
 }
 
