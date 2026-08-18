@@ -4,9 +4,7 @@ import {parseExpression} from '@babel/parser';
 import {CategoryChannel, Guild, Client} from 'discord.js';
 
 import {BotError, Message, readFile, sentByAdmin} from './base.js';
-
-
-let client: Client = (await import('./index.js')).client;
+import {client} from './index.js';
 
 
 export type ACL = 
