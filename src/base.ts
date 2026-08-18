@@ -843,6 +843,7 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
         } else {
             for (let arg of extraArgv) {
                 argv.push(arg);
+                rawArgv += ' ' + arg[0];
             }
             value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, i !== parsedPipe.length - 1, pattern);
         }
