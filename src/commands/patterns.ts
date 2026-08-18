@@ -89,11 +89,11 @@ addCommand(
             text = `Period-${match[2]} ${APGCODE_PATTERN_TYPES[match[1]]}`;
             isPattern = true;
             code = code.slice(match[0].length);
-        } else if (match = code.match(/^yl(\d+)_(\d+)_(\d+)_()$/)) {
+        } else if (match = code.match(/^yl(\d+)_(\d+)_(\d+)_([0-9a-f]+)$/)) {
             text = `Linear growth\nPeriod of the population sequence: ${match[1]}\nSubperiod of the population sequence (often the period of the debris): ${match[2]}\nPopulation of the debris: ${match[3]}\n[MD5](<https://en.wikipedia.org/wiki/MD5>) hash of some complicated stuff, see [the code](<https://gitlab.com/apgoucher/apgmera/-/blob/master/includes/detection.h>) for more detailS: ${match[4]}`;
             isPattern = false;
-        } else if (match = code.match(/^ov_[spq]$/)) {
-            text = `Oversized ${APGCODE_PATTERN_TYPES[match[1]]}`;
+        } else if (match = code.match(/^ov_[spq](\d+)$/)) {
+            text = `Oversized period-${match[2]} ${APGCODE_PATTERN_TYPES[match[1]]}`;
             isPattern = false;
         } else if (code in APGCODE_POWER_MEANINGS) {
             text = `Apparently aperiodic object where, if you take the power law regression (f(x) = a*x^p), the power is ${APGCODE_POWER_MEANINGS[code]}`;
