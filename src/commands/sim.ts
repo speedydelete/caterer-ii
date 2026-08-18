@@ -419,6 +419,9 @@ function parseSim(pattern: string, argv: string[]): SimData {
 const SIM_BASE_PATH = resolvePath('sim_base.gif');
 
 async function runSim(input: {pattern: string, argv: string[], outFilePath: string}): Promise<{parseTime: number, text?: string}> {
+    if (eval('true')) {
+        throw new Error('in worker: ' + JSON.stringify(input.argv));
+    }
     let startTime = performance.now();
     let {frames, gifSize, minX, minY, width, height, useAdvancedColors, customColors, text} = parseSim(input.pattern, input.argv);
     let parseTime = performance.now() - startTime;
@@ -677,7 +680,6 @@ addCommand(
     async args => {
         try {
             let argv = args.parts ?? [];
-            throw new Error(argv.join(' '));
             if (argv[0] === 'rand') {
                 throw new BotError(`Use !simrand, not !sim rand`);
             }
