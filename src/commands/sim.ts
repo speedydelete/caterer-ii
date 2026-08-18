@@ -375,7 +375,7 @@ function parseSim(pattern: string, argv: string[]): SimData {
     if (parts[0] && parts[0][1] === 'fps' && typeof parts[0][0] === 'number') {
         time = Math.ceil(100 / parts[0][0]);
     }
-    throw new Error('test 4: ' + JSON.stringify(parts));
+    throw new Error('test 4: ' + JSON.stringify(parts) + '\n' + JSON.stringify(argv));
     let frames: Frame[] = [{p: p.copy(), time}];
     let gifSize = 200;
     let data: PartRunnerData = {
