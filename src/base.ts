@@ -425,7 +425,10 @@ const ESCAPES: {[key: string]: string} = {
 
 type Argv = [value: string, isFlag: boolean][];
 
-function parseArgv(data: string): Argv {
+function parseArgv(data: string, noArgvParse?: boolean): Argv {
+    if (noArgvParse) {
+        return data.split(' ').map(x => [x, false]);
+    }
     let out: Argv = [];
     let currentArg = '';
     let currentIsFlag = false;
@@ -705,7 +708,7 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
 async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv: Argv, useThisPattern?: Pattern): Promise<void> {
     if (!cmd.patternArg) {
         if (useThisPattern) {
-            for (let arg of parseArgv(useThisPattern.toRLE())) {
+            for (let arg of parseArgv(useThisPattern.toRLE(), cmd.noArgvParse)) {
                 argv.push(arg);
             }
         }
@@ -785,6 +788,9 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         }
         return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, isInsidePipe, useThisPattern);
     }
+    if (cmd.noArgvParse) {
+        argv = parseArgv(rawArgs, true);
+    }
     let args: ParsedArgs = {};
     await parseArgs(args, cmd, msg, argv, useThisPattern);
     if (cmd.sendTyping) {
@@ -813,25 +819,18 @@ function tryStupidCommand(cmd: string): Response {
     return {type: 'string', value: out};
 }
 
-async function runPipe(msg: Message, rawArgs: string, argv: Argv): Promise<Response> {
-    let argvs: Argv[] = [];
-    let current: Argv = [];
-    for (let i = 0; i < argv.length; i++) {
-        let value = argv[i];
-        if (value[0] === '|') {
-            argvs.push(current);
-            current = [];
-        } else {
-            current.push(value);
-        }
+async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
+    let parsedPipe: string[] = [];
+    for (let value of rawArgs.split(/[ \n]\|[ \n]/)) {
+        parsedPipe.push(value);
     }
-    argvs.push(current);
     let prevResp: Response;
     let extraArgv: Argv = [];
     let pattern: Pattern | undefined = undefined;
     let deleters: string[] = [];
-    for (let i = 0; i < argvs.length; i++) {
-        let argv = argvs[i];
+    for (let i = 0; i < parsedPipe.length; i++) {
+        let rawArgv = parsedPipe[i];
+        let argv = parseArgv(rawArgv);
         let value: Response;
         let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
         if (!(cmd in COMMANDS)) {
@@ -845,7 +844,7 @@ async function runPipe(msg: Message, rawArgs: string, argv: Argv): Promise<Respo
             for (let arg of extraArgv) {
                 argv.push(arg);
             }
-            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, i !== argvs.length - 1, pattern);
+            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, i !== parsedPipe.length - 1, pattern);
         }
         pattern = undefined;
         if (value && value.deleters) {
@@ -884,7 +883,7 @@ export async function internalRunTextCommand(msg: Message, rawArgs: string): Pro
     let argv = parseArgv(rawArgs);
     // pipes!
     if (argv.some(x => x[0] === '|')) {
-        return await runPipe(msg, rawArgs, argv);
+        return await runPipe(msg, rawArgs);
     }
     let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
     if (!(cmd in COMMANDS)) {
