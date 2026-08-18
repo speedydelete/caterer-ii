@@ -43,19 +43,6 @@ async function runCommand(msg: Message): Promise<void> {
             return;
         }
     }
-    let cmd: string;
-    let index = data.indexOf(' ');
-    let index2 = data.indexOf('\n');
-    if (index === -1 || (index2 !== -1 && index2 < index)) {
-        index = index2;
-    }
-    if (index === -1) {
-        cmd = data;
-        data = '';
-    } else {
-        cmd = data.slice(0, index);
-        data = data.slice(index + 1);
-    }
     runningCommands.add(msg.id);
     try {
         let value = await internalRunTextCommand(msg, data);
@@ -145,8 +132,6 @@ export let client = new Client({
         Partials.ThreadMember,
     ],
 }) as Client<true>;
-
-let sssssChannel: TextChannel;
 
 client.once('clientReady', async () => {
     console.log('Logged in');
