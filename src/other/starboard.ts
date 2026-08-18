@@ -292,15 +292,15 @@ async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> 
 }
 
 async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise<void> {
-    console.log('testing');
     if (_msg.partial) {
         _msg = await _msg.fetch();
     }
-    console.log('testing 2');
+    console.log('testing 1');
     if (!_msg.inGuild()) {
         console.log('not in guild');
         return;
     }
+    console.log('testing 2');
     let msg: Message = _msg;
     let serverID = msg.guild.id;
     let board = config.starboards[serverID];
@@ -308,11 +308,13 @@ async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise
         console.log(msg.channel.id, board?.channel);
         return;
     }
+    console.log('testing 3');
     let msg2 = await resolveMessageFromStarboard(msg);
     if (!msg2) {
         console.log('NO MESSAGE FOUND');
         return;
     }
+    console.log('testing 4');
     let boardData = starboardData[serverID];
     let entry = boardData.data.get(msg2.id);
     boardData.forbidden.add(msg2.id);
