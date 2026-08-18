@@ -1,14 +1,8 @@
 
 import {RuleError, createPattern} from '../../lifeweb/lib/index.js';
 
-import {BotError, readFile, writeFile, requiredRestArg, addCommand} from '../base.js';
+import {BotError, aliases, saveAliases, requiredRestArg, addCommand} from '../base.js';
 
-
-export let aliases: {[key: string]: string} = Object.assign(Object.create(null), JSON.parse(await readFile('data/aliases.json')));
-
-export async function saveAliases(): Promise<void> {
-    await writeFile('data/aliases.json', JSON.stringify(aliases, undefined, 4));
-}
 
 
 addCommand(

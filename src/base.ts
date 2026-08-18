@@ -3,13 +3,18 @@ import {DiscordAPIError, ColorResolvable, EmbedBuilder, MessageReferenceType, Me
 import {Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
 import {RPFPattern, RPFParser} from '../lifeweb/lib/editor/rpf.js';
 
-import {sendMessageToWrapper} from './ipc_and_error_setup.js';
-import {BotError, Message} from './real_base.js';
+import {BotError, Message, readFile, writeFile} from './real_base.js';
 import {aclData, matchesACL} from './acl.js';
-import {aliases} from './commands/aliases.js';
 
 export * from './ipc_and_error_setup.js';
 export * from './real_base.js';
+
+
+export let aliases: {[key: string]: string} = Object.assign(Object.create(null), JSON.parse(await readFile('data/aliases.json')));
+
+export async function saveAliases(): Promise<void> {
+    await writeFile('data/aliases.json', JSON.stringify(aliases, undefined, 4));
+}
 
 
 export interface PatternArgData {

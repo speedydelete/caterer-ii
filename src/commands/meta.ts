@@ -7,9 +7,8 @@ import * as lifeweb from '../../lifeweb/lib/index.js';
 import * as lifewebRPF from '../../lifeweb/lib/editor/rpf.js';
 import * as lifewebRuleSymmetries from '../../lifeweb/lib/rule_symmetries/index.js';
 
-import {BotError, readFile, writeFile, CommandCategory, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, Command, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, findPatternInChannel, commandValidator, createEmbed} from '../base.js';
+import {BotError, readFile, writeFile, aliases, CommandCategory, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, Command, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, findPatternInChannel, commandValidator, createEmbed} from '../base.js';
 import {aclData, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses} from '../acl.js';
-import {aliases} from './aliases.js';
 import {client} from '../index.js';
 
 
