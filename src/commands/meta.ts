@@ -123,6 +123,9 @@ addCommand(
             } else {
                 desc = `${cmd.desc}\nSubcommands:\n${cmd.subCommands.map(subCmd => `* \`${cmd.name} ${subCmd}\``).join('\n')}`;
             }
+            if (cmd.extraHelp) {
+                desc += cmd.extraHelp;
+            }
             return {type: 'message-spec', value: {embeds: [createEmbed(title, desc)]}};
         }
     },
