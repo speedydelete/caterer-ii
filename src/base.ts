@@ -830,7 +830,7 @@ async function runPipe(msg: Message, rawArgs: string, argv: Argv): Promise<Respo
     let extraArgv: Argv = [];
     let pattern: Pattern | undefined = undefined;
     let deleters: string[] = [];
-    for (let i = 0; i < argv.length; i++) {
+    for (let i = 0; i < argvs.length; i++) {
         let argv = argvs[i];
         let value: Response;
         let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
