@@ -706,9 +706,6 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
 }
 
 async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv: Argv, nestLevel: number, useThisPattern?: Pattern): Promise<void> {
-    if (cmd.name === 'ruleinfo') {
-        throw new Error(JSON.stringify(argv));
-    }
     if (!cmd.patternArg) {
         if (useThisPattern) {
             for (let arg of parseArgv(useThisPattern.toRLE(), cmd.noArgvParse)) {
@@ -832,8 +829,8 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
     let pattern: Pattern | undefined = undefined;
     let deleters: string[] = [];
     for (let i = 0; i < parsedPipe.length; i++) {
-        let rawArgv = parsedPipe[i];
-        let argv = parseArgv(rawArgv);
+        let rawArgs = parsedPipe[i];
+        let argv = parseArgv(rawArgs);
         let value: Response;
         let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
         if (!(cmd in COMMANDS)) {
@@ -846,7 +843,7 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
         } else {
             for (let arg of extraArgv) {
                 argv.push(arg);
-                rawArgv += ' ' + arg[0];
+                rawArgs += ' ' + arg[0];
             }
             value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, i !== parsedPipe.length - 1, pattern);
         }
