@@ -93,7 +93,6 @@ function restartWorker() {
     workerAlive = true;
 }
 
-console.log('manager: i am', ME);
 if (ME === 'bot') {
     restartWorker();
 }

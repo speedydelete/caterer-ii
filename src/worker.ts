@@ -18,13 +18,13 @@ export function registerWorkerTask<T extends WorkerTaskType>(type: T, func: (dat
 }
 
 
-console.log('worker: i am', ME);
-
 
 // register everything
 if (ME === 'worker') {
-    await import('./commands/sim.js');
-    await import('./commands/identify.js');
+    setTimeout(async () => {
+        await import('./commands/sim.js');
+        await import('./commands/identify.js');
+    }, 10);
 }
 
 
