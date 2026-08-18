@@ -3,7 +3,7 @@ import {DiscordAPIError, ColorResolvable, EmbedBuilder, MessageReferenceType, Me
 import {Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
 import {RPFPattern, RPFParser} from '../lifeweb/lib/editor/rpf.js';
 
-import {BotError, Message, readFile, writeFile} from './real_base.js';
+import {IS_WORKER, BotError, Message, readFile, writeFile} from './real_base.js';
 import {aclData, matchesACL} from './acl.js';
 
 export * from './ipc_and_error_setup.js';
@@ -302,6 +302,9 @@ export const COMMANDS: {[key: string]: Command} = Object.create(null);
 export const COMMANDS_BY_CATEGORY: {[key: string]: Command[]} = Object.create(null);
 
 export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, otherOptions: Partial<Pick<BasicCommand, 'sendTyping' | 'extraHelp' | 'noArgvParse'>> = {}): void {
+    if (IS_WORKER) {
+        return;
+    }
     // compile argument data and sanity check the argument names
     let posArgs: PosArg[] = [];
     let optionArgs: OptionArg[] = [];
@@ -882,7 +885,7 @@ export async function internalRunTextCommand(msg: Message, rawArgs: string): Pro
 
 export function commandValidator(cmd: string): string | {name: string, reason?: string} {
     cmd = cmd.toLowerCase().replaceAll('_', '');
-    if (cmd.startsWith('!')) {
+    if (cmd.startsWith('!') || cmd.startsWith('$')) {
         cmd = cmd.slice(1);
     } else if (cmd.startsWith('ca.')) {
         cmd = cmd.slice(3);

@@ -2,7 +2,7 @@
 import {DiscordAPIError, GatewayIntentBits, MessageReplyOptions, Message as _Message, TextChannel, Partials, Client} from 'discord.js';
 import {LifewebError} from '../lifeweb/lib/index.js';
 
-import {IS_TESTING, BotError, Message, internalRunTextCommand, config} from './base.js';
+import {IS_WORKER, IS_TESTING, BotError, Message, internalRunTextCommand, config} from './base.js';
 
 import './commands/meta.js';
 import './commands/sim.js';
@@ -116,124 +116,129 @@ async function runCommand(msg: Message): Promise<void> {
 }
 
 
-export let client = new Client({
-    intents: [
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildMessageReactions,
-    ],
-    partials: [
-        Partials.Channel,
-        Partials.Message,
-        Partials.Reaction,
-        Partials.GuildMember,
-        Partials.User,
-        Partials.ThreadMember,
-    ],
-}) as Client<true>;
+export let client: Client;
 
-client.once('clientReady', async () => {
-    console.log('Logged in');
-});
+if (!IS_WORKER) {
 
-client.on('messageCreate', runCommand);
+    client = new Client({
+        intents: [
+            GatewayIntentBits.MessageContent,
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.GuildMessageReactions,
+        ],
+        partials: [
+            Partials.Channel,
+            Partials.Message,
+            Partials.Reaction,
+            Partials.GuildMember,
+            Partials.User,
+            Partials.ThreadMember,
+        ],
+    }) as Client<true>;
 
-client.on('messageUpdate', async (old, msg) => {
-    try {
-        let index = previousMsgs.findLastIndex(x => x[0] === old.id);
-        if (index > -1) {
-            let msg = previousMsgs[index][1];
-            try {
-                let msg2 = await msg.channel.messages.fetch(msg.id);
-                if (msg2) {
-                    msg2.delete();
-                }
-            } catch {}
-            previousMsgs = previousMsgs.splice(index, 1);
-        }
-        runCommand(msg);
-    } catch (error) {
-        let str: string;
-        if (error && typeof error === 'object' && 'stack' in error) {
-            str = String(error.stack);
-            if (str.length > 1900) {
-                str = str.slice(0, 1900) + '... (truncated)';
+    client.once('clientReady', async () => {
+        console.log('Logged in');
+    });
+
+    client.on('messageCreate', runCommand);
+
+    client.on('messageUpdate', async (old, msg) => {
+        try {
+            let index = previousMsgs.findLastIndex(x => x[0] === old.id);
+            if (index > -1) {
+                let msg = previousMsgs[index][1];
+                try {
+                    let msg2 = await msg.channel.messages.fetch(msg.id);
+                    if (msg2) {
+                        msg2.delete();
+                    }
+                } catch {}
+                previousMsgs = previousMsgs.splice(index, 1);
             }
-        } else {
-            str = String(error);
+            runCommand(msg);
+        } catch (error) {
+            let str: string;
+            if (error && typeof error === 'object' && 'stack' in error) {
+                str = String(error.stack);
+                if (str.length > 1900) {
+                    str = str.slice(0, 1900) + '... (truncated)';
+                }
+            } else {
+                str = String(error);
+            }
+            console.log(str);
+            let content = '```' + str + '```';
+            if (msg.author.id !== '1253852708826386518') {
+                content = '<@1253852708826386518>\n' + content;
+            }
+            await msg.reply({content, allowedMentions: {repliedUser: true, parse: ['users']}});
         }
-        console.log(str);
-        let content = '```' + str + '```';
-        if (msg.author.id !== '1253852708826386518') {
-            content = '<@1253852708826386518>\n' + content;
-        }
-        await msg.reply({content, allowedMentions: {repliedUser: true, parse: ['users']}});
-    }
-});
+    });
 
-client.on('messageReactionAdd', async data => {
-    if (!(data.emoji.name === '❌' || data.emoji.name === '🗑️')) {
-        return;
-    }
-    if (data.partial) {
-        data = await data.fetch();
-    }
-    let msg = data.message;
-    if (msg.partial) {
-        msg = await msg.fetch();
-    }
-    if (!msg.author || (msg.author.id !== client.user?.id) || !msg.deletable) {
-        return;
-    }
-    for (let admin of config.admins) {
-        if (data.users.cache.has(admin)) {
-            msg.delete();
+    client.on('messageReactionAdd', async data => {
+        if (!(data.emoji.name === '❌' || data.emoji.name === '🗑️')) {
             return;
         }
-    }
-    if (msg.channel.id in starboardChannels) {
-        return;
-    }
-    if (msg.author?.id === client.user?.id && msg.reference) {
-        let id = (await data.message.fetchReference()).author.id;
-        let users = await data.users.fetch();
-        if (users.find(x => x.id === id)) {
-            msg.delete();
+        if (data.partial) {
+            data = await data.fetch();
+        }
+        let msg = data.message;
+        if (msg.partial) {
+            msg = await msg.fetch();
+        }
+        if (!msg.author || (msg.author.id !== client.user?.id) || !msg.deletable) {
             return;
         }
-        for (let [userId, msgId] of deleters) {
-            if (msgId === msg.id && users.find(x => x.id === userId)) {
+        for (let admin of config.admins) {
+            if (data.users.cache.has(admin)) {
                 msg.delete();
                 return;
             }
         }
-    }
-    return;
-});
-
-
-if (config.sssssChannel !== undefined) {
-    client.once('ready', async () => {
-        let sssssChannel = await client.channels.fetch(config.sssssChannel) as TextChannel;
-        setInterval(async () => {
-            try {
-                await check5S(sssssChannel);
-            } catch (error) {
-                let str: string;
-                if (error && typeof error === 'object' && 'stack' in error) {
-                    str = String(error.stack);
-                    if (str.length > 1900) {
-                        str = str.slice(0, 1900) + '... (truncated)';
-                    }
-                } else {
-                    str = String(error);
-                }
-                await sssssChannel.send('<@1253852708826386518>\n```' + str + '```');
+        if (msg.channel.id in starboardChannels) {
+            return;
+        }
+        if (msg.author?.id === client.user?.id && msg.reference) {
+            let id = (await data.message.fetchReference()).author.id;
+            let users = await data.users.fetch();
+            if (users.find(x => x.id === id)) {
+                msg.delete();
+                return;
             }
-        }, 300000);
+            for (let [userId, msgId] of deleters) {
+                if (msgId === msg.id && users.find(x => x.id === userId)) {
+                    msg.delete();
+                    return;
+                }
+            }
+        }
+        return;
     });
+
+    if (config.sssssChannel !== undefined) {
+        client.once('ready', async () => {
+            let sssssChannel = await client.channels.fetch(config.sssssChannel) as TextChannel;
+            setInterval(async () => {
+                try {
+                    await check5S(sssssChannel);
+                } catch (error) {
+                    let str: string;
+                    if (error && typeof error === 'object' && 'stack' in error) {
+                        str = String(error.stack);
+                        if (str.length > 1900) {
+                            str = str.slice(0, 1900) + '... (truncated)';
+                        }
+                    } else {
+                        str = String(error);
+                    }
+                    await sssssChannel.send('<@1253852708826386518>\n```' + str + '```');
+                }
+            }, 300000);
+        });
+    }
+
+    client.login(config.token);
+
 }
 
-
-client.login(config.token);

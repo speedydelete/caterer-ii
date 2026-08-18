@@ -1,11 +1,14 @@
 
 import * as fs from 'node:fs/promises';
 import {join} from 'node:path';
+import {isMainThread} from 'node:worker_threads';
 
 import {Message as _Message, OmitPartialGroupDMChannel} from 'discord.js';
 
 import {IS_WRAPPER, sendMessageToWrapper} from './ipc_and_error_setup.js';
 
+
+export const IS_WORKER = Boolean(!isMainThread);
 
 export const IS_TESTING = Boolean(process.argv.includes('testing=true'));
 
