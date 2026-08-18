@@ -306,6 +306,7 @@ async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise
     }
     let msg2 = await resolveMessageFromStarboard(msg);
     if (!msg2) {
+        console.log('NO MESSAGE FOUND');
         return;
     }
     let boardData = starboardData[serverID];
