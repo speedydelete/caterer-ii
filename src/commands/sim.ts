@@ -84,26 +84,25 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
                 data.time = Math.ceil(100 / part[0]);
                 part = part.slice(2);
             } else {
-                throw new Error('hi');
-                // let step = 1;
-                // let remove = 1;
-                // if (typeof part[1] === 'number') {
-                //     step = part[1];
-                //     remove = 2;
-                // }
-                // if (data.partCount === 1) {
-                //     part[0] = part[0] - 1;
-                //     if (part[0] === 0) {
-                //         continue;
-                //     }
-                // }
-                // for (let i = 0; i < Math.ceil(part[0] / step); i++) {
-                //     for (let j = 0; j < step; j++) {
-                //         runGeneration(p);
-                //     }
-                //     frames.push(getFrame(p, data));
-                // }
-                // part = part.slice(remove);
+                let step = 1;
+                let remove = 1;
+                if (typeof part[1] === 'number') {
+                    step = part[1];
+                    remove = 2;
+                }
+                if (data.partCount === 1) {
+                    part[0] = part[0] - 1;
+                    if (part[0] === 0) {
+                        continue;
+                    }
+                }
+                for (let i = 0; i < Math.ceil(part[0] / step); i++) {
+                    for (let j = 0; j < step; j++) {
+                        runGeneration(p);
+                    }
+                    frames.push(getFrame(p, data));
+                }
+                part = part.slice(remove);
             }
         } else if (part[0] === 'size') {
             if (typeof part[1] !== 'number') {
@@ -376,6 +375,7 @@ function parseSim(pattern: string, argv: string[]): SimData {
     if (parts[0] && parts[0][1] === 'fps' && typeof parts[0][0] === 'number') {
         time = Math.ceil(100 / parts[0][0]);
     }
+    throw new Error('test 4: ' + JSON.stringify(parts));
     let frames: Frame[] = [{p: p.copy(), time}];
     let gifSize = 200;
     let data: PartRunnerData = {
