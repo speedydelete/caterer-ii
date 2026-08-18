@@ -791,10 +791,6 @@ addCommand(
             let [height, width] = args.size.split('x').map(Number);
             let p = createPattern(args.rule, aliases);
             let weights = parseRandFill(p, args.fill);
-            if (p instanceof TorusPattern && (p.height < height || p.width < width)) {
-                height = p.height;
-                width = p.width;
-            }
             let size = height * width;
             let data = new Uint8Array(size);
             for (let i = 0; i < size; i++) {
