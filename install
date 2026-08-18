@@ -16,4 +16,9 @@ popd > /dev/null
 npm install
 npx tsc -b
 
+echo '{"acls":{},"commands":{}}' > data/acls.json
+echo '{}' > data/aliases.json
+echo '' > data/names.txt
+echo '{}' > data/starboard.json
+
 popd > /dev/null
