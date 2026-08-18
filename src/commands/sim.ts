@@ -84,25 +84,26 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
                 data.time = Math.ceil(100 / part[0]);
                 part = part.slice(2);
             } else {
-                let step = 1;
-                let remove = 1;
-                if (typeof part[1] === 'number') {
-                    step = part[1];
-                    remove = 2;
-                }
-                if (data.partCount === 1) {
-                    part[0] = part[0] - 1;
-                    if (part[0] === 0) {
-                        continue;
-                    }
-                }
-                for (let i = 0; i < Math.ceil(part[0] / step); i++) {
-                    for (let j = 0; j < step; j++) {
-                        runGeneration(p);
-                    }
-                    frames.push(getFrame(p, data));
-                }
-                part = part.slice(remove);
+                throw new Error('hi');
+                // let step = 1;
+                // let remove = 1;
+                // if (typeof part[1] === 'number') {
+                //     step = part[1];
+                //     remove = 2;
+                // }
+                // if (data.partCount === 1) {
+                //     part[0] = part[0] - 1;
+                //     if (part[0] === 0) {
+                //         continue;
+                //     }
+                // }
+                // for (let i = 0; i < Math.ceil(part[0] / step); i++) {
+                //     for (let j = 0; j < step; j++) {
+                //         runGeneration(p);
+                //     }
+                //     frames.push(getFrame(p, data));
+                // }
+                // part = part.slice(remove);
             }
         } else if (part[0] === 'size') {
             if (typeof part[1] !== 'number') {
@@ -419,9 +420,6 @@ function parseSim(pattern: string, argv: string[]): SimData {
 const SIM_BASE_PATH = resolvePath('sim_base.gif');
 
 async function runSim(input: {pattern: string, argv: string[], outFilePath: string}): Promise<{parseTime: number, text?: string}> {
-    if (eval('true')) {
-        throw new Error('in worker: ' + JSON.stringify(input.argv));
-    }
     let startTime = performance.now();
     let {frames, gifSize, minX, minY, width, height, useAdvancedColors, customColors, text} = parseSim(input.pattern, input.argv);
     let parseTime = performance.now() - startTime;
