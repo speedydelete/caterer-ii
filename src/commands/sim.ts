@@ -343,7 +343,7 @@ function parseSim(pattern: string, argv: string[]): SimData {
     let p = deserialize(pattern).shrinkToFit();
     let parts: (string | number)[][] = [];
     let currentPart: (string | number)[] = [];
-    for (let arg of argv.slice(1)) {
+    for (let arg of argv) {
         arg = arg.replaceAll('`', '');
         if (arg === '>' || arg === '\n') {
             parts.push(currentPart);
@@ -375,7 +375,6 @@ function parseSim(pattern: string, argv: string[]): SimData {
     if (parts[0] && parts[0][1] === 'fps' && typeof parts[0][0] === 'number') {
         time = Math.ceil(100 / parts[0][0]);
     }
-    throw new Error('test 4: ' + JSON.stringify(parts) + '\n' + JSON.stringify(argv));
     let frames: Frame[] = [{p: p.copy(), time}];
     let gifSize = 200;
     let data: PartRunnerData = {
