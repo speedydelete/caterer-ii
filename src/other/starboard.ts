@@ -96,8 +96,8 @@ async function deleteStarboardEntry(msg: _Message | PartialMessage, entry: [stri
         try {
             await starboardChannels[msg.guildId].messages.delete(id);
         } catch (error) {
-            if (error instanceof DiscordAPIError) {
-                console.error(error);
+            if (error instanceof DiscordAPIError && error.message === 'Unknown Message') {
+                continue;
             } else {
                 throw error;
             }
