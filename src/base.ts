@@ -865,7 +865,7 @@ async function runPipe(msg: Message, rawArgs: string, argv: Argv): Promise<Respo
 
 export async function internalRunTextCommand(msg: Message, rawArgs: string): Promise<Response> {
     let argv = parseArgv(rawArgs);
-    throw new Error(argv.join(''));
+    throw new Error(argv.join('\n'));
     // pipes!
     if (argv.some(x => x[0] === '|')) {
         return await runPipe(msg, rawArgs, argv);
