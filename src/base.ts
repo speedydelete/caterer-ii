@@ -512,7 +512,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
     } else if (type === 'number') {
         let out = Number(value);
         if (Number.isNaN(out) && value !== 'NaN') {
-            throw new ArgumentError(`Invalid value '${value}' for argument ${arg.name} (expected number)`);
+            throw new ArgumentError(`Invalid value '${value}' for argument '${arg.name}' (expected number)`);
         }
         return out;
     } else if (type === 'boolean') {
@@ -521,7 +521,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
         } else if (value === 'false') {
             return false;
         } else {
-            throw new ArgumentError(`Invalid value '${value}' for argument ${arg.name} (expected boolean)`);
+            throw new ArgumentError(`Invalid value '${value}' for argument '${arg.name}' (expected boolean)`);
         }
     } else if (typeof type === 'function') {
         let result = type(value);
@@ -563,7 +563,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
                 return value;
             }
         }
-        throw new ArgumentError(`Invalid value for ${arg.name} argument: '${value}' (expected ${type.name})`);
+        throw new ArgumentError(`Invalid value for argument '${arg.name}': '${value}' (expected ${type.name})`);
     }
 }
 
@@ -587,7 +587,7 @@ function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: numbe
             }
             // enforce that they have to have something
             if ((arg.kind === 'required-variadic' || arg.kind === 'required-rest') && found.length === 0) {
-                throw new ArgumentError(`Empty value provided for required argument ${arg.name}`);
+                throw new ArgumentError(`Empty value provided for required argument '${arg.name}'`);
             }
             if (arg.kind === 'required-variadic' || arg.kind === 'optional-variadic') {
                 out[kebabToCamel(arg.name)] = found.map(value => validate(value, arg, arg.type));
@@ -634,7 +634,7 @@ function afterPosArgsParsed(out: ParsedArgs, posArgs: PosArg[]): void {
         let name = kebabToCamel(arg.name);
         if (!(name in out)) {
             if (arg.kind === 'required' || arg.kind === 'required-variadic' || arg.kind === 'required-rest') {
-                throw new ArgumentError(`No value provided for required argument ${arg.name}`);
+                throw new ArgumentError(`No value provided for required argument '${arg.name}'`);
             } else if ('default' in arg) {
                 out[name] = arg.default;
             }
@@ -683,7 +683,7 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
     if (arg.kind === 'flag') {
         out[kebabToCamel(arg.name)] = flagValue;
     } else if (mustBeFlag) {
-        throw new ArgumentError(`Option ${option} is not a flag but was provided as '${rawOption}'`);
+        throw new ArgumentError(`Option '${option}' is not a flag but was provided as '${rawOption}'`);
     } else {
         pos++;
         let result: ParsedArgs<PosArg[]> = {};
@@ -782,7 +782,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
     }
     if (cmd.type === 'super') {
         if (argv[nestLevel + 1] === undefined) {
-            throw new ArgumentError(`No subcommand provided for supercommand ${cmd.name}`);
+            throw new ArgumentError(`No subcommand provided for supercommand '${cmd.name}'`);
         }
         let rawSubCmd = cmd.name + ' ' + argv[nestLevel + 1][0];
         let subCmd = rawSubCmd.toLowerCase().replaceAll('_', '');
