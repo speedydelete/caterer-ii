@@ -329,7 +329,7 @@ addCommand(
     ],
     async args => {
         let parsed = await parseACL(args.value, args.msg.guild as Guild);
-        aclData.acls[args.command] = parsed;
+        aclData.commands[args.command] = parsed;
         await saveACLs();
         return {type: 'string', value: 'Command ACL set!'};
     },
