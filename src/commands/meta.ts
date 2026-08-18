@@ -351,20 +351,3 @@ addCommand(
         return {type: 'string', value: 'Command ACL deleted!'};
     },
 );
-
-addCommand(
-    'acl imnotgonnaexplainwhatthisdoes', 'sub', [],
-    '',
-    [],
-    async () => {
-        let out: string[] = [];
-        for (let cmd of Object.keys(aclData.commands)) {
-            if (!(cmd in COMMANDS)) {
-                out.push(cmd);
-                delete aclData.commands[cmd];
-            }
-        }
-        await saveACLs();
-        return {type: 'string', value: `Complete:\n${out.join(', ')}`};
-    },
-)
