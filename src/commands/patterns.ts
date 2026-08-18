@@ -1,8 +1,7 @@
 
 import {getHashsoup, createPattern} from '../../lifeweb/lib/index.js';
 
-import {requiredArg, optionalArg, optionalRestArg, patternArg, optionArg, addCommand} from '../base.js';
-import {aliases} from './aliases.js';
+import {aliases, requiredArg, optionalArg, optionalRestArg, patternArg, optionArg, addCommand} from '../base.js';
 
 
 addCommand(

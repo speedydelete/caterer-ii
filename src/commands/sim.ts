@@ -4,10 +4,9 @@ import {execSync} from 'node:child_process';
 
 import {Pattern, TreePattern, HistoryPattern, SuperPattern, InvestigatorPattern, TorusPattern, identifyPeriodic, getDescription, INTSeparator, Separator, createPattern} from '../../lifeweb/lib/index.js';
 
-import {BotError, resolvePath, readFile, writeFile, requiredArg, optionalArg, optionalVariadicArg, flagArg, patternArg, addCommand, createEmbed} from '../base.js';
+import {BotError, resolvePath, readFile, writeFile, aliases, requiredArg, optionalArg, optionalVariadicArg, flagArg, patternArg, addCommand, createEmbed} from '../base.js';
 import {deserialize, registerWorkerTask} from '../worker.js';
 import {serialize, runWorkerTask} from '../worker_manager.js';
-import {aliases} from './aliases.js';
 
 
 const HISTORY_COLORS: [number, number, number][] = [[0, 255, 0], [0, 0, 128], [216, 255, 216], [255, 0, 0], [255, 255, 0], [96, 96, 96]];

@@ -5,8 +5,7 @@ import {Worker} from 'node:worker_threads';
 import {LifewebError, Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
 import {RPFParser, RPFPattern} from '../lifeweb/lib/editor/rpf.js';
 
-import {BotError} from './base.js';
-import {aliases} from './commands/aliases.js';
+import {BotError, aliases} from './base.js';
 
 
 // this interface is augmented to define new worker tasks!

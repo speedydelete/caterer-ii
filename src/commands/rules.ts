@@ -3,8 +3,7 @@ import {AttachmentBuilder} from 'discord.js';
 import {LifewebError, Pattern, unparseMAP, unparseMAPRuleFull, MAPPattern, MAPB0Pattern, MAPGenPattern, createPattern, toCatagolueRule, getBlackWhiteReversal} from '../../lifeweb/lib/index.js';
 import {basisToString, findBasis, parseSymmetry} from '../../lifeweb/lib/rule_symmetries/index.js';
 
-import {BotError, requiredRestArg, addCommand, createEmbed} from '../base.js';
-import {aliases} from './aliases.js';
+import {BotError, aliases, requiredRestArg, addCommand, createEmbed} from '../base.js';
 
 
 addCommand(
