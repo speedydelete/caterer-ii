@@ -84,17 +84,17 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
 }
 
 async function deleteStarboardEntry(msg: _Message | PartialMessage, entry: [string, string]): Promise<void> {
-    if (!msg.guildId) {
+    if (!msg.inGuild()) {
         return;
     }
-    let data = starboardData[msg.guildId];
+    let data = starboardData[msg.guild.id];
     if (!data) {
         return;
     }
     data.data.delete(msg.id);
     for (let id of entry) {
         try {
-            await starboardChannels[msg.guildId].messages.delete(id);
+            await starboardChannels[msg.guild.id].messages.delete(id);
         } catch (error) {
             if (error instanceof DiscordAPIError && error.message === 'Unknown Message') {
                 continue;
@@ -141,10 +141,10 @@ async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> 
     }
     let msg: Message = _msg;
     // seriously
-    if (msg.channelId === config.sssssChannel && msg.content.includes('<@1253852708826386518>')) {
+    if (msg.channel.id === config.sssssChannel && msg.content.includes('<@1253852708826386518>')) {
         return;
     }
-    let serverID = msg.guildId;
+    let serverID = msg.guild.id;
     let board = config.starboards[serverID];
     if (!board) {
         return;
@@ -156,9 +156,9 @@ async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> 
     if (!boardData || boardData.forbidden.has(msg.id)) {
         return;
     }
-    while (msg.reference && msg.reference.type === 1 && msg.channelId !== board.channel) {
+    while (msg.reference && msg.reference.type === 1 && msg.channel.id !== board.channel) {
         let msg2 = await msg.fetchReference();
-        if (!msg2 || !msg2.inGuild() || msg2.guildId !== serverID) {
+        if (!msg2 || !msg2.inGuild() || msg2.guild.id !== serverID) {
             break;
         }
         msg = msg2;
@@ -176,9 +176,9 @@ async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> 
         msg = msg2;
     }
     await getReactions(msg, board.emojis, reacts);
-    let senderId: string;
+    let senderID: string;
     if (msg.author) {
-        senderId = msg.author.id;
+        senderID = msg.author.id;
     } else {
         return;
     }
@@ -198,12 +198,12 @@ async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> 
     }
     if (msg.author?.id === client.user.id && msg.attachments.size === 1) {
         let msg2 = await msg.fetchReference();
-        senderId = msg2.author.id;
+        senderID = msg2.author.id;
     }
     let userReacts: {[key: string]: string} = {};
     for (let emoji in reacts) {
         for (let user of Array.from(reacts[emoji])) {
-            if (!board.allowSelf && user === senderId) {
+            if (!board.allowSelf && user === senderID) {
                 continue;
             } else if (user === '237844886030778368') {
                 continue;
@@ -267,7 +267,7 @@ async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> 
         } else {
             text += `<@${msg.author?.id}>`;
         }
-        text += ` (https://discord.com/channels/${msg.guildId}/${msg.channelId}/${msg.id})`;
+        text += ` (https://discord.com/channels/${msg.guild.id}/${msg.channel.id}/${msg.id})`;
         if (entry) {
             try {
                 (await channel.messages.fetch(entry[0])).edit({content: text, allowedMentions: {parse: []}});
@@ -301,10 +301,10 @@ async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise
         return;
     }
     let msg: Message = _msg;
-    let serverID = msg.guildId;
+    let serverID = msg.guild.id;
     let board = config.starboards[serverID];
-    if (!board || msg.channelId !== board.channel) {
-        console.log(msg.channelId, board?.channel);
+    if (!board || msg.channel.id !== board.channel) {
+        console.log(msg.channel.id, board?.channel);
         return;
     }
     let msg2 = await resolveMessageFromStarboard(msg);
@@ -369,7 +369,7 @@ let interval = setInterval(async () => {
         client.on('messageReactionRemove', updateStarboard);
         client.on('messageReactionRemoveAll', async msg => {
             if (msg.inGuild()) {
-                let boardData = starboardData[msg.guildId];
+                let boardData = starboardData[msg.guild.id];
                 if (!boardData) {
                     return;
                 }
@@ -382,7 +382,7 @@ let interval = setInterval(async () => {
         });
         client.on('messageDelete', async msg => {
             if (msg.inGuild()) {
-                let boardData = starboardData[msg.guildId];
+                let boardData = starboardData[msg.guild.id];
                 if (!boardData) {
                     return;
                 }

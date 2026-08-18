@@ -191,7 +191,7 @@ if (ME === 'bot') {
         if (msg.partial) {
             msg = await msg.fetch();
         }
-        if (!msg.author || (msg.author.id !== client.user?.id) || !msg.deletable) {
+        if (!msg.author || (msg.author.id !== client.user?.id) || !msg.deletable || msg.channel.id in starboardChannels) {
             return;
         }
         for (let admin of config.admins) {
@@ -200,9 +200,6 @@ if (ME === 'bot') {
                 return;
             }
         }
-        if (msg.channel.id in starboardChannels) {
-            return;
-        }
         if (msg.author?.id === client.user?.id && msg.reference) {
             let id = (await data.message.fetchReference()).author.id;
             let users = await data.users.fetch();
@@ -210,8 +207,8 @@ if (ME === 'bot') {
                 msg.delete();
                 return;
             }
-            for (let [userId, msgId] of deleters) {
-                if (msgId === msg.id && users.find(x => x.id === userId)) {
+            for (let [userID, msgID] of deleters) {
+                if (msgID === msg.id && users.find(x => x.id === userID)) {
                     msg.delete();
                     return;
                 }
