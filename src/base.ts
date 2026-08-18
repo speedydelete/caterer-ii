@@ -706,6 +706,9 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
 }
 
 async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv: Argv, nestLevel: number, useThisPattern?: Pattern): Promise<void> {
+    if (cmd.name === 'ruleinfo') {
+        throw new Error(JSON.stringify(argv));
+    }
     if (!cmd.patternArg) {
         if (useThisPattern) {
             for (let arg of parseArgv(useThisPattern.toRLE(), cmd.noArgvParse)) {
