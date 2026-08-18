@@ -807,7 +807,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
             if (value === '') {
                 rawArgs = before + extraArgs + after;
             } else {
-                rawArgs = before + parsedExtra[Number(value)] + after;
+                rawArgs = before + parsedExtra[Number(value)][0] + after;
             }
         }
         if (!found) {
