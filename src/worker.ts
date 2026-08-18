@@ -17,10 +17,10 @@ export function registerWorkerTask<T extends WorkerTaskType>(type: T, func: (dat
     }
 }
 
-console.log(ME);
-
-// register everything
-await import('./index.js');
+if (ME === 'worker') {
+    // register everything
+    await import('./index.js');
+}
 
 
 function sendMessage(msg: WorkerToBotMessage): void {
