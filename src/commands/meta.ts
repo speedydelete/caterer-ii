@@ -135,7 +135,7 @@ addCommand(
     'eval', 'meta', [],
     `Evaluates code (admin only).`,
     [
-        requiredArg('code', 'string', 'The code to run.'),
+        requiredRestArg('code', 'string', 'The code to run.'),
     ],
     async args => {
         if (args.msg.author.id !== '1253852708826386518') {
