@@ -112,6 +112,9 @@ addCommand(
             await msg.delete();
         }
     },
+    {
+        noArgParse: true,
+    },
 );
 
 addCommand(
@@ -162,6 +165,9 @@ addCommand(
         if (deleteAfter && msg.deletable) {
            await msg.delete();
         }
+    },
+    {
+        noArgParse: true,
     },
 );
 
