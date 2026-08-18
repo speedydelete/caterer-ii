@@ -677,6 +677,7 @@ addCommand(
     async args => {
         try {
             let argv = args.parts ?? [];
+            throw new Error(argv.join(' '));
             if (argv[0] === 'rand') {
                 throw new BotError(`Use !simrand, not !sim rand`);
             }
