@@ -778,9 +778,10 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         return {type: 'string', value: 'Error: You do not have permission to run this command'};
     }
     if (cmd.type === 'super') {
-        let subCmd = cmd.name + ' ' + argv[nestLevel][0].toLowerCase().replaceAll('_', '');
+        let rawSubCmd = cmd.name + ' ' + argv[nestLevel - 1][0];
+        let subCmd = rawSubCmd.toLowerCase().replaceAll('_', '');
         if (!(subCmd in COMMANDS)) {
-            throw new ArgumentError(`Nonexistent subcommand: '${cmd.name} ${argv[nestLevel]}'`);
+            throw new ArgumentError(`Nonexistent subcommand: '${rawSubCmd}'`);
         }
         return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, isPipe, useThisPattern);
     }
@@ -843,7 +844,7 @@ async function runPipe(msg: Message, rawArgs: string, argv: Argv): Promise<Respo
             for (let arg of extraArgv) {
                 argv.push(arg);
             }
-            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 1, true, pattern);
+            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, true, pattern);
         }
         pattern = undefined;
         if (value && value.deleters) {
@@ -888,7 +889,7 @@ export async function internalRunTextCommand(msg: Message, rawArgs: string): Pro
     if (!(cmd in COMMANDS)) {
         return tryStupidCommand(cmd);
     }
-    return await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 1, false);
+    return await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, false);
 }
 
 
