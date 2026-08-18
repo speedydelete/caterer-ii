@@ -707,13 +707,6 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
 }
 
 async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv: Argv, nestLevel: number, useThisPattern?: Pattern): Promise<void> {
-    if (!cmd.patternArg) {
-        if (useThisPattern) {
-            for (let arg of parseArgv(useThisPattern.toRLE(), cmd.noArgvParse)) {
-                argv.push(arg);
-            }
-        }
-    }
     let posArgsPos = 0;
     for (let pos = nestLevel + 1; pos < argv.length; pos++) {
         let [value, isFlag] = argv[pos];
@@ -762,7 +755,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
         }
     }
     // add the pattern arg
-    if (cmd.patternArg) {
+    if (cmd.patternArg && !out[cmd.patternArg.name]) {
         if (useThisPattern) {
             out[cmd.patternArg.name] = {p: useThisPattern, msg, msgInChannel: msg};
         } else {
@@ -775,7 +768,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
     }
 }
 
-async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, isInsidePipe: boolean, useThisPattern?: Pattern): Promise<Response> {
+async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, isInsidePipe: boolean, useThisPattern?: Pattern, extraArgs?: string): Promise<Response> {
     if (!matchesACL(msg, aclData.commands[cmd.name])) {
         return {type: 'string', value: 'Error: You do not have permission to run this command'};
     }
@@ -792,6 +785,35 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
     }
     if (cmd.noArgvParse) {
         argv = parseArgv(rawArgs, true);
+    }
+    if (!cmd.patternArg && useThisPattern) {
+        if (extraArgs === undefined) {
+            extraArgs = '';
+        } 
+        extraArgs += useThisPattern.toRLE();
+    }
+    if (extraArgs !== undefined) {
+        let parsedExtra = parseArgv(extraArgs);
+        let found = false;
+        let match: RegExpMatchArray | null;
+        while (match = rawArgs.match(/\{(\d*)\}/)) {
+            if (match.index === undefined) {
+                break;
+            }
+            found = true;
+            let value = match[1];
+            let before = rawArgs.slice(0, match.index);
+            let after = rawArgs.slice(match.index + match[0].length);
+            if (value === '') {
+                rawArgs = before + extraArgs + after;
+            } else {
+                rawArgs = before + parsedExtra[Number(value)] + after;
+            }
+        }
+        if (!found) {
+            rawArgs += ' ' + extraArgs;
+        }
+        argv = parseArgv(rawArgs, cmd.noArgvParse);
     }
     let args: ParsedArgs = {};
     if (!cmd.noArgParse) {
@@ -845,30 +867,7 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
                 value = stupid;
             }
         } else {
-            if (extraArgs !== undefined) {
-                let parsedExtra = parseArgv(extraArgs);
-                let found = false;
-                let match: RegExpMatchArray | null;
-                while (match = rawArgs.match(/\{(\d*)\}/)) {
-                    if (match.index === undefined) {
-                        break;
-                    }
-                    found = true;
-                    let value = match[1];
-                    let before = rawArgs.slice(0, match.index);
-                    let after = rawArgs.slice(match.index + match[0].length);
-                    if (value === '') {
-                        rawArgs = before + extraArgs + after;
-                    } else {
-                        rawArgs = before + parsedExtra[Number(value)] + after;
-                    }
-                }
-                if (!found) {
-                    rawArgs += ' ' + extraArgs;
-                }
-                argv = parseArgv(rawArgs);
-            }
-            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, i !== parsedPipe.length - 1, pattern);
+            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, i !== parsedPipe.length - 1, pattern, extraArgs);
         }
         pattern = undefined;
         if (value && value.deleters) {
