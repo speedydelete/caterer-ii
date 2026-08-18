@@ -43,6 +43,7 @@ async function onMessage(data: BotToWorkerMessage): Promise<void> {
 }
 
 if (ME === 'worker') {
+    console.log('REGISTERING HANDLER');
     if (!parentPort) {
         throw new Error('Worker is not being run as worker');
     }
