@@ -3,7 +3,7 @@ import {MessagePort, parentPort} from 'node:worker_threads';
 
 import {LifewebError} from '../lifeweb/lib/index.js';
 
-import {BotError} from './base.js';
+import {ME, BotError} from './base.js';
 import {WorkerTaskTypes, WorkerTaskType, BotToWorkerMessage, WorkerToBotMessage} from './worker_manager.js';
 
 export {deserialize} from './worker_manager.js';
@@ -16,6 +16,8 @@ export function registerWorkerTask<T extends WorkerTaskType>(type: T, func: (dat
         workerTaskFunctions[type] = Object.create(null);
     }
 }
+
+console.log(ME);
 
 // register everything
 await import('./index.js');
