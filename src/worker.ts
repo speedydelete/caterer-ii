@@ -23,6 +23,9 @@ if (ME === 'worker') {
 }
 
 
+console.log('i am', ME);
+
+
 function sendMessage(msg: WorkerToBotMessage): void {
     (parentPort as MessagePort).postMessage(msg);
 }
