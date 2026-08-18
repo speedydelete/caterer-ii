@@ -120,13 +120,11 @@ async function resolveMessageFromStarboard(msg: Message): Promise<Message | unde
         if (!match) {
             return;
         }
-        console.log('fetching channel');
-        let msg2Channel = await msg.guild.channels.fetch(match[0]);
+        let msg2Channel = await msg.guild.channels.fetch(match[1]);
         if (!msg2Channel || !msg2Channel.isTextBased()) {
             return;
         }
-        console.log('fetching message');
-        let msg2 = await msg2Channel.messages.fetch(match[1]);
+        let msg2 = await msg2Channel.messages.fetch(match[2]);
         if (!msg2) {
             return;
         }
@@ -298,7 +296,6 @@ async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise
         _msg = await _msg.fetch();
     }
     if (!_msg.inGuild()) {
-        console.log('not in guild');
         return;
     }
     let msg: Message = _msg;
@@ -310,7 +307,6 @@ async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise
     }
     let msg2 = await resolveMessageFromStarboard(msg);
     if (!msg2) {
-        console.log('NO MESSAGE FOUND');
         return;
     }
     let boardData = starboardData[serverID];
