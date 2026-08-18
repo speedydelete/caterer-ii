@@ -116,7 +116,7 @@ async function runCommand(msg: Message): Promise<void> {
 }
 
 
-export let client: Client;
+export let client: Client<true>;
 
 if (!IS_WORKER) {
 
@@ -241,4 +241,3 @@ if (!IS_WORKER) {
     client.login(config.token);
 
 }
-
