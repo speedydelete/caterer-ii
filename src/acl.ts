@@ -28,7 +28,7 @@ export interface ACLData {
 export let aclData: ACLData = Object.assign(Object.create(null), JSON.parse(await readFile('data/acls.json')));
 
 
-export const ACL_NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]$/;
+export const ACL_NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 export const INVALID_ACL_NAMES = ['everyone', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'new', 'null', 'return', 'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with', 'undefined', 'Infinity', 'NaN', '__proto__', 'constructor'];
 
 export function aclValidator(arg: string): ReturnType<Validator<string>> {
