@@ -809,7 +809,10 @@ addCommand(
             }
             p.setData(height, width, data);
             let content = await runSimCommand(args.pattern.p, argv, args.time);
-            return {type: 'message-spec', value: {content, files: ['sim.gif']}};
+            return {
+                type: 'message-spec',
+                value: {content, files: ['sim.gif']},
+            };
         } finally {
             try {
                 await fs.rm('sim_base.gif');
