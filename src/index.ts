@@ -2,7 +2,7 @@
 import {DiscordAPIError, GatewayIntentBits, MessageReplyOptions, Message as _Message, TextChannel, Partials, Client} from 'discord.js';
 import {LifewebError} from '../lifeweb/lib/index.js';
 
-import {BotError, Message, readFile, internalRunTextCommand, config} from './base.js';
+import {IS_TESTING, BotError, Message, readFile, internalRunTextCommand, config} from './base.js';
 
 import './commands/meta.js';
 import './commands/sim.js';
@@ -31,12 +31,20 @@ async function runCommand(msg: Message): Promise<void> {
         return;
     }
     let data = msg.content;
-    if (data.startsWith('!')) {
-        data = data.slice(1);
-    } else if (data.startsWith('ca.')) {
-        data = data.slice(3);
+    if (IS_TESTING) {
+        if (data.startsWith('$')) {
+            data = data.slice(1);
+        } else {
+            return;
+        }
     } else {
-        return;
+        if (data.startsWith('!')) {
+            data = data.slice(1);
+        } else if (data.startsWith('ca.')) {
+            data = data.slice(3);
+        } else {
+            return;
+        }
     }
     let cmd: string;
     let index = data.indexOf(' ');
@@ -146,7 +154,6 @@ let sssssChannel: TextChannel;
 
 client.once('clientReady', async () => {
     console.log('Logged in');
-    sssssChannel = await client.channels.fetch(config.sssssChannel) as TextChannel;
 });
 
 client.on('messageCreate', runCommand);
@@ -225,22 +232,27 @@ client.on('messageReactionAdd', async data => {
 });
 
 
-setInterval(async () => {
-    try {
-        await check5S(sssssChannel);
-    } catch (error) {
-        let str: string;
-        if (error && typeof error === 'object' && 'stack' in error) {
-            str = String(error.stack);
-            if (str.length > 1900) {
-                str = str.slice(0, 1900) + '... (truncated)';
+if (config.sssssChannel !== undefined) {
+    client.once('ready', async () => {
+        let sssssChannel = await client.channels.fetch(config.sssssChannel) as TextChannel;
+        setInterval(async () => {
+            try {
+                await check5S(sssssChannel);
+            } catch (error) {
+                let str: string;
+                if (error && typeof error === 'object' && 'stack' in error) {
+                    str = String(error.stack);
+                    if (str.length > 1900) {
+                        str = str.slice(0, 1900) + '... (truncated)';
+                    }
+                } else {
+                    str = String(error);
+                }
+                await sssssChannel.send('<@1253852708826386518>\n```' + str + '```');
             }
-        } else {
-            str = String(error);
-        }
-        await sssssChannel.send('<@1253852708826386518>\n```' + str + '```');
-    }
-}, 300000);
+        }, 300000);
+    });
+}
 
 
 client.login(config.token);

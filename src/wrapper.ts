@@ -2,8 +2,8 @@
 import {ChildProcess, spawn, execSync} from 'node:child_process';
 import {Client, GatewayIntentBits, TextChannel} from 'discord.js';
 
-import {CatererIPCMessage} from './ipc_and_error_setup.js';
-import {BotError, Message, config, sentByAdmin, lookupSignal} from './base.js';
+import {BotToWrapperMessage} from './ipc_and_error_setup.js';
+import {IS_TESTING, BotError, Message, config, sentByAdmin, lookupSignal} from './real_base.js';
 
 
 let client = new Client({intents: [
@@ -48,7 +48,7 @@ function clearAntiFreeze() {
     }
 }
 
-function onMessage(msg: CatererIPCMessage): void {
+function onMessage(msg: BotToWrapperMessage): void {
     if (msg.type === 'heartbeat') {
         lastHeartbeat = getNow();
     } else if (msg.type === 'js-error' || msg.type === 'system-error') {
@@ -194,7 +194,7 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
 
 
 client.on('messageCreate', async msg => {
-    if (msg.author.bot || !sentByAdmin(msg) || !msg.content.startsWith('!!')) {
+    if (msg.author.bot || !sentByAdmin(msg) || !msg.content.startsWith(IS_TESTING ? '$$' : '!!')) {
         return;
     }
     try {
