@@ -85,6 +85,9 @@ addCommand(
             await msg.delete();
         }
     },
+    {
+        noArgParse: true,
+    },
 );
 
 addCommand(

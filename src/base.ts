@@ -284,6 +284,7 @@ export interface BasicCommand<T extends Arg[] = Arg[]> {
     sendTyping?: boolean;
     extraHelp?: string;
     noArgvParse?: boolean;
+    noArgParse?: boolean;
 }
 
 export interface SuperCommand {
@@ -301,7 +302,7 @@ export type Command = BasicCommand | SuperCommand;
 export const COMMANDS: {[key: string]: Command} = Object.create(null);
 export const COMMANDS_BY_CATEGORY: {[key: string]: Command[]} = Object.create(null);
 
-export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, otherOptions: Partial<Pick<BasicCommand, 'sendTyping' | 'extraHelp' | 'noArgvParse'>> = {}): void {
+export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, otherOptions: Partial<Pick<BasicCommand, 'sendTyping' | 'extraHelp' | 'noArgvParse' | 'noArgParse'>> = {}): void {
     if (ME !== 'bot') {
         return;
     }
@@ -793,7 +794,9 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         argv = parseArgv(rawArgs, true);
     }
     let args: ParsedArgs = {};
-    await parseArgs(args, cmd, msg, argv, nestLevel, useThisPattern);
+    if (!cmd.noArgParse) {
+        await parseArgs(args, cmd, msg, argv, nestLevel, useThisPattern);
+    }
     if (cmd.sendTyping) {
         try {
             await msg.channel.sendTyping();
