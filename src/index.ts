@@ -191,8 +191,13 @@ if (ME === 'bot') {
         if (msg.partial) {
             msg = await msg.fetch();
         }
-        if (!msg.author || (msg.author.id !== client.user?.id) || !msg.deletable || msg.channel.id in starboardChannels) {
+        if (!msg.author || (msg.author.id !== client.user?.id) || !msg.deletable) {
             return;
+        }
+        for (let channel of Object.values(starboardChannels)) {
+            if (msg.channel.id === channel.id) {
+                return;
+            }
         }
         for (let admin of config.admins) {
             if (data.users.cache.has(admin)) {
