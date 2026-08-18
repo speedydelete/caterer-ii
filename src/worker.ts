@@ -13,22 +13,9 @@ export let workerTaskFunctions: {[key: string]: (data: any) => WorkerTaskTypes[s
 
 export function registerWorkerTask<T extends WorkerTaskType>(type: T, func: (data: WorkerTaskTypes[T][0]) => (WorkerTaskTypes[T][1] | Promise<WorkerTaskTypes[T][1]>)): void {
     if (ME === 'worker') {
-        workerTaskFunctions[type] = Object.create(null);
+        workerTaskFunctions[type] = func;
     }
 }
-
-
-
-// register everything
-if (ME === 'worker') {
-    setTimeout(async () => {
-        await import('./commands/sim.js');
-        await import('./commands/identify.js');
-    }, 10);
-}
-
-
-console.log('worker 2: i am', ME);
 
 
 function sendMessage(msg: WorkerToBotMessage): void {
@@ -51,9 +38,12 @@ async function onMessage(data: BotToWorkerMessage): Promise<void> {
 }
 
 if (ME === 'worker') {
-    console.log('REGISTERING HANDLER');
     if (!parentPort) {
         throw new Error('Worker is not being run as worker');
     }
+    // register everything
+    setTimeout(async () => {
+        await import('./index.js');
+    }, 10);
     parentPort.on('message', onMessage);
 }
