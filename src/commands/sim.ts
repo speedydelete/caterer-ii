@@ -807,7 +807,7 @@ addCommand(
                 }
             }
             p.setData(height, width, data);
-            let content = await runSimCommand(args.pattern.p, argv, args.time);
+            let content = await runSimCommand(p, argv, args.time);
             return {
                 type: 'message-spec',
                 value: {content, files: ['sim.gif']},
