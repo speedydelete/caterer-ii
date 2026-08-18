@@ -106,6 +106,10 @@ async function deleteStarboardEntry(msg: _Message | PartialMessage, entry: [stri
     await saveStarboard();
 }
 
+async function resolveMessageFromStarboard(msg: Message): Promise<void> {
+    
+}
+
 async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> {
     if (_msg.partial) {
         _msg = await _msg.fetch();

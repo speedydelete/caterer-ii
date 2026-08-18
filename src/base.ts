@@ -847,6 +847,9 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
             for (let arg of extraArgv) {
                 argv.push(arg);
             }
+            if (i === 2) {
+                throw new Error(JSON.stringify(argv));
+            }
             value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, i !== parsedPipe.length - 1, pattern);
         }
         pattern = undefined;
