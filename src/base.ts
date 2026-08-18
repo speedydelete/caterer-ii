@@ -784,7 +784,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, useThisPattern);
     }
     let args: ParsedArgs = {};
-    parseArgs(args, cmd, msg, argv, useThisPattern);
+    await parseArgs(args, cmd, msg, argv, useThisPattern);
     return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs}));
 }
 
