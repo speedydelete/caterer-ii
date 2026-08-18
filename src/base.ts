@@ -705,7 +705,7 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
     return pos;
 }
 
-async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv: Argv, useThisPattern?: Pattern): Promise<void> {
+async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv: Argv, nestLevel: number, useThisPattern?: Pattern): Promise<void> {
     if (!cmd.patternArg) {
         if (useThisPattern) {
             for (let arg of parseArgv(useThisPattern.toRLE(), cmd.noArgvParse)) {
@@ -714,7 +714,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
         }
     }
     let posArgsPos = 0;
-    for (let pos = 1; pos < argv.length; pos++) {
+    for (let pos = nestLevel + 1; pos < argv.length; pos++) {
         let [value, isFlag] = argv[pos];
         if (!isFlag) {
             let data = parsePosArgs(out, cmd.posArgs, argv, pos, posArgsPos);
@@ -795,7 +795,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         argv = parseArgv(rawArgs, true);
     }
     let args: ParsedArgs = {};
-    await parseArgs(args, cmd, msg, argv, useThisPattern);
+    await parseArgs(args, cmd, msg, argv, nestLevel, useThisPattern);
     if (cmd.sendTyping) {
         try {
             await msg.channel.sendTyping();
