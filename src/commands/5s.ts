@@ -47,10 +47,11 @@ addCommand(
         if (!resp.ok) {
             throw new BotError(`Server returned ${resp.status} ${resp.statusText}`);
         }
-        // the second one allows for more generality with pipes
-        // but loses the #C at the start that the server returns
-        // return {type: 'string', value: await resp.text()};
-        return {type: 'pattern', value: parse(await resp.text())};
+        if (args.isInsidePipe) {
+            return {type: 'pattern', value: parse(await resp.text())};
+        } else {
+            return {type: 'string', value: await resp.text()};
+        }
     },
     {
         sendTyping: true,

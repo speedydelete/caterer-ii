@@ -268,7 +268,7 @@ export type Response = undefined | void | ((
 ) & {deleters?: string[]});
 
 
-export type CommandFunc<T extends Arg[] = Arg[]> = (args: ParsedArgs<T> & {msg: Message, argv: string[], rawArgs: string, isPipe: boolean}) => Promise<Response>;
+export type CommandFunc<T extends Arg[] = Arg[]> = (args: ParsedArgs<T> & {msg: Message, argv: string[], rawArgs: string, isInsidePipe: boolean}) => Promise<Response>;
 
 export interface BasicCommand<T extends Arg[] = Arg[]> {
     type: 'basic';
@@ -770,7 +770,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
     }
 }
 
-async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, isPipe: boolean, useThisPattern?: Pattern): Promise<Response> {
+async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, isInsidePipe: boolean, useThisPattern?: Pattern): Promise<Response> {
     if (argv[0][0] === 'printargv') {
         return {type: 'string', value: argv.map(x => `\`${x[0]}\` (${x[1] ? 'flag' : 'not flag'})`).join('\n')};
     }
@@ -783,7 +783,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         if (!(subCmd in COMMANDS)) {
             throw new ArgumentError(`Nonexistent subcommand: '${rawSubCmd}'`);
         }
-        return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, isPipe, useThisPattern);
+        return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, isInsidePipe, useThisPattern);
     }
     let args: ParsedArgs = {};
     await parseArgs(args, cmd, msg, argv, useThisPattern);
@@ -792,7 +792,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
             await msg.channel.sendTyping();
         } catch {}
     }
-    return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs, isPipe}));
+    return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs, isInsidePipe}));
 }
 
 const STUPID_COMMAND_TEMPLATES: {[key: string]: string} = {
@@ -830,7 +830,8 @@ async function runPipe(msg: Message, rawArgs: string, argv: Argv): Promise<Respo
     let extraArgv: Argv = [];
     let pattern: Pattern | undefined = undefined;
     let deleters: string[] = [];
-    for (let argv of argvs) {
+    for (let i = 0; i < argv.length; i++) {
+        let argv = argvs[i];
         let value: Response;
         let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
         if (!(cmd in COMMANDS)) {
@@ -844,7 +845,7 @@ async function runPipe(msg: Message, rawArgs: string, argv: Argv): Promise<Respo
             for (let arg of extraArgv) {
                 argv.push(arg);
             }
-            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, true, pattern);
+            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, i !== argvs.length - 1, pattern);
         }
         pattern = undefined;
         if (value && value.deleters) {
