@@ -370,5 +370,7 @@ let interval = setInterval(async () => {
                 }
             }
         });
+    } else if (ME !== 'bot') {
+        clearInterval(interval);
     }
 }, 1000);

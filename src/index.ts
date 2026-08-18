@@ -15,7 +15,7 @@ import './commands/wiki.js';
 import {CalcError} from './commands/calc.js';
 import './commands/secret.js';
 
-import {starboardChannels} from './other/starboard.js';
+// import {starboardChannels} from './other/starboard.js';
 import {check5S} from './other/notifier.js';
 
 
