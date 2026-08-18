@@ -124,7 +124,7 @@ addCommand(
                 desc = `${cmd.desc}\nSubcommands:\n${cmd.subCommands.map(subCmd => `* \`${cmd.name} ${subCmd}\``).join('\n')}`;
             }
             if (cmd.extraHelp) {
-                desc += cmd.extraHelp;
+                desc += `\n${cmd.extraHelp}`;
             }
             return {type: 'message-spec', value: {embeds: [createEmbed(title, desc)]}};
         }
