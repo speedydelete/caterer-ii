@@ -8,7 +8,7 @@ import * as lifewebRPF from '../../lifeweb/lib/editor/rpf.js';
 import * as lifewebRuleSymmetries from '../../lifeweb/lib/rule_symmetries/index.js';
 
 import {BotError, readFile, writeFile, aliases, CommandCategory, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, Command, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, findPatternInChannel, commandValidator, createEmbed} from '../base.js';
-import {aclData, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses} from '../acl.js';
+import {aclData, saveACLs, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses} from '../acl.js';
 import {client} from '../index.js';
 
 
@@ -85,11 +85,11 @@ addCommand(
     async args => {
         if (args.command === undefined) {
             let out: string[] = [];
-            for (let [category, commands] of Object.entries(COMMANDS_BY_CATEGORY) as [CommandCategory, Command[]][]) {
+            for (let [category, name] of Object.entries(CATEGORY_NAMES)) {
                 if (category === 'sub' || category === 'secret') {
                     continue;
                 }
-                out.push(`* ${CATEGORY_NAMES[category as CommandCategory]}: ${commands.map(cmd => `\`${cmd.name}\``).join(', ')}`);
+                out.push(`* ${name}: ${COMMANDS_BY_CATEGORY[category].map(cmd => `\`${cmd.name}\``).join(', ')}`);
             }
             return {type: 'string', value: HELP_TEMPLATE.replace('$$$', out.join('\n'))};
         } else {
@@ -184,10 +184,6 @@ addCommand(
     },
 );
 
-
-async function saveACLs(): Promise<void> {
-    await writeFile('data/acls.json', JSON.stringify(aclData));
-}
 
 addSuperCommand(
     'acl', 'meta', [],

@@ -3,7 +3,7 @@ import {Node, Expression, PrivateName} from '@babel/types';
 import {parseExpression} from '@babel/parser';
 import {CategoryChannel, Guild, Client} from 'discord.js';
 
-import {BotError, Message, readFile, sentByAdmin, Validator} from './base.js';
+import {BotError, Message, readFile, writeFile, sentByAdmin, Validator} from './base.js';
 
 
 export type ACL = 
@@ -26,6 +26,10 @@ export interface ACLData {
 }
 
 export let aclData: ACLData = Object.assign(Object.create(null), JSON.parse(await readFile('data/acls.json')));
+
+export async function saveACLs(): Promise<void> {
+    await writeFile('data/acls.json', JSON.stringify(aclData));
+}
 
 
 export const ACL_NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
