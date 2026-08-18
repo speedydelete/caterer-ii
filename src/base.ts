@@ -792,14 +792,13 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         argv = parseArgv(rawArgs, true);
     }
     let args: ParsedArgs = {};
-    throw new Error(JSON.stringify(argv));
-    // await parseArgs(args, cmd, msg, argv, nestLevel, useThisPattern);
-    // if (cmd.sendTyping) {
-    //     try {
-    //         await msg.channel.sendTyping();
-    //     } catch {}
-    // }
-    // return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs, isInsidePipe}));
+    await parseArgs(args, cmd, msg, argv, nestLevel, useThisPattern);
+    if (cmd.sendTyping) {
+        try {
+            await msg.channel.sendTyping();
+        } catch {}
+    }
+    return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs, isInsidePipe}));
 }
 
 const STUPID_COMMAND_TEMPLATES: {[key: string]: string} = {
