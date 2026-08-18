@@ -805,8 +805,13 @@ addCommand(
             p.setData(height, width, data);
             let content = await runSimCommand(p, argv, args.time);
             return {
-                type: 'message-spec',
-                value: {content, files: ['sim.gif']},
+                type: 'already-sent',
+                value: await args.msg.reply({
+                    content,
+                    files: ['sim.gif'],
+                    allowedMentions: {repliedUser: true, parse: []},
+                }),
+                deleters: [args.msg.author.id],
             };
         } finally {
             try {
