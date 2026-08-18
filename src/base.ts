@@ -268,7 +268,7 @@ export type Response = undefined | void | ((
 ) & {deleters?: string[]});
 
 
-export type CommandFunc<T extends Arg[] = Arg[]> = (args: ParsedArgs<T> & {msg: Message, argv: string[], rawArgs: string}) => Promise<Response>;
+export type CommandFunc<T extends Arg[] = Arg[]> = (args: ParsedArgs<T> & {msg: Message, argv: string[], rawArgs: string, isPipe: boolean}) => Promise<Response>;
 
 export interface BasicCommand<T extends Arg[] = Arg[]> {
     type: 'basic';
@@ -770,7 +770,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
     }
 }
 
-async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, useThisPattern?: Pattern): Promise<Response> {
+async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, isPipe: boolean, useThisPattern?: Pattern): Promise<Response> {
     if (argv[0][0] === 'printargv') {
         return {type: 'string', value: argv.map(x => `\`${x[0]}\` (${x[1] ? 'flag' : 'not flag'})`).join('\n')};
     }
@@ -782,7 +782,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         if (!(subCmd in COMMANDS)) {
             throw new ArgumentError(`Nonexistent subcommand: '${cmd.name} ${argv[nestLevel]}'`);
         }
-        return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, useThisPattern);
+        return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, isPipe, useThisPattern);
     }
     let args: ParsedArgs = {};
     await parseArgs(args, cmd, msg, argv, useThisPattern);
@@ -791,7 +791,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
             await msg.channel.sendTyping();
         } catch {}
     }
-    return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs}));
+    return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs, isPipe}));
 }
 
 const STUPID_COMMAND_TEMPLATES: {[key: string]: string} = {
@@ -843,7 +843,7 @@ async function runPipe(msg: Message, rawArgs: string, argv: Argv): Promise<Respo
             for (let arg of extraArgv) {
                 argv.push(arg);
             }
-            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 1, pattern);
+            value = await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 1, true, pattern);
         }
         pattern = undefined;
         if (value && value.deleters) {
@@ -888,7 +888,7 @@ export async function internalRunTextCommand(msg: Message, rawArgs: string): Pro
     if (!(cmd in COMMANDS)) {
         return tryStupidCommand(cmd);
     }
-    return await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 1);
+    return await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 1, false);
 }
 
 
