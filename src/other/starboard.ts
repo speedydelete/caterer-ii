@@ -296,6 +296,7 @@ async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise
     if (_msg.partial) {
         _msg = await _msg.fetch();
     }
+    console.log('testing 2');
     if (!_msg.inGuild()) {
         console.log('not in guild');
         return;
