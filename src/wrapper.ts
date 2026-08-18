@@ -54,7 +54,7 @@ function onMessage(msg: BotToWrapperMessage): void {
     } else if (msg.type === 'js-error' || msg.type === 'system-error') {
         if (msg.type === 'js-error') {
             let data = msg.data;
-            let out = 'JS error caught, restarting (<@1253852708826386518>)\n```';
+            let out = 'JS error caught (<@1253852708826386518>)\n```';
             if (typeof data === 'string') {
                 out += msg.data;
             } else {
@@ -67,7 +67,7 @@ function onMessage(msg: BotToWrapperMessage): void {
             out += '```';
             log(out);
         } else if (msg.type === 'system-error') {
-            log('System error detected, restarting\n```' + msg.message + '```');
+            log('System error detected (<@1253852708826386518>)\n```' + msg.message + '```');
             if (caterer) {
                 caterer.kill('SIGKILL');
             }
