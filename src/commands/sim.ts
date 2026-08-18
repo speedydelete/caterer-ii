@@ -644,35 +644,26 @@ export let simStats: {[key: string]: number} = JSON.parse(await readFile('data/s
 async function runSimCommand(p: Pattern, argv: string[], showTime?: boolean): Promise<string | undefined> {
     p.shrinkToFit();
     let startTime = performance.now();
-    try {
-        let {parseTime, text} = await runWorkerTask('sim', {pattern: serialize(p), argv, outFilePath: 'sim.gif'});
-        let rule = p.rule.str;
-        if (rule in simStats) {
-            simStats[rule]++;
-        } else {
-            simStats[rule] = 1;
-        }
-        await writeFile('data/sim_stats.json', JSON.stringify(simStats, undefined, 4));
-        let out: string | undefined = undefined;
-        if (showTime) {
-            let total = Math.round(performance.now() - startTime) / 1000;
-            let parse = Math.round(parseTime) / 1000;
-            out = `Took ${total} seconds (${parse} to parse)`;
-            if (text) {
-                out += '\n' + text;
-            }
-        } else if (text) {
-            out = text;
-        }
-        return out;
-    } finally {
-        try {
-            await fs.rm('sim_base.gif');
-        } catch {}
-        try {
-            await fs.rm('sim.gif');
-        } catch {}
+    let {parseTime, text} = await runWorkerTask('sim', {pattern: serialize(p), argv, outFilePath: 'sim.gif'});
+    let rule = p.rule.str;
+    if (rule in simStats) {
+        simStats[rule]++;
+    } else {
+        simStats[rule] = 1;
     }
+    await writeFile('data/sim_stats.json', JSON.stringify(simStats, undefined, 4));
+    let out: string | undefined = undefined;
+    if (showTime) {
+        let total = Math.round(performance.now() - startTime) / 1000;
+        let parse = Math.round(parseTime) / 1000;
+        out = `Took ${total} seconds (${parse} to parse)`;
+        if (text) {
+            out += '\n' + text;
+        }
+    } else if (text) {
+        out = text;
+    }
+    return out;
 }
 
 addCommand(
@@ -684,21 +675,30 @@ addCommand(
         flagArg('time', [], 'Shows how much time it took.'),
     ],
     async args => {
-        let argv = args.parts ?? [];
-        if (argv[0] === 'rand') {
-            throw new BotError(`Use !simrand, not !sim rand`);
+        try {
+            let argv = args.parts ?? [];
+            if (argv[0] === 'rand') {
+                throw new BotError(`Use !simrand, not !sim rand`);
+            }
+            let content = await runSimCommand(args.pattern.p, argv, args.time);
+            let replyTo = args.pattern.msgInChannel;
+            return {
+                type: 'already-sent',
+                value: await replyTo.reply({
+                    content,
+                    files: ['sim.gif'],
+                    allowedMentions: {repliedUser: false},
+                }),
+                deleters: [replyTo.author.id],
+            };
+        } finally {
+            try {
+                await fs.rm('sim_base.gif');
+            } catch {}
+            try {
+                await fs.rm('sim.gif');
+            } catch {}
         }
-        let content = await runSimCommand(args.pattern.p, argv, args.time);
-        let replyTo = args.pattern.msgInChannel;
-        return {
-            type: 'already-sent',
-            value: await replyTo.reply({
-                content,
-                files: ['sim.gif'],
-                allowedMentions: {repliedUser: false},
-            }),
-            deleters: [replyTo.author.id],
-        };
     },
     {
         sendTyping: true,
@@ -787,28 +787,37 @@ addCommand(
         flagArg('time', [], 'Shows how much time it took.'),
     ],
     async args => {
-        let argv = args.parts ?? [];
-        let [height, width] = args.size.split('x').map(Number);
-        let p = createPattern(args.rule, aliases);
-        let weights = parseRandFill(p, args.fill);
-        if (p instanceof TorusPattern && (p.height < height || p.width < width)) {
-            height = p.height;
-            width = p.width;
-        }
-        let size = height * width;
-        let data = new Uint8Array(size);
-        for (let i = 0; i < size; i++) {
-            let value = Math.random();
-            for (let state = 0; state < weights.length; state++) {
-                if (value < weights[state]) {
-                    data[i] = state;
-                    break;
+        try {
+            let argv = args.parts ?? [];
+            let [height, width] = args.size.split('x').map(Number);
+            let p = createPattern(args.rule, aliases);
+            let weights = parseRandFill(p, args.fill);
+            if (p instanceof TorusPattern && (p.height < height || p.width < width)) {
+                height = p.height;
+                width = p.width;
+            }
+            let size = height * width;
+            let data = new Uint8Array(size);
+            for (let i = 0; i < size; i++) {
+                let value = Math.random();
+                for (let state = 0; state < weights.length; state++) {
+                    if (value < weights[state]) {
+                        data[i] = state;
+                        break;
+                    }
                 }
             }
+            p.setData(height, width, data);
+            let content = await runSimCommand(args.pattern.p, argv, args.time);
+            return {type: 'message-spec', value: {content, files: ['sim.gif']}};
+        } finally {
+            try {
+                await fs.rm('sim_base.gif');
+            } catch {}
+            try {
+                await fs.rm('sim.gif');
+            } catch {}
         }
-        p.setData(height, width, data);
-        let content = await runSimCommand(args.pattern.p, argv, args.time);
-        return {type: 'message-spec', value: {content, files: ['sim.gif']}};
     },
     {
         sendTyping: true,
@@ -833,6 +842,9 @@ addCommand(
         let pageData = data.slice(realPage * 10, (realPage + 1) * 10);
         let title = `Most popular rules (page ${page} of ${maxPage})`;
         let out = pageData.map(x => x[0] + ': ' + x[1]).join('\n');
-        return {type: 'message-spec', value: {embeds: [createEmbed(title, out)]}};
+        return {
+            type: 'message-spec',
+            value: {embeds: [createEmbed(title, out)]},
+        };
     },
 );
