@@ -297,12 +297,14 @@ async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise
         _msg = await _msg.fetch();
     }
     if (!_msg.inGuild()) {
+        console.log('not in guild');
         return;
     }
     let msg: Message = _msg;
     let serverID = msg.guildId;
     let board = config.starboards[serverID];
     if (!board || msg.channelId !== board.channel) {
+        console.log(msg.channelId, board?.channel);
         return;
     }
     let msg2 = await resolveMessageFromStarboard(msg);
