@@ -2,20 +2,20 @@
 import {LifewebError, parseSpeed, parse} from '../../lifeweb/lib/index.js';
 import {Type, TYPE_NAMES} from '../../sssss/lib/index.js';
 
-import {BotError, requiredArg, requiredRestArg, optionalArg, optionArg, addCommand} from '../base.js';
+import {BotError, Validator, requiredArg, requiredRestArg, optionalArg, optionArg, addCommand} from '../base.js';
 
 
 let rulespaces = Object.keys(TYPE_NAMES);
 
-function rulespaceValidator(arg: string): Type | {name: string, reason?: string} {
+function rulespaceValidator(arg: string): ReturnType<Validator<Type>> {
     arg = arg.toLowerCase();
     if (!rulespaces.includes(arg)) {
-        return {name: 'rulespace', reason: `not one of ${rulespaces.join('/')} (case insensitive)`};
+        return {isError: true, name: 'rulespace', reason: `not one of ${rulespaces.join('/')} (case insensitive)`};
     }
     return arg as Type;
 }
 
-function speedValidator(arg: string): {dx: number, dy: number, period: number} | {name: string, reason?: string} {
+function speedValidator(arg: string): ReturnType<Validator<{dx: number, dy: number, period: number}>> {
     try {
         return parseSpeed(arg);
     } catch (error) {
@@ -24,7 +24,7 @@ function speedValidator(arg: string): {dx: number, dy: number, period: number} |
             if (!match) {
                 throw error;
             }
-            return {name: 'speed', reason: match[1]};
+            return {isError: true, name: 'speed', reason: match[1]};
         } else {
             throw error;
         }

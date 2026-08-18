@@ -3,7 +3,7 @@ import {Node, Expression, PrivateName} from '@babel/types';
 import {parseExpression} from '@babel/parser';
 import {CategoryChannel, Guild, Client} from 'discord.js';
 
-import {BotError, Message, readFile, sentByAdmin} from './base.js';
+import {BotError, Message, readFile, sentByAdmin, Validator} from './base.js';
 
 
 export type ACL = 
@@ -31,27 +31,27 @@ export let aclData: ACLData = Object.assign(Object.create(null), JSON.parse(awai
 export const ACL_NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]$/;
 export const INVALID_ACL_NAMES = ['everyone', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'new', 'null', 'return', 'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with', 'undefined', 'Infinity', 'NaN', '__proto__', 'constructor'];
 
-export function aclValidator(acl: string): string | {name: string, reason?: string} {
-    if (!acl.match(ACL_NAME_REGEX)) {
-        return {name: 'ACL', reason: 'includes invalid characters'};
+export function aclValidator(arg: string): ReturnType<Validator<string>> {
+    if (!arg.match(ACL_NAME_REGEX)) {
+        return {isError: true, name: 'ACL', reason: 'includes invalid characters'};
     }
-    if (INVALID_ACL_NAMES.includes(acl)) {
-        return {name: 'ACL', reason: 'name is forbidden'};
+    if (INVALID_ACL_NAMES.includes(arg)) {
+        return {isError: true, name: 'ACL', reason: 'name is forbidden'};
     }
-    return acl;
+    return arg;
 }
 
-export function aclAndExistsValidator(acl: string): string | {name: string, reason?: string} {
-    if (!acl.match(ACL_NAME_REGEX)) {
-        return {name: 'ACL', reason: 'includes invalid characters'};
+export function aclAndExistsValidator(arg: string): ReturnType<Validator<string>> {
+    if (!arg.match(ACL_NAME_REGEX)) {
+        return {isError: true, name: 'ACL', reason: 'includes invalid characters'};
     }
-    if (INVALID_ACL_NAMES.includes(acl)) {
-        return {name: 'ACL', reason: 'name is forbidden'};
+    if (INVALID_ACL_NAMES.includes(arg)) {
+        return {isError: true, name: 'ACL', reason: 'name is forbidden'};
     }
-    if (!(acl in aclData)) {
-        return {name: 'ACL', reason: 'does not exist'};
+    if (!(arg in aclData)) {
+        return {isError: true, name: 'ACL', reason: 'does not exist'};
     }
-    return acl;
+    return arg;
 }
 
 

@@ -141,7 +141,7 @@ export const CATEGORY_NAMES: {[K in CommandCategory]: string} = {
 };
 
 
-export type Validator<T = any> = (arg: string) => T | {name: string, reason?: string};
+export type Validator<T = any> = (arg: string) => T | {isError: true, name: string, reason?: string};
 
 export type SingleArgType = 
     | 'string'
@@ -522,9 +522,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
         }
     } else if (typeof type === 'function') {
         let result = type(value);
-        if (typeof result === 'string') {
-            return result;
-        } else {
+        if (result && typeof result === 'object' && result.isError) {
             let msg = `Invalid value '${value}' for argument ${arg.name}`;
             if (result.reason !== undefined) {
                 msg += ` (expected ${result.name}, ${result.reason})`;
@@ -533,6 +531,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
             }
             throw new ArgumentError(msg);
         }
+        return result;
     } else {
         if (Array.isArray(type.value)) {
             for (let option of type.value) {
@@ -888,7 +887,7 @@ export async function internalRunTextCommand(msg: Message, rawArgs: string): Pro
 }
 
 
-export function commandValidator(cmd: string): string | {name: string, reason?: string} {
+export function commandValidator(cmd: string): ReturnType<Validator<string>> {
     cmd = cmd.toLowerCase().replaceAll('_', '');
     if (cmd.startsWith('!') || cmd.startsWith('$')) {
         cmd = cmd.slice(1);
@@ -896,7 +895,7 @@ export function commandValidator(cmd: string): string | {name: string, reason?: 
         cmd = cmd.slice(3);
     }
     if (!(cmd in COMMANDS)) {
-        return {name: 'command'};
+        return {isError: true, name: 'command', reason: 'does not exist'};
     }
     return cmd;
 }
