@@ -570,7 +570,7 @@ function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: numbe
         if (argv[pos][1]) {
             return {pos, posArgsPos};
         }
-        if (posArgsPos > posArgs.length) {
+        if (posArgsPos >= posArgs.length) {
             throw new ArgumentError(`Too many positional arguments provided`);
         }
         let arg = posArgs[posArgsPos];
@@ -620,6 +620,7 @@ function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: numbe
             }
         }
     }
+    console.log(argv, {pos, posArgsPos});
     return {pos, posArgsPos};
 }
 
