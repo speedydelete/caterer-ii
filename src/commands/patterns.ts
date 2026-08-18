@@ -92,7 +92,7 @@ addCommand(
         } else if (match = code.match(/^yl(\d+)_(\d+)_(\d+)_([0-9a-f]+)$/)) {
             text = `Linear growth\nPeriod of the population sequence: ${match[1]}\nSubperiod of the population sequence (often the period of the debris): ${match[2]}\nPopulation of the debris: ${match[3]}\n[MD5](<https://en.wikipedia.org/wiki/MD5>) hash of some complicated stuff, see [the code](<https://gitlab.com/apgoucher/apgmera/-/blob/master/includes/detection.h>) for more details: ${match[4]}`;
             isPattern = false;
-        } else if (match = code.match(/^ov_[spq](\d+)$/)) {
+        } else if (match = code.match(/^ov_([spq])(\d+)$/)) {
             text = `Oversized period-${match[2]} ${APGCODE_PATTERN_TYPES[match[1]]}`;
             isPattern = false;
         } else if (code in APGCODE_POWER_MEANINGS) {
