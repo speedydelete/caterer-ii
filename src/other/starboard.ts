@@ -106,8 +106,30 @@ async function deleteStarboardEntry(msg: _Message | PartialMessage, entry: [stri
     await saveStarboard();
 }
 
-async function resolveMessageFromStarboard(msg: Message): Promise<void> {
-    
+async function resolveMessageFromStarboard(msg: Message): Promise<Message | undefined> {
+    if (msg.author.id !== client.user.id) {
+        return;
+    } else if (msg.reference && msg.reference.type === 1) {
+        msg = await msg.fetchReference();
+        if (!msg.inGuild()) {
+            return;
+        }
+        return msg;
+    } else {
+        let match = msg.content.match(/\/(\d+)\/(\d+)\)$/);
+        if (!match) {
+            return;
+        }
+        let msg2Channel = await msg.guild.channels.fetch(match[0]);
+        if (!msg2Channel || !msg2Channel.isTextBased()) {
+            return;
+        }
+        let msg2 = await msg2Channel.messages.fetch(match[1]);
+        if (!msg2) {
+            return;
+        }
+        return msg2;
+    }
 }
 
 async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> {
@@ -147,27 +169,11 @@ async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> 
     let channel = starboardChannels[serverID];
     let reacts: {[key: string]: Set<string>} = {};
     if (msg.channel.id === board.channel) {
-        if (msg.author.id !== client.user?.id) {
+        let msg2 = await resolveMessageFromStarboard(msg);
+        if (!msg2) {
             return;
-        } else if (msg.reference) {
-            msg = await msg.fetchReference();
-            if (!msg.inGuild()) {
-                return;
-            }
-            await getReactions(msg, board.emojis, reacts);
-        } else {
-            let match = msg.content.match(/\/(\d+)\/(\d+)\)$/);
-            if (!match || !msg.guild) {
-                return;
-            }
-            let channelID = match[0];
-            let messageID = match[1];
-            let msg2Channel = await msg.guild.channels.fetch(match[0]);
-            if (!msg2Channel || !msg2Channel.isTextBased()) {
-                return;
-            }
-            let msg2 = await msg2Channel.messages.fetch('');
         }
+        msg = msg2;
     }
     await getReactions(msg, board.emojis, reacts);
     let senderId: string;
@@ -285,6 +291,32 @@ async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> 
     }
 }
 
+async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise<void> {
+    if (_msg.partial) {
+        _msg = await _msg.fetch();
+    }
+    if (!_msg.inGuild()) {
+        return;
+    }
+    let msg: Message = _msg;
+    let serverID = msg.guildId;
+    let board = config.starboards[serverID];
+    if (!board || msg.channelId !== board.channel) {
+        return;
+    }
+    let msg2 = await resolveMessageFromStarboard(msg);
+    if (!msg2) {
+        return;
+    }
+    let boardData = starboardData[serverID];
+    let entry = boardData.data.get(msg2.id);
+    boardData.forbidden.add(msg2.id);
+    if (entry) {
+        await deleteStarboardEntry(msg2, entry);
+    }
+    await saveStarboard();
+}
+
 let updatingStarboardFor = new Set<string>();
 
 async function updateStarboard(data: MessageReaction | PartialMessageReaction): Promise<void> {
@@ -294,7 +326,17 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
             data = await data.fetch();
         }
         if ((data.emoji.name && !starReactions.has(data.emoji.name)) && (data.emoji.id && !starReactions.has(data.emoji.id))) {
-            return;
+            if (data.emoji.name === '❌' || data.emoji.name === '🗑️') {
+                let msg = data.message;
+                if (updatingStarboardFor.has(msg.id)) {
+                    setTimeout(() => updateStarboard(data), 2000);
+                }
+                updatingStarboardFor.add(msg.id);
+                await _checkStarboardDeletion(msg);
+                updatingStarboardFor.delete(msg.id);
+            } else {
+                return;
+            }
         }
         let msg = data.message;
         if (updatingStarboardFor.has(msg.id)) {
@@ -347,23 +389,3 @@ let interval = setInterval(async () => {
         });
     }
 }, 1000);
-
-
-// export async function cmdStarboardPrevent(msg: Message, argv: string[]): Promise<Response> {
-//     if (!msg.reference) {
-//         throw new BotError('!starboardprevent must be used when replying to a message');
-//     }
-//     let msg2 = await msg.fetchReference();
-//     if (msg2.guildId && msg2.guildId in config.starboardServers) {
-//         let boardName = config.starboardServers[msg2.guildId];
-//         let entry = starboard[boardName].data.get(msg2.id);
-//         starboard[boardName].forbidden.add(msg2.id);
-//         if (entry) {
-//             await deleteStarboardEntry(boardName, msg2, entry);
-//         }
-//         await saveStarboard();
-//     } else {
-//         throw new BotError('!starboardprevent must be used in servers witih starboards');
-//     }
-//     return 'Prevented!';
-// }
