@@ -860,7 +860,11 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
         extraArgs = undefined;
         if (value === undefined) {
             // do nothing
-        } else if (value.type === 'already-sent' || value.type === 'message-spec') {
+        } else if (value.type === 'already-sent') {
+            if (i !== parsedPipe.length - 1) {
+                throw new BotError(`Cannot pipe the output of commands that send custom messages`);
+            }
+        } else if (value.type === 'message-spec') {
             // do nothing
         } else if (value.type === 'string') {
             extraArgs = value.value;
