@@ -292,6 +292,7 @@ async function _updateStarboard(_msg: _Message | PartialMessage): Promise<void> 
 }
 
 async function _checkStarboardDeletion(_msg: _Message | PartialMessage): Promise<void> {
+    console.log('testing');
     if (_msg.partial) {
         _msg = await _msg.fetch();
     }
