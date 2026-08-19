@@ -176,6 +176,7 @@ addCommand(
     {
         sendTyping: true,
         noArgParse: true,
+        noPipe: true,
     },
 );
 
