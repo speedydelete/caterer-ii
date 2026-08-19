@@ -1,5 +1,5 @@
 
-import {DiscordAPIError, Message as _Message, PartialMessage, MessageReaction, PartialMessageReaction, TextChannel} from 'discord.js';
+import {DiscordAPIError, Message as _Message, PartialMessage, MessageReaction, PartialMessageReaction, TextChannel, OmitPartialGroupDMChannel} from 'discord.js';
 
 import {ME, Message, readFile, writeFile, config, findPatternInText} from '../base.js';
 import {client} from '../index.js';
@@ -328,52 +328,60 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
     }
 }
 
-
-let interval = setInterval(async () => {
-    if (ME === 'bot' && client.isReady()) {
-        clearInterval(interval);
-        loadStarboard();
-        client.on('messageReactionAdd', updateStarboard);
-        client.on('messageReactionRemove', updateStarboard);
-        client.on('messageReactionRemoveAll', async msg => {
-            if (msg.inGuild()) {
-                let boardData = starboardData[msg.guild.id];
-                if (!boardData) {
-                    return;
-                }
-                let entry = boardData.data.get(msg.id);
-                if (entry) {
-                    await deleteStarboardEntry(msg, entry);
-                    await saveStarboard();
-                }
-            }
-        });
-        client.on('messageDelete', async msg => {
-            if (msg.inGuild()) {
-                let boardData = starboardData[msg.guild.id];
-                if (!boardData) {
-                    return;
-                }
-                let entry = boardData.data.get(msg.id);
-                if (entry) {
-                    boardData.forbidden.add(msg.id);
-                    await deleteStarboardEntry(msg, entry);
-                    await saveStarboard();
-                } else if (msg.channel.id === starboardChannels[msg.guild.id].id) {
-                    let msg2 = await resolveMessageFromStarboard(msg);
-                    if (!msg2) {
-                        return;
-                    }
-                    let entry = boardData.data.get(msg2.id);
-                    boardData.forbidden.add(msg2.id);
-                    if (entry) {
-                        await deleteStarboardEntry(msg2, entry);
-                    }
-                    await saveStarboard();
-                }
-            }
-        });
-    } else if (ME !== 'bot') {
-        clearInterval(interval);
+async function starboardReactionRemoveAll(msg: OmitPartialGroupDMChannel<_Message | PartialMessage>) {
+    if (msg.inGuild()) {
+        let boardData = starboardData[msg.guild.id];
+        if (!boardData) {
+            return;
+        }
+        let entry = boardData.data.get(msg.id);
+        if (entry) {
+            await deleteStarboardEntry(msg, entry);
+            await saveStarboard();
+        }
     }
-}, 1000);
+}
+
+async function starboardMessageDelete(msg: OmitPartialGroupDMChannel<_Message | PartialMessage>) {
+    if (msg.inGuild()) {
+        let boardData = starboardData[msg.guild.id];
+        if (!boardData) {
+            return;
+        }
+        let entry = boardData.data.get(msg.id);
+        if (entry) {
+            boardData.forbidden.add(msg.id);
+            await deleteStarboardEntry(msg, entry);
+            await saveStarboard();
+        } else if (msg.channel.id === starboardChannels[msg.guild.id].id) {
+            let msg2 = await resolveMessageFromStarboard(msg);
+            if (!msg2) {
+                return;
+            }
+            let entry = boardData.data.get(msg2.id);
+            boardData.forbidden.add(msg2.id);
+            if (entry) {
+                await deleteStarboardEntry(msg2, entry);
+            }
+            await saveStarboard();
+        }
+    }
+}
+
+
+async function startStarboard() {
+    await loadStarboard();
+    client.on('messageReactionAdd', updateStarboard);
+    client.on('messageReactionRemove', updateStarboard);
+    client.on('messageReactionRemoveAll', starboardReactionRemoveAll);
+    client.on('messageDelete', starboardMessageDelete);
+}
+
+if (ME === 'bot') {
+    let interval = setInterval(async () => {
+        if (client.isReady()) {
+            clearInterval(interval);
+            await startStarboard();
+        }
+    }, 1000);
+}
