@@ -230,3 +230,13 @@ client.once('clientReady', async () => {
 });
 
 client.login(config.wrapper.token);
+
+// restart every 24 hours
+let prevDay = getDay();
+setTimeout(async () => {
+    let day = getDay();
+    if (day !== prevDay) {
+        await stopBot();
+        process.exit(0);
+    }
+});
