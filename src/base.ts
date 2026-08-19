@@ -285,7 +285,10 @@ export interface BasicCommand<T extends Arg[] = Arg[]> {
     extraHelp?: string;
     noArgParse?: boolean;
     noArgvParse?: boolean;
+    noPipe?: boolean;
 }
+
+export type ExtraOptions = Omit<BasicCommand, 'type' | 'name' | 'category' | 'aliases' | 'desc' | 'args' | 'posArgs' | 'optionArgs' | 'patternArg' | 'func'>;
 
 export interface SuperCommand {
     type: 'super';
@@ -302,7 +305,7 @@ export type Command = BasicCommand | SuperCommand;
 export const COMMANDS: {[key: string]: Command} = Object.create(null);
 export const COMMANDS_BY_CATEGORY: {[key: string]: Command[]} = Object.create(null);
 
-export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, otherOptions: Partial<Pick<BasicCommand, 'sendTyping' | 'extraHelp' | 'noArgParse' | 'noArgvParse'>> = {}): void {
+export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, otherOptions: ExtraOptions = {}): void {
     if (ME !== 'bot') {
         return;
     }
@@ -901,14 +904,15 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
 export async function internalRunTextCommand(msg: Message, rawArgs: string): Promise<Response> {
     let argv = parseArgv(rawArgs);
     // pipes!
-    if (argv.some(x => x[0] === '|')) {
+    let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
+    let cmdData = COMMANDS[cmd];
+    if (argv.some(x => x[0] === '|') && !(cmdData && cmdData.type === 'basic' && cmdData.noPipe)) {
         return await runPipe(msg, rawArgs);
     }
-    let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
-    if (!(cmd in COMMANDS)) {
+    if (!cmdData) {
         return tryStupidCommand(cmd);
     }
-    return await _internalRunTextCommand(msg, COMMANDS[cmd], rawArgs, argv, 0, false);
+    return await _internalRunTextCommand(msg, cmdData, rawArgs, argv, 0, false);
 }
 
 
