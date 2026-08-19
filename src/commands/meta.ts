@@ -143,12 +143,16 @@ addCommand(
             throw new BotError('You are not speedydelete');
         }
         let code = args.rawArgs;
-        return {type: 'string', value: '```\n' + code + '\n```'};
         let index = code.indexOf(' ');
+        let index2 = code.indexOf('\n');
         if (index === -1) {
-            index = code.indexOf('\n');
-            if (index === -1) {
+            if (index2 === -1) {
                 throw new BotError(`No separating whitespace detected`);
+            }
+            index = index2;
+        } else {
+            if (index2 !== -1) {
+                index = Math.min(index, index2);
             }
         }
         code = code.slice(index + 1);
