@@ -143,6 +143,7 @@ addCommand(
             throw new BotError('You are not speedydelete');
         }
         let code = args.rawArgs;
+        return {type: 'string', value: '```\n' + code + '\n```'};
         let index = code.indexOf(' ');
         if (index === -1) {
             index = code.indexOf('\n');
