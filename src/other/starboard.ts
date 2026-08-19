@@ -83,6 +83,8 @@ async function getReactions(msg: _Message, emojis: {[key: string]: number}, out:
     }
 }
 
+let iAmDeleting = new Set();
+
 async function deleteStarboardEntry(msg: _Message | PartialMessage, entry: [string, string]): Promise<void> {
     if (!msg.inGuild()) {
         return;
@@ -93,6 +95,8 @@ async function deleteStarboardEntry(msg: _Message | PartialMessage, entry: [stri
     }
     data.data.delete(msg.id);
     for (let id of entry) {
+        iAmDeleting.add(id);
+        setTimeout(() => iAmDeleting.delete(id), 5000);
         try {
             await starboardChannels[msg.guild.id].messages.delete(id);
         } catch (error) {
@@ -341,6 +345,9 @@ async function starboardReactionRemoveAll(msg: OmitPartialGroupDMChannel<_Messag
 
 async function starboardMessageDelete(msg: OmitPartialGroupDMChannel<_Message | PartialMessage>) {
     if (msg.inGuild()) {
+        if (iAmDeleting.has(msg.id)) {
+            return;
+        }
         let boardData = starboardData[msg.guild.id];
         if (!boardData) {
             return;
