@@ -283,8 +283,8 @@ export interface BasicCommand<T extends Arg[] = Arg[]> {
     func: CommandFunc<T>;
     sendTyping?: boolean;
     extraHelp?: string;
-    noArgvParse?: boolean;
     noArgParse?: boolean;
+    noArgvParse?: boolean;
 }
 
 export interface SuperCommand {
@@ -302,7 +302,7 @@ export type Command = BasicCommand | SuperCommand;
 export const COMMANDS: {[key: string]: Command} = Object.create(null);
 export const COMMANDS_BY_CATEGORY: {[key: string]: Command[]} = Object.create(null);
 
-export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, otherOptions: Partial<Pick<BasicCommand, 'sendTyping' | 'extraHelp' | 'noArgvParse' | 'noArgParse'>> = {}): void {
+export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, otherOptions: Partial<Pick<BasicCommand, 'sendTyping' | 'extraHelp' | 'noArgParse' | 'noArgvParse'>> = {}): void {
     if (ME !== 'bot') {
         return;
     }

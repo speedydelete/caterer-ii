@@ -137,15 +137,20 @@ const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\
 addCommand(
     'eval', 'meta', [],
     `Evaluates code (admin only).`,
-    [
-        requiredRestArg('code', 'string', 'The code to run.'),
-    ],
+    [],
     async args => {
         if (args.msg.author.id !== '1253852708826386518') {
             throw new BotError('You are not speedydelete');
         }
-        let code = args.code;
-        return {type: 'string', value: '```' + code + '```'};
+        let code = args.rawArgs;
+        let index = code.indexOf(' ');
+        if (index === -1) {
+            index = code.indexOf('\n');
+            if (index === -1) {
+                throw new BotError(`No separating whitespace detected`);
+            }
+        }
+        code = code.slice(index + 1);
         if (!code.includes(';') && !code.includes('\n')) {
             code = 'return ' + code;
         }
@@ -169,6 +174,7 @@ addCommand(
     },
     {
         sendTyping: true,
+        noArgParse: true,
         noArgvParse: true,
     },
 );
