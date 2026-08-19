@@ -155,6 +155,7 @@ addCommand(
             code = 'return ' + code;
         }
         code = `return (async () => {${code}})()`;
+        return {type: 'string', value: '```\n' + code + '\n```'};
         let out = await (new Function('client', 'msg', 'lifeweb', 'lifewebRPF', 'lifewebRuleSymmetries', 'aliases', 'readFile', 'writeFile', 'getPattern', '"use strict";' + EVAL_PREFIX + code))(client, args.msg, lifeweb, lifewebRPF, lifewebRuleSymmetries, aliases, readFile, writeFile, async (): Promise<Pattern> => {
             let out = await findPatternInChannel(args.msg);
             if (!out) {
