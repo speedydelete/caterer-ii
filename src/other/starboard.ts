@@ -111,7 +111,7 @@ async function deleteStarboardEntry(msg: _Message | PartialMessage, entry: [stri
 }
 
 async function resolveMessageFromStarboard(msg: Message): Promise<Message | undefined> {
-    if (msg.author.id !== client.user.id) {
+    if (!msg.author || msg.author.id !== client.user.id) {
         return;
     } else if (msg.reference && msg.reference.type === 1) {
         msg = await msg.fetchReference();
