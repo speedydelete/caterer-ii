@@ -314,7 +314,7 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
                 setTimeout(() => {
                     updateStarboard(data);
                     queuedUpdatingStarboardFor.delete(msg.id);
-                }, 2000);
+                }, 5000);
             }
             return;
         }
