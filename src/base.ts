@@ -905,6 +905,7 @@ export async function internalRunTextCommand(msg: Message, rawArgs: string): Pro
     let argv = parseArgv(rawArgs);
     let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
     let cmdData = COMMANDS[cmd];
+    console.log(cmd, cmdData);
     console.log(cmdData && cmdData.type === 'basic' && cmdData.noPipe);
     if (argv.some(x => x[0] === '|') && !(cmdData && cmdData.type === 'basic' && cmdData.noPipe)) {
         return await runPipe(msg, rawArgs);
