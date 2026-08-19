@@ -300,11 +300,9 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         if (data.partial) {
             data = await data.fetch();
         }
-        console.log('fetched', data.emoji.name, data.emoji.id, Boolean(data.emoji.name && starReactions.has(data.emoji.name)), Boolean(data.emoji.id && starReactions.has(data.emoji.id)));
         if (!(data.emoji.name && starReactions.has(data.emoji.name)) && !(data.emoji.id && starReactions.has(data.emoji.id))) {
             return;
         }
-        console.log('running');
         let msg = data.message;
         if (updatingStarboardFor.has(msg.id)) {
             if (!queuedUpdatingStarboardFor.has(msg.id)) {
@@ -318,7 +316,6 @@ async function updateStarboard(data: MessageReaction | PartialMessageReaction): 
         }
         updatingStarboardFor.add(msg.id);
         currentID = msg.id;
-        console.log('UPDATING');
         await _updateStarboard(msg);
         updatingStarboardFor.delete(msg.id);
     } catch (error) {
@@ -377,11 +374,9 @@ async function startStarboard() {
     client.on('messageDelete', starboardMessageDelete);
 }
 
-console.log('i am', ME);
 if (ME === 'bot') {
     let interval = setInterval(async () => {
         if (client.isReady()) {
-            console.log('starting starboard');
             clearInterval(interval);
             await startStarboard();
         }
