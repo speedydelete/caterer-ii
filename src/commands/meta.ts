@@ -145,6 +145,7 @@ addCommand(
             throw new BotError('You are not speedydelete');
         }
         let code = args.code;
+        return {type: 'string', value: '```' + code + '```'};
         if (!code.includes(';') && !code.includes('\n')) {
             code = 'return ' + code;
         }
