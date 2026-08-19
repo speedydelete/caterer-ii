@@ -374,11 +374,9 @@ async function startStarboard() {
     client.on('messageDelete', starboardMessageDelete);
 }
 
-console.log('i am', ME);
 if (ME === 'bot') {
     let interval = setInterval(async () => {
         if (client.isReady()) {
-            console.log('starting starboard');
             clearInterval(interval);
             await startStarboard();
         }
