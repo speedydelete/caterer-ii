@@ -190,12 +190,10 @@ addCommand(
     `Gets the latency.`,
     [],
     async args => {
-        if (args.isInsidePipe) {
-            throw new BotError(`Cannot call !ping from inside a pipe`);
-        }
         let msg = args.msg;
         let msg2 = await msg.reply({content: 'Pong!', allowedMentions: {repliedUser: true, parse: []}});
         msg2.edit({content: `Pong! Latency: ${Math.round(msg2.createdTimestamp - msg.createdTimestamp)} ms (Discord WebSocket: ${Math.round(client.ws.ping)} ms)`, allowedMentions: {repliedUser: true, parse: []}});
+        return {type: 'already-sent', value: msg2};
     },
 );
 

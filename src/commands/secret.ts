@@ -25,18 +25,18 @@ addCommand(
     `See https://discord.com/channels/268882317391429632/1446065612227874847 for context.`,
     [],
     async args => {
-        if (args.isInsidePipe) {
-            throw new BotError(`Cannot call !ping from inside a pipe`);
-        }
         let msg = args.msg;
+        let out: Message | undefined = undefined;
         if (msg.reference) {
             let ref = await msg.fetchReference();
             if (ref.type === 0) {
-                ref.reply({content: `Don't ask to ask, you should beg to ask! Many users on mathcord are important people with busy lives and you are inconveniencing them by asking a question. As such you should grovel and beg for the privilege of doing so.`, allowedMentions: {repliedUser: false}});
+                out = await ref.reply({content: `Don't ask to ask, you should beg to ask! Many users on mathcord are important people with busy lives and you are inconveniencing them by asking a question. As such you should grovel and beg for the privilege of doing so.`, allowedMentions: {repliedUser: false}});
             }
-        } else {
-            msg.channel.send(`Don't ask to ask, you should beg to ask! Many users on mathcord are important people with busy lives and you are inconveniencing them by asking a question. As such you should grovel and beg for the privilege of doing so.`);
         }
+        if (!out) {
+            out = await msg.channel.send(`Don't ask to ask, you should beg to ask! Many users on mathcord are important people with busy lives and you are inconveniencing them by asking a question. As such you should grovel and beg for the privilege of doing so.`);
+        }
+        return {type: 'already-sent', value: out};
     },
 );
 
