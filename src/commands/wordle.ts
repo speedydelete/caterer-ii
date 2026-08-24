@@ -1,5 +1,5 @@
 
-import {readFile} from '../real_base.js';
+import {readFile, writeFile} from '../real_base.js';
 
 
 interface GameInfo {
@@ -7,6 +7,7 @@ interface GameInfo {
     length: number;
     guesses: Set<string>;
     answers: Set<string>;
+    startRatings: string[];
 }
 
 async function loadWordList(path: string): Promise<Set<string>> {
@@ -25,6 +26,7 @@ const DEFAULT: GameInfo = {
     length: 5,
     guesses: await loadWordList('data/wordle_guesses.txt'),
     answers: await loadWordList('data/wordle_answers.txt'),
+    startRatings: [],
 };
 
 
@@ -178,6 +180,7 @@ function orderGuesses(info: GameInfo, possible: Set<string>): [string, number][]
 
 
 // rank start words
+
 let info = DEFAULT;
 let out: [string, number][] = [];
 console.log('Running');
@@ -185,10 +188,18 @@ let guesses = Array.from(info.guesses);
 for (let i = 0; i < guesses.length; i++) {
     if (i % 10 === 0 && i > 0) {
         out = out.sort((x, y) => x[1] - y[1]);
+        await writeFile('starts.json', JSON.stringify(out));
         console.log(`Checked ${i} guesses: current: ${guesses[i]}, best: ${out[0][0]} (${out[0][1].toFixed(3)}), worst: ${out[out.length - 1][0]} (${out[out.length - 1][1].toFixed(3)})`);
     }
     let guess = guesses[i];
     out.push([guess, scoreGuess(info, DEFAULT.answers, guess)]);
 }
+out = out.sort((x, y) => x[1] - y[1]);
+await writeFile('starts.json', JSON.stringify(out));
 console.log('Results:');
-console.log(out.sort((x, y) => x[1] - y[1]).map(x => `${x[0]} (${x[1].toFixed(3)})`).join('\n'));
+console.log(out.map(x => `${x[0]} (${x[1].toFixed(3)})`).join('\n'));
+
+
+// function rateGame(guesses: string[], answer: string): string {
+
+// }
