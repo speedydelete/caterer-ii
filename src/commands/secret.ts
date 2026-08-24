@@ -25,6 +25,9 @@ addCommand(
     `See https://discord.com/channels/268882317391429632/1446065612227874847 for context.`,
     [],
     async args => {
+        if (args.isInsidePipe) {
+            throw new BotError(`Cannot call !ping from inside a pipe`);
+        }
         let msg = args.msg;
         if (msg.reference) {
             let ref = await msg.fetchReference();
