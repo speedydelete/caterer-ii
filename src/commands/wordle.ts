@@ -176,7 +176,7 @@ function orderGuesses(info: GameInfo, possible: Set<string>): [string, number][]
     return out.sort((x, y) => x[1] - y[1]);
 }
 
-
+// rank start words
 let info = DEFAULT;
 let out: [string, number][] = [];
 console.log('Running');
@@ -184,7 +184,7 @@ let guesses = Array.from(info.guesses);
 for (let i = 0; i < guesses.length; i++) {
     if (i % 10 === 0 && i > 0) {
         out = out.sort((x, y) => x[1] - y[1]);
-        console.log(`Checked ${i} guesses, best: ${out[0][0]} (${out[0][1].toFixed(3)}), worst: ${out[out.length - 1][0]} (${out[out.length - 1][1].toFixed(3)})`);
+        console.log(`Checked ${i} guesses (current: ${guesses[i]}), best: ${out[0][0]} (${out[0][1].toFixed(3)}), worst: ${out[out.length - 1][0]} (${out[out.length - 1][1].toFixed(3)})`);
     }
     let guess = guesses[i];
     out.push([guess, scoreGuess(info, DEFAULT.answers, guess)]);
