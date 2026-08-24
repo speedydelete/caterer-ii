@@ -176,6 +176,7 @@ function orderGuesses(info: GameInfo, possible: Set<string>): [string, number][]
     return out.sort((x, y) => x[1] - y[1]);
 }
 
+
 // rank start words
 let info = DEFAULT;
 let out: [string, number][] = [];
