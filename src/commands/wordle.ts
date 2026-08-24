@@ -17,7 +17,7 @@ async function loadWordList(path: string): Promise<Set<string>> {
             out.add(word);
         }
     }
-    return out;
+    return new Set(Array.from(out).sort());
 }
 
 const DEFAULT: GameInfo = {
