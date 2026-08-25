@@ -229,7 +229,7 @@ addCommand(
         requiredVariadicArg('words', 'string', 'The words to submit, last one should be the answer (if you didn\'t get it, put it at the end anyway'),
     ],
     async args => {
-        let words = args.words;
+        let words = args.words.map(word => word.toUpperCase());
         let guesses: string[] = [];
         let answer: string;
         if (words.length > 7) {
