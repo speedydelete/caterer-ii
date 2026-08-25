@@ -45,7 +45,7 @@ async function runCommand(msg: OmitPartialGroupDMChannel<_Message>): Promise<voi
     }
     runningCommands.add(msg.id);
     try {
-        let value = await internalRunTextCommand(msg, data);
+        let {response: value, spoiler} = await internalRunTextCommand(msg, data);
         if (value) {
             let out: Message;
             let newDeleters: string[] = [msg.author.id];
@@ -66,6 +66,9 @@ async function runCommand(msg: OmitPartialGroupDMChannel<_Message>): Promise<voi
                     data.content = value.value.toRLE();
                 } else {
                     throw new Error(`This error should not occur (invalid response type: '${(value as {type: 'string'}).type}')`);
+                }
+                if (spoiler && data.content !== undefined) {
+                    data.content = '||' + data.content + '||';
                 }
                 out = await msg.reply(data);
             }

@@ -901,17 +901,25 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
     return prevResp;
 }
 
-export async function internalRunTextCommand(msg: Message, rawArgs: string): Promise<Response> {
+export async function internalRunTextCommand(msg: Message, rawArgs: string): Promise<{response: Response, spoiler: boolean}> {
     let argv = parseArgv(rawArgs);
     let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
+    let spoiler = false;
+    if (argv.length > 0 && argv[1][0].startsWith('||') && argv[argv.length - 1][0].endsWith('||')) {
+        spoiler = true;
+        argv[1][0] = argv[1][0].slice(2);
+        argv[argv.length - 1][0] = argv[argv.length - 1][0].slice(0, -2);
+    }
     let cmdData = COMMANDS[cmd];
+    let out: Response;
     if (argv.some(x => x[0] === '|') && !(cmdData && cmdData.type === 'basic' && cmdData.noPipe)) {
-        return await runPipe(msg, rawArgs);
+        out = await runPipe(msg, rawArgs);
+    } else if (!cmdData) {
+        out = tryStupidCommand(cmd);
+    } else {
+        out = await _internalRunTextCommand(msg, cmdData, rawArgs, argv, 0, false)
     }
-    if (!cmdData) {
-        return tryStupidCommand(cmd);
-    }
-    return await _internalRunTextCommand(msg, cmdData, rawArgs, argv, 0, false);
+    return {response: out, spoiler};
 }
 
 
