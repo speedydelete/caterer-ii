@@ -905,7 +905,7 @@ export async function internalRunTextCommand(msg: Message, rawArgs: string): Pro
     let argv = parseArgv(rawArgs);
     let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
     let spoiler = false;
-    if (argv.length > 0 && argv[1][0].startsWith('||') && argv[argv.length - 1][0].endsWith('||')) {
+    if (argv.length > 1 && argv[1][0].startsWith('||') && argv[argv.length - 1][0].endsWith('||')) {
         spoiler = true;
         argv[1][0] = argv[1][0].slice(2);
         argv[argv.length - 1][0] = argv[argv.length - 1][0].slice(0, -2);
