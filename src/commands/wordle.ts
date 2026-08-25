@@ -107,7 +107,12 @@ function getGuessScore(info: GameInfo, possible: Set<string>, guess: string): nu
 
 function getAllGuesses(info: GameInfo, possible: Set<string>): [string, number][] {
     let out: [string, number][] = [];
+    let prevStart = '';
     for (let guess of info.guesses) {
+        if (guess[0] !== prevStart) {
+            prevStart = guess[0];
+            console.log(guess);
+        }
         out.push([guess, getGuessScore(info, possible, guess)]);
     }
     return out.sort((x, y) => x[1] - y[1]);
@@ -161,7 +166,6 @@ function rateGame(info: GameInfo, guesses: string[], answer: string): string {
         // calculate luck: find the distribution of next guesses
         // and rank it by its position in there
         let distr = data.map(x => x[1]);
-        console.log(distr);
         let luck = distr.findIndex(x => x === nextPossible.size);
         if (luck === -1) {
             luck = 67;
