@@ -1,5 +1,6 @@
 
-import {BotError, readFile, requiredVariadicArg, addCommand} from '../base.js';
+import {BotError, readFile} from '../real_base.js';
+// import {BotError, readFile, requiredVariadicArg, addCommand} from '../base.js';
 
 
 interface GameInfo {
@@ -91,7 +92,7 @@ function updateKnown(info: GameInfo, guess: string, answer: string, data: Set<st
 
 // information theory based (not optimal!)
 
-function scoreGuess(info: GameInfo, possible: Set<string>, guess: string): number {
+function getGuessScore(info: GameInfo, possible: Set<string>, guess: string): number {
     let out = 0;
     for (let answer of possible) {
         let target = getPattern(info, guess, answer);
@@ -107,7 +108,7 @@ function scoreGuess(info: GameInfo, possible: Set<string>, guess: string): numbe
 function getAllGuesses(info: GameInfo, possible: Set<string>): [string, number][] {
     let out: [string, number][] = [];
     for (let guess of info.guesses) {
-        out.push([guess, scoreGuess(info, possible, guess)]);
+        out.push([guess, getGuessScore(info, possible, guess)]);
     }
     return out.sort((x, y) => x[1] - y[1]);
 }
@@ -127,7 +128,7 @@ function getAllGuesses(info: GameInfo, possible: Set<string>): [string, number][
 //         console.log(`Checked ${i} guesses: next: ${guesses[i]}, best: ${out[0][0]} (${out[0][1].toFixed(3)}), worst: ${out[out.length - 1][0]} (${out[out.length - 1][1].toFixed(3)}), ${((i / ((performance.now() - start) / 1000))).toFixed(3)} checks/second`);
 //     }
 //     let guess = guesses[i];
-//     out.push([guess, scoreGuess(info, DEFAULT.answers, guess)]);
+//     out.push([guess, getGuessScore(info, DEFAULT.answers, guess)]);
 // }
 // out = out.sort((x, y) => x[1] - y[1]);
 // await writeFile('starts.json', JSON.stringify(out));
@@ -159,21 +160,12 @@ function rateGame(info: GameInfo, guesses: string[], answer: string): string {
         }
         // calculate luck: find the distribution of next guesses
         // and rank it by its position in there
-        let distr: number[] = [];
-        for (let answer of possible) {
-            let target = getPattern(info, guess, answer);
-            let value = 0;
-            for (let word of possible) {
-                if (target === getPattern(info, guess, word)) {
-                    value++;
-                }
-            }
-            distr.push(value);
-        }
-        distr = distr.sort((x, y) => y - x);
+        let distr = data.map(x => x[1]);
+        console.log(distr);
         let luck = distr.findIndex(x => x === nextPossible.size);
         if (luck === -1) {
-            throw new BotError(`Failed to calculate luck for guess ${i}`);
+            luck = 67;
+            // throw new BotError(`Failed to calculate luck for guess ${i}`);
         }
         if (distr[distr.length - 1] === distr[luck]) {
             luck = 100;
@@ -216,31 +208,35 @@ function rateGame(info: GameInfo, guesses: string[], answer: string): string {
         } else {
             emoji = '<:blunder:1541544504182571108>';
         }
-        perWord.push(`${emoji} \`${guess}\` - ${skill} skill, ${luck} luck, score: ${guessScore}, best score: ${bestScore}, ranking: ${data.slice(3).join('/')}/.../${data[data.length - 1]}`);
+        perWord.push(`${emoji} \`${guess}\` - ${skill} skill, ${luck} luck, score: ${guessScore}, best score: ${bestScore}, ranking: ${data.slice(0, 3).map(x => x[0]).join('/')}/.../${data[data.length - 1][0]}`);
+        possible = nextPossible;
+        console.log(possible.size);
     }
     return `Overall: ${Math.round(totalSkill / totalCountingGuesses)} skill, ${Math.round(totalLuck / totalCountingGuesses)}\n${perWord.join('\n')} luck`;
 }
 
 
-addCommand(
-    'ratewordle', 'other', [],
-    'Rates a game of Wordle like chess.com would',
-    [
-        requiredVariadicArg('words', 'string', 'The words to submit, last one should be the answer (if you didn\'t get it, put it at the end anyway'),
-    ],
-    async args => {
-        let words = args.words.map(word => word.toUpperCase());
-        let guesses: string[] = [];
-        let answer: string;
-        if (words.length > 7) {
-            throw new BotError(`More than 7 words provided`);
-        } else if (words.length === 7) {
-            guesses = words.slice(0, 6);
-            answer = words[6];
-        } else {
-            guesses = words;
-            answer = words[words.length - 1];
-        }
-        return {type: 'string', value: rateGame(DEFAULT, guesses, answer)};
-    },
-);
+console.log(rateGame(DEFAULT, ['SALET', 'CRONY', 'RUNNY'], 'RUNNY'));
+
+// addCommand(
+//     'ratewordle', 'other', [],
+//     'Rates a game of Wordle like chess.com would',
+//     [
+//         requiredVariadicArg('words', 'string', 'The words to submit, last one should be the answer (if you didn\'t get it, put it at the end anyway'),
+//     ],
+//     async args => {
+//         let words = args.words.map(word => word.toUpperCase());
+//         let guesses: string[] = [];
+//         let answer: string;
+//         if (words.length > 7) {
+//             throw new BotError(`More than 7 words provided`);
+//         } else if (words.length === 7) {
+//             guesses = words.slice(0, 6);
+//             answer = words[6];
+//         } else {
+//             guesses = words;
+//             answer = words[words.length - 1];
+//         }
+//         return {type: 'string', value: rateGame(DEFAULT, guesses, answer)};
+//     },
+// );
