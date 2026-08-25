@@ -1,5 +1,5 @@
 
-import {BotError, readFile, writeFile} from '../base.js';
+import {BotError, readFile, requiredVariadicArg, addCommand} from '../base.js';
 
 
 interface GameInfo {
@@ -220,3 +220,27 @@ function rateGame(info: GameInfo, guesses: string[], answer: string): string {
     }
     return `Overall: ${Math.round(totalSkill / totalCountingGuesses)} skill, ${Math.round(totalLuck / totalCountingGuesses)}\n${perWord.join('\n')} luck`;
 }
+
+
+addCommand(
+    'ratewordle', 'other', [],
+    'Rates a game of Wordle like chess.com would',
+    [
+        requiredVariadicArg('words', 'string', 'The words to submit, last one should be the answer (if you didn\'t get it, put it at the end anyway'),
+    ],
+    async args => {
+        let words = args.words;
+        let guesses: string[] = [];
+        let answer: string;
+        if (words.length > 7) {
+            throw new BotError(`More than 7 words provided`);
+        } else if (words.length === 7) {
+            guesses = words.slice(0, 6);
+            answer = words[6];
+        } else {
+            guesses = words;
+            answer = words[words.length - 1];
+        }
+        return {type: 'string', value: rateGame(DEFAULT, guesses, answer)};
+    },
+);
