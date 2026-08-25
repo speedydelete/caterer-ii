@@ -28,7 +28,7 @@ const DEFAULT: GameInfo = {
     length: 5,
     guesses: await loadWordList('data/wordle_guesses.txt'),
     answers: await loadWordList('data/wordle_answers.txt'),
-    startRatings: [],
+    startRatings: Array.from(await loadWordList('data/wordle_guesses.txt')).map(x => [x, 67]),
     bookStarts: new Set(['SALET', 'QAJAQ', 'CRANE', atob('UEVOSVM='), 'SLATE', 'ADIEU', 'AUDIO', 'OUIJA', 'STARE', 'RAISE', 'ARISE']),
     rareLetters: new Set('KWVZXQJ'),
 };
