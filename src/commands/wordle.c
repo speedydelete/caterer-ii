@@ -289,7 +289,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
     char* previous_guesses = safe_calloc(previous_guesses_size);
     memset(previous_guesses, '\0', previous_guesses_size);
     WordAndScore* data = safe_calloc(all_guesses.len * sizeof(WordAndScore));
-    uint32_t* distr = safe_calloc(all_solutions.len * sizeof(WordAndScore));
+    uint32_t* distr = safe_calloc(all_solutions.len * sizeof(uint32_t));
     for (int i = 0; i < guess_count; i++) {
         char* guess = guesses[i];
         possible.count = next_possible.count;
@@ -352,7 +352,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
                 break;
             }
         }
-        if (luck_index == possible.count || true) {
+        if (luck_index == possible.count) {
             fprintf(stderr, "Error while finding luck: distr_len = %zu, possible.count = %"PRIu32", next_possible.count = %"PRIu32", distr[0] = %"PRIu32", distr[distr_len - 1] = %"PRIu32"\n", distr_len, possible.count, next_possible.count, distr[0], distr[distr_len - 1]);
             exit(1);
         }
