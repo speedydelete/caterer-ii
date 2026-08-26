@@ -21,6 +21,7 @@ const SOLUTIONS = await loadWordList('data/wordle/nyt_guesses.txt');
 
 const EMOJIS: {[key: string]: string} = {
     ':book:': '<:book:1541544540962295818>',
+    ':best:': '<:best:1541544471345504326>',
     ':brilliant:': '<:brilliant:1541544576249110649>',
     ':great:': '<:great:1541543749379952690>',
     ':excellent:': '<:excellent:1541545113413492877>',
@@ -34,9 +35,9 @@ const EMOJIS: {[key: string]: string} = {
 
 addCommand(
     'ratewordle', 'other', [],
-    'Rates a game of Wordle like chess.com would',
+    'Rates a game of Wordle like chess.com would.',
     [
-        requiredVariadicArg('words', 'string', 'The words to submit, last one should be the answer (if you didn\'t get it, put it at the end anyway'),
+        requiredVariadicArg('words', 'string', 'The words to submit, last one should be the answer (if you didn\'t get it, put it at the end anyway)'),
     ],
     async args => {
         let words = args.words.map(word => word.toLowerCase());
