@@ -284,7 +284,9 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
     next_possible.data = safe_calloc(all_solutions.len * sizeof(bool));
     memset(next_possible.data, true, all_solutions.len);
     double total_skill = 0;
+    double skill_guesses = 0;
     double total_luck = 0;
+    double luck_guesses = 0;
     size_t previous_guesses_size = (guess_count * WORD_LENGTH + 1) * sizeof(char);
     char* previous_guesses = safe_calloc(previous_guesses_size);
     memset(previous_guesses, '\0', previous_guesses_size);
@@ -347,12 +349,12 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         size_t distr_len = loc;
         qsort(distr, distr_len, sizeof(double), double_sorter);
         uint32_t luck_index;
-        for (luck_index = 0; luck_index < possible.count; luck_index++) {
+        for (luck_index = 0; luck_index < distr_len; luck_index++) {
             if (next_possible.count == distr[luck_index]) {
                 break;
             }
         }
-        if (luck_index == possible.count) {
+        if (luck_index == distr_len) {
             fprintf(stderr, "Error while finding luck: distr_len = %zu, possible.count = %"PRIu32", next_possible.count = %"PRIu32", distr[0] = %"PRIu32", distr[distr_len - 1] = %"PRIu32"\n", distr_len, possible.count, next_possible.count, distr[0], distr[distr_len - 1]);
             exit(1);
         }
@@ -363,14 +365,16 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             if (distr[luck_index] == distr[distr_len - 1]) {
                 luck = 100.0;
             } else {
-                luck = luck_index * 100.0 / possible.count;
+                luck = luck_index * 100.0 / distr_len;
             }
         }
         if (i > 0) {
             total_skill += skill;
+            skill_guesses++;
         }
         if (luck != -1.0) {
             total_luck += luck;
+            luck_guesses++;
         }
         char* emoji = "";
         if (i == 0) {
@@ -441,7 +445,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         printf("`\n");
         strncat(previous_guesses, guess, WORD_LENGTH);
     }
-    printf("Overall: %i skill, %i luck\n", (int)trunc(total_skill / (guess_count - 1)), (int)trunc(total_luck / guess_count));
+    printf("Overall: %i skill, %i luck\n", (int)trunc(total_skill / skill_guesses), (int)trunc(total_luck / luck_guesses));
     free(data);
 }
 
