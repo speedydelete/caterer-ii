@@ -1,4 +1,5 @@
 
+#include <linux/limits.h>
 #include <stdbool.h>
 #include <inttypes.h>
 #include <ctype.h>
@@ -40,11 +41,6 @@ typedef struct WordList {
     char (*ptr)[WORD_LENGTH + 1];
 } WordList;
 
-typedef struct WordAndScore {
-    char* word;
-    double score;
-} WordAndScore;
-
 static inline void load_word_list(WordList* out, char* path) {
     FILE* file = fopen(path, "r");
     if (file == NULL) {
@@ -82,6 +78,15 @@ static inline void free_word_list(WordList* list) {
 
 WordList all_guesses;
 WordList all_solutions;
+
+
+
+typedef struct WordAndScore {
+    char* word;
+    double score;
+} WordAndScore;
+
+// WordAndScore first_guess_data[];
 
 
 static inline Pattern get_pattern(char* guess, char* target) {
@@ -158,7 +163,7 @@ static inline void rank_guesses(WordAndScore* out, Possible* possible) {
     qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter);
     if (possible->count > 2000) {
         for (size_t i = 0; i < all_guesses.len; i++) {
-            printf("%s: %.17f", out[i].word, out[i].score);
+            printf("%s: %.17f\n", out[i].word, out[i].score);
         }
     }
 }
@@ -315,7 +320,8 @@ int main(int argc, char** argv) {
     }
     load_word_list(&all_guesses, argv[1]);
     load_word_list(&all_solutions, argv[2]);
-    rate_game(argv + 4, argc - 4, argv[3]);
+    // read_first_guess_data(argv[3]);
+    rate_game(argv + 5, argc - 5, argv[4]);
     free_word_list(&all_guesses);
     free_word_list(&all_solutions);
     return 0;

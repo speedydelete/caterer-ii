@@ -29,7 +29,7 @@ addCommand(
             guesses = words;
             answer = words[words.length - 1];
         }
-        let out = execSync(`${resolvePath('wordle')} ${resolvePath('data/wordle_guesses.txt')} ${resolvePath('data/wordle_solutions.txt')} ${answer} ${guesses.join(' ')}`).toString();
+        let out = execSync(`${resolvePath('wordle')} ${resolvePath('data/wordle_guesses.txt')} ${resolvePath('data/wordle_solutions.txt')} ${resolvePath('data/wordle_first_guess_data.txt')} ${answer} ${guesses.join(' ')}`).toString();
         return {type: 'string', value: out};
     },
 );
