@@ -55,10 +55,8 @@ addCommand(
         }
         let guesses: string[] = [];
         let solution: string;
-        if (words.length > 7) {
-            throw new BotError(`More than 7 words provided`);
-        } else if (words.length === 7) {
-            guesses = words.slice(0, 6);
+        if (words.length > 6) {
+            guesses = words.slice(0, -1);
             solution = words[6];
         } else {
             guesses = words;
