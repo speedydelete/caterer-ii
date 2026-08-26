@@ -71,4 +71,7 @@ addCommand(
         }
         return {type: 'string', value: out};
     },
+    {
+        sendTyping: true,
+    },
 );
