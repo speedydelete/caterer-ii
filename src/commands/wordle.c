@@ -28,6 +28,21 @@ typedef struct Possible {
 
 const char* RARE_LETTERS = "KWVZXQJ";
 
+const char* BOOK_GUESSES[] = {
+    "salet",
+    "qajaq",
+    "crane",
+    "slate",
+    "roate",
+    "immix",
+    "adieu",
+    "audio",
+    "ouija",
+    "stare",
+    "raise",
+    "arise",
+};
+
 
 static inline void* safe_calloc(size_t size) {
     void* out = calloc(1, size);
@@ -358,7 +373,17 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             total_luck += luck;
         }
         char* emoji;
-        if (strncmp(guess, answer, WORD_LENGTH) == 0) {
+        if (i == 0) {
+            emoji = "";
+            for (int i = 0; i < sizeof(BOOK_GUESSES) / (sizeof(char) * (WORD_LENGTH + 1)); i++) {
+                if (strncmp(guess, BOOK_GUESSES[i], WORD_LENGTH) == 0) {
+                    emoji = ":book:";
+                }
+            }
+        }
+        if (strcmp(emoji, ":book:") == 0) {
+            // do nothing
+        } else if (strncmp(guess, answer, WORD_LENGTH) == 0) {
             emoji = ":winner:";
         } else if (possible.count == 1) {
             emoji = ":miss:";

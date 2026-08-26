@@ -30,6 +30,7 @@ const EMOJIS: {[key: string]: string} = {
     ':mistake:': '<:mistake:1541544273999167488>',
     ':blunder:': '<:blunder:1541544504182571108>',
     ':winner:': '<:winner:1541545248935907418>',
+    ':miss:': '<:miss:1542273676899262504>',
 };
 
 
