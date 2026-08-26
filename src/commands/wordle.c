@@ -207,7 +207,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             }
         }
         if (skill_index == all_guesses.len) {
-            fprintf(stderr, "Error while finding skill");
+            fprintf(stderr, "Error while finding skill\n");
             exit(1);
         }
         double guess_score = data[skill_index].score;
@@ -247,7 +247,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             }
         }
         if (luck_index == all_guesses.len) {
-            fprintf(stderr, "Error while finding luck");
+            fprintf(stderr, "Error while finding luck\n");
             exit(1);
         }
         double luck;
