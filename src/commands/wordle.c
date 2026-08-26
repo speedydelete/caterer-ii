@@ -19,7 +19,7 @@ typedef uint32_t Pattern;
 #define GREEN 2
 #define INVALID_PATTERN 3
 // all greens
-#define MAX_PATTERN 242
+#define MAX_PATTERN 682
 
 typedef struct Possible {
     uint32_t count;
@@ -196,6 +196,9 @@ static inline void update_possible(Possible* possible, char* guess, char* answer
         if (!possible->data[i]) {
             continue;
         }
+        if (possible->count == 1) {
+            printf("%s\n", all_solutions.ptr[i]);
+        }
         if (target != get_pattern(guess, all_solutions.ptr[i])) {
             possible->data[i] = false;
             possible->count--;
@@ -207,8 +210,8 @@ static inline double score_guess(Possible* possible, char* guess) {
     if (possible->count == 1) {
         for (uint32_t i = 0; i < all_solutions.len; i++) {
             if (possible->data[i]) {
-                if (strcmp(guess, all_solutions.ptr[i]) == 0) {
-                    return 1.0;
+                if (strncmp(guess, all_solutions.ptr[i], WORD_LENGTH) == 0) {
+                    return 0.0;
                 }
             }
         }
@@ -220,9 +223,6 @@ static inline double score_guess(Possible* possible, char* guess) {
             continue;
         }
         Pattern target = get_pattern(guess, all_solutions.ptr[i]);
-        if (target == MAX_PATTERN) {
-            out++;
-        }
         for (uint32_t j = 0; j < all_solutions.len; j++) {
             if (!possible->data[j]) {
                 continue;
@@ -253,7 +253,7 @@ static inline int word_and_score_sorter(const void* _x, const void* _y) {
 }
 
 static inline int word_and_score_sorter_2(const void* x, const void* y) {
-    return strcmp(((WordAndScore*)x)->word, ((WordAndScore*)y)->word);
+    return strncmp(((WordAndScore*)x)->word, ((WordAndScore*)y)->word, WORD_LENGTH);
 }
 
 static inline void rank_guesses(WordAndScore* out, Possible* possible) {
@@ -268,10 +268,10 @@ static inline void rank_guesses(WordAndScore* out, Possible* possible) {
     }
     qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter);
     // printf("best: %s (%.3f) or %s (%.3f), worst: %s (%.3f) or %s (%.3f)\n", out[all_guesses.len - 1].word, out[all_guesses.len - 1].score, out[all_guesses.len - 2].word, out[all_guesses.len - 2].score, out[0].word, out[0].score, out[1].word, out[1].score);
-    // if (possible->count > 2000) {
-    //     qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter_2);
+    // if (possible->count <= 2) {
+    //     // qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter_2);
     //     for (size_t i = 0; i < all_guesses.len; i++) {
-    //         printf("%s: %a\n", out[i].word, out[i].score);
+    //         printf("%s: %.3f\n", out[i].word, out[i].score);
     //     }
     //     exit(0);
     // }
@@ -320,7 +320,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         }
         uint32_t skill_index;
         for (skill_index = 0; skill_index < all_guesses.len; skill_index++) {
-            if (strcmp(guess, data[skill_index].word) == 0) {
+            if (strncmp(guess, data[skill_index].word, WORD_LENGTH) == 0) {
                 break;
             }
         }
@@ -411,7 +411,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
                 }
             }
         }
-        if (strcmp(emoji, ":book:") == 0) {
+        if (strncmp(emoji, ":book:", 6) == 0) {
             // do nothing
         } else if (strncmp(guess, answer, WORD_LENGTH) == 0) {
             emoji = ":winner:";
