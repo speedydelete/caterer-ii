@@ -157,7 +157,7 @@ static inline void rank_guesses(WordAndScore* out, Possible* possible) {
         out[i].word = word;
         out[i].score = score_guess(possible, word);
         if (i % 100 == 0 && i > 0) {
-            printf("%i/%zu\n", i, all_guesses.len);
+            fprintf(stderr, "%i/%zu\n", i, all_guesses.len);
         }
     }
     qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter);
