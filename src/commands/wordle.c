@@ -372,10 +372,9 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         if (luck != -1.0) {
             total_luck += luck;
         }
-        char* emoji;
+        char* emoji = "";
         if (i == 0) {
-            emoji = "";
-            for (int i = 0; i < sizeof(BOOK_GUESSES) / (sizeof(char) * (WORD_LENGTH + 1)); i++) {
+            for (size_t i = 0; i < (sizeof(BOOK_GUESSES) / (sizeof(BOOK_GUESSES[0]))); i++) {
                 if (strncmp(guess, BOOK_GUESSES[i], WORD_LENGTH) == 0) {
                     emoji = ":book:";
                 }
