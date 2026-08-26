@@ -17,6 +17,7 @@ typedef uint32_t Pattern;
 #define GRAY 0
 #define YELLOW 1
 #define GREEN 2
+#define INVALID_PATTERN 3
 // all greens
 #define MAX_PATTERN 242
 
@@ -277,8 +278,8 @@ static inline void rank_guesses(WordAndScore* out, Possible* possible) {
 }
 
 
-static inline int double_sorter(const void* x, const void* y) {
-    return (int)(((*(double*)y) - (*(double*)x)) * 100000.0);
+static inline int uint32_sorter(const void* x, const void* y) {
+    return (int)((*(uint32_t*)y) - (*(uint32_t*)x));
 }
 
 static inline void to_uppercase(char* out, char* in) {
@@ -304,6 +305,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
     char* previous_guesses = safe_calloc(previous_guesses_size);
     memset(previous_guesses, '\0', previous_guesses_size);
     WordAndScore* data = safe_calloc(all_guesses.len * sizeof(WordAndScore));
+    Pattern* pattern_counts = safe_calloc((MAX_PATTERN + 1) * sizeof(Pattern));
     uint32_t* distr = safe_calloc(all_solutions.len * sizeof(uint32_t));
     for (int i = 0; i < guess_count; i++) {
         char* guess = guesses[i];
@@ -342,26 +344,37 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         // calculate luck:
         // find the distribution of remaining possible answers
         // and rank it by its position in there
-        uint32_t loc = 0;
+        memset(pattern_counts, 0, (MAX_PATTERN + 1) * sizeof(Pattern));
         for (uint32_t i = 0; i < all_solutions.len; i++) {
-            if (!possible.data[i]) {
-                continue;
-            }
-            Pattern target = get_pattern(guess, all_solutions.ptr[i]);
-            uint32_t value = 0;
-            for (uint32_t j = 0; j < all_solutions.len; j++) {
-                if (!possible.data[j]) {
-                    continue;
-                }
-                if (target == get_pattern(guess, all_solutions.ptr[j])) {
-                    value++;
-                }
-            }
-            distr[loc] = value;
-            loc++;
+            Pattern pattern = get_pattern(guess, all_solutions.ptr[i]);
+            pattern_counts[pattern]++;
         }
-        size_t distr_len = loc;
-        qsort(distr, distr_len, sizeof(uint32_t), double_sorter);
+        size_t distr_len = 0;
+        for (uint32_t i = 0; i < MAX_PATTERN + 1; i++) {
+            if (pattern_counts[i] > 0) {
+                distr[distr_len] = pattern_counts[i];
+                distr_len++;
+            }
+        }
+        // size_t distr_len = 0;
+        // for (uint32_t i = 0; i < all_solutions.len; i++) {
+        //     if (!possible.data[i]) {
+        //         continue;
+        //     }
+        //     Pattern target = get_pattern(guess, all_solutions.ptr[i]);
+        //     uint32_t value = 0;
+        //     for (uint32_t j = 0; j < all_solutions.len; j++) {
+        //         if (!possible.data[j]) {
+        //             continue;
+        //         }
+        //         if (target == get_pattern(guess, all_solutions.ptr[j])) {
+        //             value++;
+        //         }
+        //     }
+        //     distr[distr_len] = value;
+        //     distr_len++;
+        // }
+        qsort(distr, distr_len, sizeof(uint32_t), uint32_sorter);
         uint32_t luck_index;
         for (luck_index = 0; luck_index < distr_len; luck_index++) {
             if (next_possible.count == distr[luck_index]) {
@@ -460,7 +473,12 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         strncat(previous_guesses, guess, WORD_LENGTH);
     }
     printf("Overall: %i skill, %i luck\n", (int)trunc(total_skill / skill_guesses), (int)trunc(total_luck / luck_guesses));
+    free(possible.data);
+    free(next_possible.data);
+    free(previous_guesses);
     free(data);
+    free(pattern_counts);
+    free(distr);
 }
 
 
