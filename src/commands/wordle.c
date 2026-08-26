@@ -339,7 +339,8 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         } else {
             skill = skill_index * 100.0 / all_guesses.len;
         }
-        // calculate luck: find the distribution of next guesses
+        // calculate luck:
+        // find the distribution of remaining possible answers
         // and rank it by its position in there
         uint32_t loc = 0;
         for (uint32_t i = 0; i < all_solutions.len; i++) {
@@ -360,7 +361,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             loc++;
         }
         size_t distr_len = loc;
-        qsort(distr, distr_len, sizeof(double), double_sorter);
+        qsort(distr, distr_len, sizeof(uint32_t), double_sorter);
         uint32_t luck_index;
         for (luck_index = 0; luck_index < distr_len; luck_index++) {
             if (next_possible.count == distr[luck_index]) {
