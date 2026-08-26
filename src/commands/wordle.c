@@ -211,7 +211,7 @@ static inline double score_guess(Possible* possible, char* guess) {
                 }
             }
         }
-        return 1.0;
+        return -1.0;
     }
     uint32_t out = 0;
     for (uint32_t i = 0; i < all_solutions.len; i++) {
@@ -234,8 +234,19 @@ static inline double score_guess(Possible* possible, char* guess) {
     return (double)out / (double)(possible->count);
 }
 
-static inline int word_and_score_sorter(const void* x, const void* y) {
-    return (int)((((WordAndScore*)y)->score - ((WordAndScore*)x)->score) * 100000.0);
+static inline int word_and_score_sorter(const void* _x, const void* _y) {
+    double x = ((WordAndScore*)_x)->score;
+    double y = ((WordAndScore*)_y)->score;
+    if (x == -1.0) {
+        if (y == -1.0) {
+            return 0;
+        } else {
+            return 1;
+        }
+    } else {
+        return -1;
+    }
+    return (int)((y - x) * 100000.0);
 }
 
 static inline int word_and_score_sorter_2(const void* x, const void* y) {
@@ -429,11 +440,11 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         }
         printf("luck, remaining: %"PRIu32", ranking: `", next_possible.count);
         printf("%s/", data[all_guesses.len - 1].word);
-        if (data[all_guesses.len - 2].score != 0) {
+        if (data[all_guesses.len - 2].score != 1.0) {
             printf("%s/", data[all_guesses.len - 2].word);
-            if (data[all_guesses.len - 3].score != 0) {
+            if (data[all_guesses.len - 3].score != 1.0) {
                 printf("%s/", data[all_guesses.len - 3].word);
-                if (data[all_guesses.len - 4].score != 0) {
+                if (data[all_guesses.len - 4].score != 1.0) {
                     printf("%s/", data[all_guesses.len - 4].word);
                 }
             }
