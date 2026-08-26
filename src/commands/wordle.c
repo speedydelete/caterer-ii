@@ -31,8 +31,7 @@ static inline void* safe_calloc(size_t size) {
         perror("Error in calloc");
         exit(1);
     }
-    // makes clangd shut up
-    return NULL;
+    return out;
 }
 
 
@@ -40,6 +39,11 @@ typedef struct WordList {
     size_t len;
     char (*ptr)[WORD_LENGTH + 1];
 } WordList;
+
+typedef struct WordAndScore {
+    char* word;
+    double score;
+} WordAndScore;
 
 static inline void load_word_list(WordList* out, char* path) {
     FILE* file = fopen(path, "r");
@@ -138,11 +142,6 @@ static inline double score_guess(Possible* possible, char* guess) {
     return (double)out / (double)(possible->count);
 }
 
-typedef struct WordAndScore {
-    char* word;
-    double score;
-} WordAndScore;
-
 static inline int word_and_score_sorter(const void* x, const void* y) {
     return (int)(((WordAndScore*)x)->score - ((WordAndScore*)y)->score);
 }
@@ -152,8 +151,16 @@ static inline void rank_guesses(WordAndScore* out, Possible* possible) {
         char* word = all_guesses.ptr[i];
         out[i].word = word;
         out[i].score = score_guess(possible, word);
+        if (i % 100 == 0 && i > 0) {
+            printf("%i/%zu\n", i, all_guesses.len);
+        }
     }
     qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter);
+    if (possible->count > 2000) {
+        for (size_t i = 0; i < all_guesses.len; i++) {
+            printf("%s: %.17f", out[i].word, out[i].score);
+        }
+    }
 }
 
 
@@ -185,7 +192,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
     double* distr = safe_calloc(all_solutions.len * sizeof(WordAndScore));
     for (int i = 0; i < guess_count; i++) {
         char* guess = guesses[i];
-        memcpy(&next_possible, &possible, all_solutions.len * sizeof(bool));
+        memcpy(next_possible.data, possible.data, all_solutions.len * sizeof(bool));
         update_possible(&next_possible, guess, answer);
         rank_guesses(data, &possible);
         uint32_t skill_index;
@@ -308,7 +315,7 @@ int main(int argc, char** argv) {
     }
     load_word_list(&all_guesses, argv[1]);
     load_word_list(&all_solutions, argv[2]);
-    rate_game((char**)argv[4], argc - 4, argv[3]);
+    rate_game(argv + 4, argc - 4, argv[3]);
     free_word_list(&all_guesses);
     free_word_list(&all_solutions);
     return 0;
