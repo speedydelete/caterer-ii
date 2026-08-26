@@ -244,7 +244,9 @@ static inline int word_and_score_sorter(const void* _x, const void* _y) {
             return 1;
         }
     } else {
-        return -1;
+        if (y == -1.0) {
+            return -1;
+        }
     }
     return (int)((y - x) * 100000.0);
 }
