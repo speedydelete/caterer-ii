@@ -352,7 +352,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
                 break;
             }
         }
-        if (luck_index == possible.count) {
+        if (luck_index == possible.count || true) {
             fprintf(stderr, "Error while finding luck: next_possible.count = %"PRIu32", distr[0] = %"PRIu32", distr[distr_len - 1] = %"PRIu32"\n", next_possible.count, distr[0], distr[distr_len - 1]);
             exit(1);
         }
