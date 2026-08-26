@@ -1,5 +1,5 @@
 
-#include <linux/limits.h>
+
 #include <stdbool.h>
 #include <inttypes.h>
 #include <ctype.h>
@@ -13,9 +13,12 @@
 
 // 5 fields, each field is 2 bits long
 typedef uint32_t Pattern;
+#define PATTERN_MASK 3
 #define GRAY 0
 #define YELLOW 1
 #define GREEN 2
+// all greens
+#define MAX_PATTERN 242
 
 typedef struct Possible {
     uint32_t count;
@@ -70,10 +73,12 @@ static inline void load_word_list(WordList* out, char* path) {
             i++;
         }
     }
+    fclose(file);
 }
 
 static inline void free_word_list(WordList* list) {
     free(list->ptr);
+    list->ptr = NULL;
 }
 
 WordList all_guesses;
@@ -86,7 +91,48 @@ typedef struct WordAndScore {
     double score;
 } WordAndScore;
 
-// WordAndScore first_guess_data[];
+WordAndScore* first_guesses;
+
+static inline void load_first_guesses(char* path) {
+    FILE* file = fopen(path, "r");
+    if (file == NULL) {
+        char msg[256];
+        snprintf(msg, sizeof(msg), "Error opening %s", path);
+        perror(msg);
+        exit(1);
+    }
+    size_t len = 0;
+    char c;
+    while ((c = fgetc(file)) != EOF) {
+        if (c == '\n') {
+            len++;
+        }
+    }
+    rewind(file);
+    first_guesses = safe_calloc(len * sizeof(WordAndScore));
+    size_t line = 0;
+    size_t i = 0;
+    char current_line[256];
+    while ((c = fgetc(file)) != EOF) {
+        if (c == '\n') {
+            WordAndScore* data = &first_guesses[line];
+            data->word = all_guesses.ptr[line];
+            current_line[i] = '\0';
+            data->score = strtod(current_line, NULL);
+            line++;
+            i = 0;
+        } else {
+            current_line[i] = c;
+            i++;
+        }
+    }
+    fclose(file);
+}
+
+static inline void free_first_guesses() {
+    free(first_guesses);
+    first_guesses = NULL;
+}
 
 
 static inline Pattern get_pattern(char* guess, char* target) {
@@ -115,13 +161,26 @@ static inline Pattern get_pattern(char* guess, char* target) {
     return pattern;
 }
 
+// static inline void print_pattern(Pattern p) {
+//     for (int i = 0; i < WORD_LENGTH; i++) {
+//         if ((p & PATTERN_MASK) == GREEN) {
+
+//         } else if ((p & PATTERN_MASK) == YELLOW) {
+
+//         } else {
+
+//         }
+//         p >>= 2;
+//     }
+// }
+
 static inline void update_possible(Possible* possible, char* guess, char* answer) {
     Pattern target = get_pattern(guess, answer);
     for (uint32_t i = 0; i < all_solutions.len; i++) {
         if (!possible->data[i]) {
             continue;
         }
-        if (target == get_pattern(guess, all_solutions.ptr[i])) {
+        if (target != get_pattern(guess, all_solutions.ptr[i])) {
             possible->data[i] = false;
             possible->count--;
         }
@@ -129,17 +188,30 @@ static inline void update_possible(Possible* possible, char* guess, char* answer
 }
 
 static inline double score_guess(Possible* possible, char* guess) {
+    if (possible->count == 1) {
+        for (uint32_t i = 0; i < all_solutions.len; i++) {
+            if (possible->data[i]) {
+                if (strcmp(guess, all_solutions.ptr[i]) == 0) {
+                    return 0.0;
+                }
+            }
+        }
+        return 1.0;
+    }
     uint32_t out = 0;
     for (uint32_t i = 0; i < all_solutions.len; i++) {
         if (!possible->data[i]) {
             continue;
         }
         Pattern target = get_pattern(guess, all_solutions.ptr[i]);
-        for (uint32_t i = 0; i < all_solutions.len; i++) {
-            if (!possible->data[i]) {
+        if (target == MAX_PATTERN) {
+            out++;
+        }
+        for (uint32_t j = 0; j < all_solutions.len; j++) {
+            if (!possible->data[j]) {
                 continue;
             }
-            if (target == get_pattern(guess, all_solutions.ptr[i])) {
+            if (target == get_pattern(guess, all_solutions.ptr[j])) {
                 out++;
             }
         }
@@ -148,7 +220,11 @@ static inline double score_guess(Possible* possible, char* guess) {
 }
 
 static inline int word_and_score_sorter(const void* x, const void* y) {
-    return (int)(((WordAndScore*)x)->score - ((WordAndScore*)y)->score);
+    return (int)((((WordAndScore*)y)->score - ((WordAndScore*)x)->score) * 100000.0);
+}
+
+static inline int word_and_score_sorter_2(const void* x, const void* y) {
+    return strcmp(((WordAndScore*)x)->word, ((WordAndScore*)y)->word);
 }
 
 static inline void rank_guesses(WordAndScore* out, Possible* possible) {
@@ -156,21 +232,25 @@ static inline void rank_guesses(WordAndScore* out, Possible* possible) {
         char* word = all_guesses.ptr[i];
         out[i].word = word;
         out[i].score = score_guess(possible, word);
-        if (i % 100 == 0 && i > 0) {
-            fprintf(stderr, "%i/%zu\n", i, all_guesses.len);
-        }
+        // if (i % 100 == 0 && i > 0) {
+        //     qsort(out, i + 1, sizeof(WordAndScore), word_and_score_sorter);
+        //     printf("%i/%zu: current: %s, best: %s (%.3f) or %s (%.3f), worst: %s (%.3f) or %s (%.3f)\n", i, all_guesses.len, word, out[i].word, out[i].score, out[i - 1].word, out[i - 1].score, out[0].word, out[0].score, out[1].word, out[1].score);
+        // }
     }
     qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter);
-    if (possible->count > 2000) {
-        for (size_t i = 0; i < all_guesses.len; i++) {
-            printf("%s: %.17f\n", out[i].word, out[i].score);
-        }
-    }
+    // printf("best: %s (%.3f) or %s (%.3f), worst: %s (%.3f) or %s (%.3f)\n", out[all_guesses.len - 1].word, out[all_guesses.len - 1].score, out[all_guesses.len - 2].word, out[all_guesses.len - 2].score, out[0].word, out[0].score, out[1].word, out[1].score);
+    // if (possible->count > 2000) {
+    //     qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter_2);
+    //     for (size_t i = 0; i < all_guesses.len; i++) {
+    //         printf("%s: %a\n", out[i].word, out[i].score);
+    //     }
+    //     exit(0);
+    // }
 }
 
 
 static inline int double_sorter(const void* x, const void* y) {
-    return (int)((*(double*)y) - (*(double*)x));
+    return (int)(((*(double*)y) - (*(double*)x)) * 100000.0);
 }
 
 static inline void to_uppercase(char* out, char* in) {
@@ -194,12 +274,18 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
     char* previous_guesses = safe_calloc(previous_guesses_size);
     memset(previous_guesses, '\0', previous_guesses_size);
     WordAndScore* data = safe_calloc(all_guesses.len * sizeof(WordAndScore));
-    double* distr = safe_calloc(all_solutions.len * sizeof(WordAndScore));
+    uint32_t* distr = safe_calloc(all_solutions.len * sizeof(WordAndScore));
     for (int i = 0; i < guess_count; i++) {
         char* guess = guesses[i];
-        memcpy(next_possible.data, possible.data, all_solutions.len * sizeof(bool));
+        possible.count = next_possible.count;
+        memcpy(possible.data, next_possible.data, all_solutions.len * sizeof(bool));
         update_possible(&next_possible, guess, answer);
-        rank_guesses(data, &possible);
+        if (i == 0) {
+            memcpy(data, first_guesses, all_guesses.len * sizeof(WordAndScore));
+            qsort(data, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter);
+        } else {
+            rank_guesses(data, &possible);
+        }
         uint32_t skill_index;
         for (skill_index = 0; skill_index < all_guesses.len; skill_index++) {
             if (strcmp(guess, data[skill_index].word) == 0) {
@@ -211,9 +297,14 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             exit(1);
         }
         double guess_score = data[skill_index].score;
-        double best_guess_score = data[all_guesses.len - 1].score;
+        // change index to be the earliest one with the same score
+        for (skill_index = 0; skill_index < all_guesses.len; skill_index++) {
+            if (guess_score == data[skill_index].score) {
+                break;
+            }
+        }
         double skill;
-        if (guess_score == best_guess_score) {
+        if (guess_score == data[all_guesses.len - 1].score) {
             skill = 100.0;
         } else {
             skill = skill_index * 100.0 / all_guesses.len;
@@ -221,45 +312,51 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         // calculate luck: find the distribution of next guesses
         // and rank it by its position in there
         uint32_t loc = 0;
-        for (uint32_t i = 0; i < possible.count; i++) {
+        for (uint32_t i = 0; i < all_solutions.len; i++) {
             if (!possible.data[i]) {
                 continue;
             }
             Pattern target = get_pattern(guess, all_solutions.ptr[i]);
-            double value = 0.0;
-            for (uint32_t i = 0; i < all_solutions.len; i++) {
-                if (!possible.data[i]) {
+            uint32_t value = 0;
+            for (uint32_t j = 0; j < all_solutions.len; j++) {
+                if (!possible.data[j]) {
                     continue;
                 }
-                if (target == get_pattern(guess, all_solutions.ptr[i])) {
+                if (target == get_pattern(guess, all_solutions.ptr[j])) {
                     value++;
                 }
             }
             distr[loc] = value;
             loc++;
         }
-        size_t distr_size = loc;
-        qsort(distr, distr_size, sizeof(double), double_sorter);
+        size_t distr_len = loc;
+        qsort(distr, distr_len, sizeof(double), double_sorter);
         uint32_t luck_index;
-        for (luck_index = 0; luck_index < all_guesses.len; luck_index++) {
+        for (luck_index = 0; luck_index < possible.count; luck_index++) {
             if (next_possible.count == distr[luck_index]) {
                 break;
             }
         }
-        if (luck_index == all_guesses.len) {
-            fprintf(stderr, "Error while finding luck\n");
+        if (luck_index == possible.count) {
+            fprintf(stderr, "Error while finding luck: next_possible.count = %"PRIu32", distr[0] = %"PRIu32", distr[distr_len - 1] = %"PRIu32"\n", next_possible.count, distr[0], distr[distr_len - 1]);
             exit(1);
         }
         double luck;
-        if (distr[luck_index] == distr[distr_size - 1]) {
-            luck = 100.0;
+        if (distr[0] == distr[distr_len - 1]) {
+            luck = -1.0;
         } else {
-            luck = luck_index * 100.0 / all_guesses.len;
+            if (distr[luck_index] == distr[distr_len - 1]) {
+                luck = 100.0;
+            } else {
+                luck = luck_index * 100.0 / possible.count;
+            }
         }
         if (i > 0) {
             total_skill += skill;
         }
-        total_luck += luck;
+        if (luck != -1.0) {
+            total_luck += luck;
+        }
         char* emoji;
         if (strncmp(guess, answer, WORD_LENGTH) == 0) {
             emoji = ":winner:";
@@ -296,17 +393,28 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         } else {
             emoji = ":blunder:";
         }
-        char u_guess[WORD_LENGTH + 1];
-        to_uppercase(u_guess, guess);
-        char u_best1[WORD_LENGTH + 1];
-        to_uppercase(u_best1, data[all_guesses.len - 1].word);
-        char u_best2[WORD_LENGTH + 1];
-        to_uppercase(u_best2, data[all_guesses.len - 2].word);
-        char u_best3[WORD_LENGTH + 1];
-        to_uppercase(u_best3, data[all_guesses.len - 3].word);
-        char u_worst[WORD_LENGTH + 1];
-        to_uppercase(u_worst, data[0].word);
-        printf("%s `%s` - %i skill, %i luck, score: %.3f (best: %.3f), ranking: `%s/%s/%s/.../%s`\n", emoji, u_guess, (int)trunc(skill), (int)trunc(luck), guess_score, best_guess_score, u_best1, u_best2, u_best3, u_worst);
+        printf("%s `%s` - %i skill, ", emoji, guess, (int)trunc(skill));
+        if (luck == -1.0) {
+            printf("no ");
+        } else {
+            printf("%i ", (int)trunc(luck));
+        }
+        printf("luck, remaining: %"PRIu32", ranking: `", next_possible.count);
+        printf("%s/", data[all_guesses.len - 1].word);
+        if (data[all_guesses.len - 2].score != 0) {
+            printf("%s/", data[all_guesses.len - 2].word);
+            if (data[all_guesses.len - 3].score != 0) {
+                printf("%s/", data[all_guesses.len - 3].word);
+                if (data[all_guesses.len - 4].score != 0) {
+                    printf("%s/", data[all_guesses.len - 4].word);
+                }
+            }
+        }
+        printf("...");
+        if (i == 0) {
+            printf("/%s", data[0].word);
+        }
+        printf("`\n");
         strncat(previous_guesses, guess, WORD_LENGTH);
     }
     printf("Overall: %i skill, %i luck\n", (int)trunc(total_skill / (guess_count - 1)), (int)trunc(total_luck / guess_count));
@@ -320,9 +428,11 @@ int main(int argc, char** argv) {
     }
     load_word_list(&all_guesses, argv[1]);
     load_word_list(&all_solutions, argv[2]);
-    // read_first_guess_data(argv[3]);
+    load_first_guesses(argv[3]);
     rate_game(argv + 5, argc - 5, argv[4]);
+    free_first_guesses();
     free_word_list(&all_guesses);
     free_word_list(&all_solutions);
     return 0;
 }
+
