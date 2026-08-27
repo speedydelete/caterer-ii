@@ -53,15 +53,13 @@ addCommand(
                 throw new BotError(`Invalid word (does not exist): '${word}'`);
             }
         }
-        let guesses: string[] = [];
-        let solution: string;
+        let guesses: string[];
         if (words.length > 6) {
             guesses = words.slice(0, -1);
-            solution = words[6];
         } else {
             guesses = words;
-            solution = words[words.length - 1];
         }
+        let solution = words[words.length - 1];
         if (!SOLUTIONS.has(solution)) {
             throw new BotError(`Invalid solution (not real): '${solution}'`);
         }

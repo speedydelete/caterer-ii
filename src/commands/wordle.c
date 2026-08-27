@@ -1,7 +1,7 @@
 
-
 #include <stdbool.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <alloca.h>
@@ -210,7 +210,17 @@ static inline double score_guess_information(Possible* possible, char* guess) {
         if (!possible->data[i]) {
             continue;
         }
+        if (possible->count == 1) {
+            if (strcmp(guess, all_solutions.ptr[i]) == 0) {
+                return 0;
+            } else {
+                return INFINITY;
+            }
+        }
         Pattern target = get_pattern(guess, all_solutions.ptr[i]);
+        if (target == MAX_PATTERN) {
+            continue;
+        }
         for (uint32_t j = 0; j < all_solutions.len; j++) {
             if (!possible->data[j]) {
                 continue;
@@ -225,87 +235,104 @@ static inline double score_guess_information(Possible* possible, char* guess) {
 
 static inline double score_guess(Possible* possible, char* guess);
 
-static inline double score_guess_tree(Possible* possible, char* guess) {
-    if (possible->count == 1) {
-        return 1.0;
-    }
-    Possible new_possible;
-    new_possible.data = alloca(all_solutions.len * sizeof(bool));
-    uint32_t counts[MAX_PATTERN + 1];
-    memset(counts, 0, (MAX_PATTERN + 1) * sizeof(uint32_t));
-    for (uint32_t i = 0; i < all_solutions.len; i++) {
-        if (!possible->data[i]) {
-            continue;
-        }
-        Pattern pattern = get_pattern(guess, all_solutions.ptr[i]);
-        counts[pattern]++;
-    }
-    double out = 0;
-    for (Pattern pattern = 0; pattern < MAX_PATTERN + 1; pattern++) {
-        uint32_t count = counts[pattern];
-        if (count == 0) {
-            continue;
-        }
-        new_possible.count = possible->count;
-        memcpy(new_possible.data, possible->data, all_solutions.len * sizeof(bool));
-        for (uint32_t i = 0; i < all_solutions.len; i++) {
-            if (!new_possible.data[i]) {
-                continue;
-            }
-            if (pattern != get_pattern(guess, all_solutions.ptr[i])) {
-                new_possible.data[i] = false;
-                new_possible.count--;
-            }
-        }
-        double value;
-        if (new_possible.count == possible->count) {
-            // prevent infinite recursion
-            continue;
-        } else if (new_possible.count == 1) {
-            // shortcut
-            value = 1.0;
-        } else {
-            double best = INFINITY;
-            for (uint32_t i = 0; i < all_guesses.len; i++) {
-                double new = score_guess(&new_possible, all_guesses.ptr[i]);
-                if (new < best) {
-                    best = new;
-                }
-            }
-            if (best == INFINITY) {
-                fprintf(stderr, "Failed to find best guess\n");
-                continue;
-            }
-            value = best;
-        }
-        out += count * (1.0 + value);
-    }
-    return out / possible->count;
-}
+// static inline double score_guess_tree(Possible* possible, char* guess) {
+//     if (possible->count == 1) {
+//         for (uint32_t i = 0; i < all_solutions.len; i++) {
+//             if (possible->data[i]) {
+//                 if (strncmp(guess, all_solutions.ptr[i], WORD_LENGTH) == 0) {
+//                     return 0.0;
+//                 } else {
+//                     return 1.0;
+//                 }
+//             }
+//         }
+//         return 1.0;
+//     }
+//     Possible new_possible;
+//     new_possible.data = alloca(all_solutions.len * sizeof(bool));
+//     uint32_t counts[MAX_PATTERN + 1];
+//     memset(counts, 0, (MAX_PATTERN + 1) * sizeof(uint32_t));
+//     for (uint32_t i = 0; i < all_solutions.len; i++) {
+//         if (!possible->data[i]) {
+//             continue;
+//         }
+//         Pattern pattern = get_pattern(guess, all_solutions.ptr[i]);
+//         counts[pattern]++;
+//     }
+//     double out = 0;
+//     for (Pattern pattern = 0; pattern < MAX_PATTERN + 1; pattern++) {
+//         uint32_t count = counts[pattern];
+//         if (count == 0) {
+//             continue;
+//         }
+//         if (pattern == MAX_PATTERN) {
+//             continue;
+//         }
+//         new_possible.count = possible->count;
+//         memcpy(new_possible.data, possible->data, all_solutions.len * sizeof(bool));
+//         for (uint32_t i = 0; i < all_solutions.len; i++) {
+//             if (!new_possible.data[i]) {
+//                 continue;
+//             }
+//             if (pattern != get_pattern(guess, all_solutions.ptr[i])) {
+//                 new_possible.data[i] = false;
+//                 new_possible.count--;
+//             }
+//         }
+//         double value;
+//         if (new_possible.count == possible->count) {
+//             // prevent infinite recursion
+//             continue;
+//         } else if (new_possible.count == 1) {
+//             // shortcut
+//             value = 1.0;
+//         } else {
+//             double best = INFINITY;
+//             for (uint32_t i = 0; i < all_guesses.len; i++) {
+//                 double new = score_guess(&new_possible, all_guesses.ptr[i]);
+//                 if (new < best) {
+//                     best = new;
+//                 }
+//             }
+//             if (best == INFINITY) {
+//                 fprintf(stderr, "Failed to find best guess\n");
+//                 continue;
+//             }
+//             value = best;
+//         }
+//         out += count * (1.0 + value);
+//     }
+//     if (out == 0) {
+//         out = INFINITY;
+//     }
+//     // printf("%s: %.3f\n", guess, out / (double)possible->count);
+//     return out / (double)possible->count;
+// }
 
 static inline double score_guess(Possible* possible, char* guess) {
-    if (possible->count <= 2) {
-        return score_guess_tree(possible, guess);
-    } else {
+    // if (possible->count <= 0) {
+    //     return score_guess_tree(possible, guess);
+    // } else {
         return score_guess_information(possible, guess);
-    }
+    // }
 }
 
 static inline int word_and_score_sorter(const void* _x, const void* _y) {
     double x = ((WordAndScore*)_x)->score;
     double y = ((WordAndScore*)_y)->score;
-    if (x == -1.0) {
-        if (y == -1.0) {
+    if (x == INFINITY) {
+        if (y == INFINITY) {
             return 0;
         } else {
-            return 1;
-        }
-    } else {
-        if (y == -1.0) {
             return -1;
         }
+    } else {
+        if (y == INFINITY) {
+            return 1;
+        } else {
+            return (int)((y - x) * 100000.0);
+        }
     }
-    return (int)((y - x) * 100000.0);
 }
 
 static inline int word_and_score_sorter_2(const void* x, const void* y) {
@@ -333,13 +360,13 @@ static inline void rank_guesses(WordAndScore* out, Possible* possible) {
         } else {
             out[i].score = score_guess(possible, guess);
         }
-        // if (i % 100 == 0 && i > 0) {
+        // if (i % 1000 == 0 && i > 0) {
         //     qsort(out, i + 1, sizeof(WordAndScore), word_and_score_sorter);
         //     printf("%i/%zu: current: %s, best: %s (%.3f) or %s (%.3f), worst: %s (%.3f) or %s (%.3f)\n", i, all_guesses.len, guess, out[i].word, out[i].score, out[i - 1].word, out[i - 1].score, out[0].word, out[0].score, out[1].word, out[1].score);
         // }
     }
     qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter);
-    // printf("best: %s (%.3f) or %s (%.3f), worst: %s (%.3f) or %s (%.3f)\n", out[all_guesses.len - 1].word, out[all_guesses.len - 1].score, out[all_guesses.len - 2].word, out[all_guesses.len - 2].score, out[0].word, out[0].score, out[1].word, out[1].score);
+    printf("best: %s (%.3f) or %s (%.3f), worst: %s (%.3f) or %s (%.3f)\n", out[all_guesses.len - 1].word, out[all_guesses.len - 1].score, out[all_guesses.len - 2].word, out[all_guesses.len - 2].score, out[0].word, out[0].score, out[1].word, out[1].score);
     // if (possible->count <= 2) {
     //     // qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter_2);
     //     for (size_t i = 0; i < all_guesses.len; i++) {
