@@ -360,7 +360,7 @@ static inline void rank_guesses(WordAndScore* out, Possible* possible) {
         } else {
             out[i].score = score_guess(possible, guess);
         }
-        // if (i % 1000 == 0 && i > 0) {
+        // if (possible->count >= 1369 && i % 100 == 0 && i > 0) {
         //     qsort(out, i + 1, sizeof(WordAndScore), word_and_score_sorter);
         //     printf("%i/%zu: current: %s, best: %s (%.3f) or %s (%.3f), worst: %s (%.3f) or %s (%.3f)\n", i, all_guesses.len, guess, out[i].word, out[i].score, out[i - 1].word, out[i - 1].score, out[0].word, out[0].score, out[1].word, out[1].score);
         // }
