@@ -99,6 +99,8 @@ async function runCommand(msg: OmitPartialGroupDMChannel<_Message>): Promise<voi
             previousMsgs.push([msg.id, await msg.reply({content: 'Error: Message too long!', allowedMentions: {repliedUser: true, parse: []}})]);
         } else if (error instanceof DiscordAPIError && error.message === 'Reaction blocked') {
             return;
+        } else if (error instanceof Error && error.message === 'spawnSync /bin/sh ETIMEDOUT') {
+            previousMsgs.push([msg.id, await msg.reply({content: 'Error: Timed out!', allowedMentions: {repliedUser: true, parse: []}})]);
         } else {
             let str: string;
             if (error && typeof error === 'object' && 'stack' in error) {
