@@ -63,7 +63,7 @@ addCommand(
         if (!SOLUTIONS.has(solution)) {
             throw new BotError(`Invalid solution (not real): '${solution}'`);
         }
-        let out = execSync(`${resolvePath('wordle')} ${resolvePath('data/wordle/nyt_guesses.txt')} ${resolvePath('data/wordle/nyt_solutions.txt')} ${resolvePath('data/wordle/nyt_first_guesses.txt')} ${solution} ${guesses.join(' ')}`).toString();
+        let out = execSync(`${resolvePath('wordle')} ${resolvePath('data/wordle/nyt_guesses.txt')} ${resolvePath('data/wordle/nyt_solutions.txt')} ${resolvePath('data/wordle/nyt_first_guesses.txt')} ${solution} ${guesses.join(' ')}`, {timeout: 10000}).toString();
         for (let [before, after] of Object.entries(EMOJIS)) {
             out = out.replaceAll(before, after);
         }
