@@ -366,7 +366,7 @@ static inline void rank_guesses(WordAndScore* out, Possible* possible) {
         // }
     }
     qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter);
-    printf("best: %s (%.3f) or %s (%.3f), worst: %s (%.3f) or %s (%.3f)\n", out[all_guesses.len - 1].word, out[all_guesses.len - 1].score, out[all_guesses.len - 2].word, out[all_guesses.len - 2].score, out[0].word, out[0].score, out[1].word, out[1].score);
+    // printf("best: %s (%.3f) or %s (%.3f), worst: %s (%.3f) or %s (%.3f)\n", out[all_guesses.len - 1].word, out[all_guesses.len - 1].score, out[all_guesses.len - 2].word, out[all_guesses.len - 2].score, out[0].word, out[0].score, out[1].word, out[1].score);
     // if (possible->count <= 2) {
     //     // qsort(out, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter_2);
     //     for (size_t i = 0; i < all_guesses.len; i++) {
