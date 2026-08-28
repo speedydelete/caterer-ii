@@ -363,7 +363,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
     memset(next_possible.data, true, all_solutions.len);
     #if HARD_MODE
     bool* guessable = safe_calloc(all_guesses.len * sizeof(bool));
-    memset(next_possible.data, true, all_guesses.len);
+    memset(guessable, true, all_guesses.len);
     #endif
     double total_skill = 0;
     double skill_guesses = 0;
