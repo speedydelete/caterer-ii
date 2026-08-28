@@ -684,7 +684,6 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
         throw new ArgumentError(`Nonexistent option: '${option}'`);
     }
     let arg = foundArg;
-    console.log(arg.kind);
     if (arg.kind === 'flag') {
         out[kebabToCamel(arg.name)] = flagValue;
     } else if (mustBeFlag) {
@@ -715,6 +714,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
     for (let pos = nestLevel + 1; pos < argv.length; pos++) {
         let [value, isFlag] = argv[pos];
         if (!isFlag) {
+            console.log('doing pos arg', value, isFlag);
             let data = parsePosArgs(out, cmd.posArgs, argv, pos, posArgsPos);
             pos = data.pos - 1;
             posArgsPos = data.posArgsPos;
@@ -746,7 +746,9 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
                 continue;
             }
             pos++;
+            console.log('pos is', pos);
             pos = parseOptionArg(out, cmd, argv, pos, option, value, mustBeFlag, flagValue) - 1;
+            console.log('pos is now', pos);
         }
     }
     afterPosArgsParsed(out, cmd.posArgs);
