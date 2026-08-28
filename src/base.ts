@@ -481,6 +481,7 @@ function parseArgv(data: string, noArgvParse?: boolean): Argv {
         } else if ((char === ' ' || char === '\n') && quoteMode === 'none') {
             out.push([currentArg, currentIsFlag]);
             currentArg = '';
+            currentIsFlag = false;
         } else {
             if (char === '-' && currentArg.length === 0) {
                 currentIsFlag = true;
@@ -714,7 +715,6 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
     for (let pos = nestLevel + 1; pos < argv.length; pos++) {
         let [value, isFlag] = argv[pos];
         if (!isFlag) {
-            console.log('doing pos arg', value, isFlag);
             let data = parsePosArgs(out, cmd.posArgs, argv, pos, posArgsPos);
             pos = data.pos - 1;
             posArgsPos = data.posArgsPos;
@@ -746,9 +746,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
                 continue;
             }
             pos++;
-            console.log('pos is', pos);
             pos = parseOptionArg(out, cmd, argv, pos, option, value, mustBeFlag, flagValue) - 1;
-            console.log('pos is now', pos, argv.length);
         }
     }
     afterPosArgsParsed(out, cmd.posArgs);
