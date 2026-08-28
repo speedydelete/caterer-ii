@@ -1,9 +1,10 @@
 
 import {ChildProcess, spawn, execSync} from 'node:child_process';
+
 import {Client, GatewayIntentBits, TextChannel} from 'discord.js';
 
 import {BotToWrapperMessage} from './ipc_and_error_setup.js';
-import {IS_TESTING, BotError, Message, config, sentByAdmin, lookupSignal} from './real_base.js';
+import {IS_TESTING, BotError, Message, exists, readFile, writeFile, config, sentByAdmin, lookupSignal} from './real_base.js';
 
 
 let client = new Client({intents: [
@@ -24,20 +25,36 @@ async function log(message: string): Promise<void> {
 let caterer: ChildProcess | undefined;
 
 
-function getNow() {
+function getNow(): number {
     return Date.now() / 1000;
 }
 
-function getHour() {
+function getHour(): number {
     return Math.floor(getNow() / 3600);
 }
 
-function getDay() {
+function getDay(): number {
     return Math.floor(getNow() / 86400);
 }
 
 let lastRestartHour = getHour();
-let restartsThisHour = 0;
+let restartsInLastHour = 1;
+
+async function saveCounter(): Promise<void> {
+    await writeFile('counter.txt', lastRestartHour + '\n' + restartsInLastHour);
+}
+
+if (exists('counter.txt')) {
+    let data = await readFile('counter.txt');
+    let match = data.match(/^(\d+)\n(\d+)$/);
+    if (match) {
+        let hour = Number(match[0]);
+        let restarts = Number(match[1]);
+        if (hour === lastRestartHour) {
+            restartsInLastHour = restarts + 1;
+        }
+    }
+}
 
 let isSupposedToBeOn = true;
 
@@ -111,12 +128,13 @@ async function startBot(manual: boolean = false): Promise<void> {
             }
             let currentHour = getHour();
             if (lastRestartHour === currentHour) {
-                restartsThisHour++;
+                restartsInLastHour++;
             } else {
                 lastRestartHour = currentHour;
-                restartsThisHour = 1;
+                restartsInLastHour = 1;
             }
-            if (restartsThisHour > config.wrapper.maxRestartsPerHour) {
+            await saveCounter();
+            if (restartsInLastHour > config.wrapper.maxRestartsPerHour) {
                 log('Maximum automatic restarts exceeded for this hour, not restarting');
                 isSupposedToBeOn = false;
                 let interval = setInterval(async () => {
@@ -244,10 +262,10 @@ client.login(config.wrapper.token);
 
 // restart every 24 hours
 let prevDay = getDay();
-setTimeout(async () => {
+setInterval(async () => {
     let day = getDay();
     if (day !== prevDay) {
         await stopBot();
         process.exit(0);
     }
-});
+}, 60000);

@@ -1,4 +1,5 @@
 
+import {existsSync} from 'node:fs';
 import * as fs from 'node:fs/promises';
 import {join} from 'node:path';
 import {isMainThread} from 'node:worker_threads';
@@ -30,6 +31,10 @@ export const BASE_PATH = join(import.meta.dirname, '..');
 
 export function resolvePath(path: string): string {
     return join(BASE_PATH, path);
+}
+
+export function exists(path: string): boolean {
+    return existsSync(resolvePath(path));
 }
 
 export async function readFile(path: string): Promise<string> {
