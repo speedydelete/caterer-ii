@@ -61,7 +61,7 @@ addCommand(
         }
         let solution = words[words.length - 1];
         if (!SOLUTIONS.has(solution)) {
-            throw new BotError(`Invalid solution (not real): '${solution}'`);
+            throw new BotError(`Invalid solution (not common): '${solution}'`);
         }
         execSync(`gcc -Wall -Werror -Wpedantic -Wextra -g -O3 -march=native -mtune=native -flto -fomit-frame-pointer -o ${resolvePath('wordle')} ${resolvePath('src/commands/wordle.c')} -lm`, {timeout: 5000});
         let out = execSync(`${resolvePath('wordle')} ${resolvePath('data/wordle/nyt_guesses.txt')} ${resolvePath('data/wordle/nyt_solutions.txt')} ${resolvePath('data/wordle/nyt_first_guesses.txt')} ${solution} ${guesses.join(' ')}`, {timeout: 10000}).toString();
