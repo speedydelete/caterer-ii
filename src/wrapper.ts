@@ -37,11 +37,11 @@ function getDay(): number {
     return Math.floor(getNow() / 86400);
 }
 
-let lastRestartHour = getHour();
-let restartsInLastHour = 1;
+let counterHour = getHour();
+let counter = 0;
 
 async function saveCounter(): Promise<void> {
-    await writeFile('counter.txt', lastRestartHour + '\n' + restartsInLastHour + '\n');
+    await writeFile('counter.txt', counterHour + '\n' + counter + '\n');
 }
 
 if (exists('counter.txt')) {
@@ -51,7 +51,7 @@ if (exists('counter.txt')) {
         let hour = Number(match[1]);
         let restarts = Number(match[2]);
         if (hour === getHour()) {
-            restartsInLastHour = restarts + 1;
+            counter = restarts;
         }
     }
 }
@@ -102,6 +102,26 @@ async function startBot(manual: boolean = false): Promise<void> {
     if (caterer) {
         throw new BotError('Bot is running!');
     }
+    let currentHour = getHour();
+    if (counterHour === currentHour) {
+        counter++;
+    } else {
+        counterHour = currentHour;
+        counter = 1;
+    }
+    await saveCounter();
+    if (counter > config.wrapper.maxRestartsPerHour) {
+        log('Maximum automatic restarts exceeded for this hour, not restarting');
+        isSupposedToBeOn = false;
+        let interval = setInterval(async () => {
+            if (getHour() !== currentHour) {
+                clearInterval(interval);
+                isSupposedToBeOn = true;
+                await startBot();
+            }
+        }, 60000);
+        return;
+    }
     let args = [`${import.meta.dirname}/index.js`];
     if (IS_TESTING) {
         args.push('testing=true');
@@ -126,26 +146,6 @@ async function startBot(manual: boolean = false): Promise<void> {
         }
         setTimeout(async () => {
             if (!isSupposedToBeOn) {
-                return;
-            }
-            let currentHour = getHour();
-            if (lastRestartHour === currentHour) {
-                restartsInLastHour++;
-            } else {
-                lastRestartHour = currentHour;
-                restartsInLastHour = 1;
-            }
-            await saveCounter();
-            if (restartsInLastHour > config.wrapper.maxRestartsPerHour) {
-                log('Maximum automatic restarts exceeded for this hour, not restarting');
-                isSupposedToBeOn = false;
-                let interval = setInterval(async () => {
-                    if (getHour() !== currentHour) {
-                        clearInterval(interval);
-                        isSupposedToBeOn = true;
-                        await startBot();
-                    }
-                }, 60000);
                 return;
             }
             await startBot();
@@ -221,11 +221,11 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
     },
 
     async 'getcounter'(): Promise<Response> {
-        return `Current hour: ${getHour()}\nLast hour: ${lastRestartHour}\nRestarts in last hour: ${restartsInLastHour}`;
+        return `Current hour: ${getHour()}\nLast hour: ${counterHour}\nStarts in last hour: ${counter}`;
     },
 
     async 'resetcounter'(): Promise<Response> {
-        restartsInLastHour = 0;
+        counter = 0;
         await saveCounter();
         return 'Counter reset!';
     },
