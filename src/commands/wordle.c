@@ -15,7 +15,7 @@
 #endif
 
 #ifndef HARD_MODE
-#define HARD_MODE true
+#define HARD_MODE false
 #endif
 
 // 5 fields, each field is 2 bits long
@@ -399,8 +399,8 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             }
         }
         if (skill_index == data_len) {
-            fprintf(stderr, "Error while finding skill on guess %i\n", i);
-            exit(1);
+            printf("Error while finding skill on guess %i\n", i);
+            exit(0);
         }
         double guess_score = data[skill_index].score;
         // change index to be the earliest one with the same score
