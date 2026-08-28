@@ -17,20 +17,20 @@ async function loadWordList(path: string): Promise<Set<string>> {
 }
 
 const GUESSES = await loadWordList('data/wordle/nyt_guesses.txt');
-const SOLUTIONS = await loadWordList('data/wordle/nyt_guesses.txt');
+const SOLUTIONS = await loadWordList('data/wordle/nyt_solutions.txt');
 
 const EMOJIS: {[key: string]: string} = {
-    ':book:': '<:book:1541544540962295818>',
-    ':best:': '<:best:1541544471345504326>',
-    ':brilliant:': '<:brilliant:1541544576249110649>',
-    ':great:': '<:great:1541543749379952690>',
-    ':excellent:': '<:excellent:1541545113413492877>',
-    ':good:': '<:good:1541545006823641192>',
-    ':inaccuracy:': '<:inaccuracy:1541543842233327727>',
-    ':mistake:': '<:mistake:1541544273999167488>',
-    ':blunder:': '<:blunder:1541544504182571108>',
-    ':winner:': '<:winner:1541545248935907418>',
-    ':miss:': '<:miss:1542273676899262504>',
+    '<book />': '<:book:1541544540962295818>',
+    '<best />': '<:best:1541544471345504326>',
+    '<brilliant />': '<:brilliant:1541544576249110649>',
+    '<great />': '<:great:1541543749379952690>',
+    '<excellent />': '<:excellent:1541545113413492877>',
+    '<good />': '<:good:1541545006823641192>',
+    '<inaccuracy />': '<:inaccuracy:1541543842233327727>',
+    '<mistake />': '<:mistake:1541544273999167488>',
+    '<blunder />': '<:blunder:1541544504182571108>',
+    '<winner />': '<:winner:1541545248935907418>',
+    '<miss />': '<:miss:1542273676899262504>',
 };
 
 
@@ -63,6 +63,7 @@ addCommand(
         if (!SOLUTIONS.has(solution)) {
             throw new BotError(`Invalid solution (not real): '${solution}'`);
         }
+        execSync(`gcc -Wall -Werror -Wpedantic -Wextra -g -O3 -march=native -mtune=native -flto -fomit-frame-pointer -o ${resolvePath('wordle')} ${resolvePath('src/commands/wordle.c')} -lm`, {timeout: 5000});
         let out = execSync(`${resolvePath('wordle')} ${resolvePath('data/wordle/nyt_guesses.txt')} ${resolvePath('data/wordle/nyt_solutions.txt')} ${resolvePath('data/wordle/nyt_first_guesses.txt')} ${solution} ${guesses.join(' ')}`, {timeout: 10000}).toString();
         for (let [before, after] of Object.entries(EMOJIS)) {
             out = out.replaceAll(before, after);
