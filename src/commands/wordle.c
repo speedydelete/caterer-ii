@@ -198,11 +198,11 @@ static inline void update_possible(Possible* possible, char* guess, char* answer
 
 static inline void update_guessable(bool* guessable, char* guess, char* answer) {
     Pattern target = get_pattern(guess, answer);
-    for (uint32_t i = 0; i < all_solutions.len; i++) {
+    for (uint32_t i = 0; i < all_guesses.len; i++) {
         if (!guessable[i]) {
             continue;
         }
-        if (target != get_pattern(guess, all_solutions.ptr[i])) {
+        if (target != get_pattern(guess, all_guesses.ptr[i])) {
             guessable[i] = false;
         }
     }
