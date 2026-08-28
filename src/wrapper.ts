@@ -225,7 +225,6 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
     },
 
     async 'resetcounter'(): Promise<Response> {
-        lastRestartHour = 0;
         restartsInLastHour = 0;
         return 'Counter reset!';
     },
