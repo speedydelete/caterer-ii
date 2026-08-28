@@ -52,6 +52,7 @@ if (exists('counter.txt')) {
         let restarts = Number(match[1]);
         if (hour === getHour()) {
             restartsInLastHour = restarts + 1;
+            console.log(restartsInLastHour);
         }
     }
 } else {
