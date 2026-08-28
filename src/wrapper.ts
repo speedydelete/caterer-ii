@@ -50,10 +50,9 @@ if (exists('counter.txt')) {
     if (match) {
         let hour = Number(match[0]);
         let restarts = Number(match[1]);
-        if (hour === lastRestartHour) {
+        if (hour === getHour()) {
             restartsInLastHour = restarts + 1;
         }
-        restartsInLastHour = 67;
     }
 } else {
     await saveCounter();
