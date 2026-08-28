@@ -53,6 +53,7 @@ if (exists('counter.txt')) {
         if (hour === lastRestartHour) {
             restartsInLastHour = restarts + 1;
         }
+        restartsInLastHour = 67;
     }
 } else {
     await saveCounter();
