@@ -684,6 +684,7 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
         throw new ArgumentError(`Nonexistent option: '${option}'`);
     }
     let arg = foundArg;
+    console.log(arg.kind);
     if (arg.kind === 'flag') {
         out[kebabToCamel(arg.name)] = flagValue;
     } else if (mustBeFlag) {

@@ -102,8 +102,8 @@ async function startBot(manual: boolean = false): Promise<void> {
     if (caterer) {
         throw new BotError('Bot is running!');
     }
+    let currentHour = getHour();
     if (manual) {
-        let currentHour = getHour();
         if (counterHour === currentHour) {
             counter++;
         } else {
@@ -111,18 +111,18 @@ async function startBot(manual: boolean = false): Promise<void> {
             counter = 1;
         }
         await saveCounter();
-        if (counter > config.wrapper.maxRestartsPerHour) {
-            log('Maximum automatic restarts exceeded for this hour, not restarting');
-            isSupposedToBeOn = false;
-            let interval = setInterval(async () => {
-                if (getHour() !== currentHour) {
-                    clearInterval(interval);
-                    isSupposedToBeOn = true;
-                    await startBot();
-                }
-            }, 60000);
-            return;
-        }
+    }
+    if (counter > config.wrapper.maxRestartsPerHour) {
+        log('Maximum automatic restarts exceeded for this hour, not restarting');
+        isSupposedToBeOn = false;
+        let interval = setInterval(async () => {
+            if (getHour() !== currentHour) {
+                clearInterval(interval);
+                isSupposedToBeOn = true;
+                await startBot();
+            }
+        }, 60000);
+        return;
     }
     let args = [`${import.meta.dirname}/index.js`];
     if (IS_TESTING) {
@@ -144,7 +144,7 @@ async function startBot(manual: boolean = false): Promise<void> {
         if (antiFreezeKilled) {
             antiFreezeKilled = false;
         } else {
-            log(`Bot exited with code ${code}${signal === null ? '' : ` (${lookupSignal(signal).desc}) `}, restarting`);
+            log(`Bot exited with code ${code}${signal === null ? '' : ` (${lookupSignal(signal).desc})`}, restarting`);
         }
         setTimeout(async () => {
             if (!isSupposedToBeOn) {
