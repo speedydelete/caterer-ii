@@ -218,8 +218,13 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
         await msg.channel.send('Update complete!');
     },
 
+    async 'getcounter'(): Promise<Response> {
+        return `Current hour: ${getHour()}\nLast hour: ${lastRestartHour}\nRestarts in last hour: ${restartsInLastHour}`;
+    },
+
     async 'resetcounter'(): Promise<Response> {
         lastRestartHour = 0;
+        restartsInLastHour = 0;
         return 'Counter reset!';
     },
 
