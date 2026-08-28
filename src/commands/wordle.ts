@@ -1,6 +1,6 @@
 
 import {execSync} from 'node:child_process';
-import {BotError, resolvePath, readFile, requiredVariadicArg, addCommand} from '../base.js';
+import {BotError, resolvePath, readFile, requiredVariadicArg, addCommand, flagArg} from '../base.js';
 
 
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
@@ -39,6 +39,7 @@ addCommand(
     'Rates a game of Wordle like chess.com would.',
     [
         requiredVariadicArg('words', 'string', 'The words to submit, last one should be the answer (if you didn\'t get it, put it at the end anyway)'),
+        flagArg('hard', ['h'], 'Enables hard mode'),
     ],
     async args => {
         let words = args.words.map(word => word.toLowerCase());
@@ -63,7 +64,7 @@ addCommand(
         if (!SOLUTIONS.has(solution)) {
             throw new BotError(`Invalid solution (not common): '${solution}'`);
         }
-        execSync(`gcc -Wall -Werror -Wpedantic -Wextra -g -O3 -march=native -mtune=native -flto -fomit-frame-pointer -o ${resolvePath('wordle')} ${resolvePath('src/commands/wordle.c')} -lm`, {timeout: 5000});
+        execSync(`gcc -Wall -Werror -Wpedantic -Wextra -g -O3 -march=native -mtune=native -flto -fomit-frame-pointer -o ${resolvePath('wordle')} -lm -DHARD_MODE=${args.hard ? 'true' : 'false'} ${resolvePath('src/commands/wordle.c')}`, {timeout: 5000});
         let out = execSync(`${resolvePath('wordle')} ${resolvePath('data/wordle/nyt_guesses.txt')} ${resolvePath('data/wordle/nyt_solutions.txt')} ${resolvePath('data/wordle/nyt_first_guesses.txt')} ${solution} ${guesses.join(' ')}`, {timeout: 10000}).toString();
         out = out.replaceAll(/\x1b\[\d+m/g, '');
         for (let [before, after] of Object.entries(EMOJIS)) {

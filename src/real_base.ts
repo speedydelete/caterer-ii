@@ -48,7 +48,7 @@ export interface Config {
         readonly token: string;
         readonly logsChannelServerID: string;
         readonly logsChannelID: string;
-        readonly maxRestartsPerDay: number;
+        readonly maxRestartsPerHour: number;
     };
     readonly antiFreeze: {
         readonly sendInterval: number;

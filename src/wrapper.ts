@@ -28,12 +28,16 @@ function getNow() {
     return Date.now() / 1000;
 }
 
+function getHour() {
+    return Math.floor(getNow() / 3600);
+}
+
 function getDay() {
     return Math.floor(getNow() / 86400);
 }
 
-let lastRestartDay = getDay();
-let restartsToday = 0;
+let lastRestartHour = getHour();
+let restartsThisHour = 0;
 
 let isSupposedToBeOn = true;
 
@@ -105,16 +109,23 @@ async function startBot(manual: boolean = false): Promise<void> {
             if (!isSupposedToBeOn) {
                 return;
             }
-            let currentDay = getDay();
-            if (lastRestartDay === currentDay) {
-                restartsToday++;
+            let currentHour = getHour();
+            if (lastRestartHour === currentHour) {
+                restartsThisHour++;
             } else {
-                restartsToday = 1;
-                lastRestartDay = currentDay;
+                lastRestartHour = currentHour;
+                restartsThisHour = 1;
             }
-            if (restartsToday > config.wrapper.maxRestartsPerDay) {
-                log('Maximum restarts exceeded for today, not restarting');
+            if (restartsThisHour > config.wrapper.maxRestartsPerHour) {
+                log('Maximum automatic restarts exceeded for this hour, not restarting');
                 isSupposedToBeOn = false;
+                let interval = setInterval(async () => {
+                    if (getHour() !== currentHour) {
+                        clearInterval(interval);
+                        isSupposedToBeOn = true;
+                        await startBot();
+                    }
+                }, 60000);
                 return;
             }
             await startBot();
@@ -190,7 +201,7 @@ const COMMANDS: {[key: string]: (msg: Message) => Promise<Response>} = Object.as
     },
 
     async 'resetcounter'(): Promise<Response> {
-        lastRestartDay = 0;
+        lastRestartHour = 0;
         return 'Counter reset!';
     },
 
