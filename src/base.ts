@@ -748,7 +748,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
             pos++;
             console.log('pos is', pos);
             pos = parseOptionArg(out, cmd, argv, pos, option, value, mustBeFlag, flagValue) - 1;
-            console.log('pos is now', pos);
+            console.log('pos is now', pos, argv.length);
         }
     }
     afterPosArgsParsed(out, cmd.posArgs);
