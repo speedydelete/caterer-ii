@@ -48,17 +48,15 @@ if (exists('counter.txt')) {
     let data = await readFile('counter.txt');
     let match = data.match(/^(\d+)\n(\d+)\n$/);
     if (match) {
-        let hour = Number(match[0]);
-        let restarts = Number(match[1]);
-        console.log(hour, getHour(), hour === getHour());
+        let hour = Number(match[1]);
+        let restarts = Number(match[2]);
         if (hour === getHour()) {
             restartsInLastHour = restarts + 1;
-            await saveCounter();
         }
     }
-} else {
-    await saveCounter();
 }
+
+await saveCounter();
 
 let isSupposedToBeOn = true;
 
