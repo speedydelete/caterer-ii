@@ -401,7 +401,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             }
         }
         if (skill_index == data_len) {
-            fprintf(stderr, "Error while finding skill\n");
+            fprintf(stderr, "Error while finding skill on guess %i\n", i);
             exit(1);
         }
         double guess_score = data[skill_index].score;
