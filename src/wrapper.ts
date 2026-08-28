@@ -113,7 +113,7 @@ async function startBot(manual: boolean = false): Promise<void> {
         await saveCounter();
     }
     if (counter > config.wrapper.maxRestartsPerHour) {
-        log('Maximum automatic restarts exceeded for this hour, not restarting');
+        log('Maximum restarts exceeded for this hour, not restarting');
         isSupposedToBeOn = false;
         let interval = setInterval(async () => {
             if (getHour() !== currentHour) {
