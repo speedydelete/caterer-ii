@@ -399,7 +399,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             }
         }
         if (skill_index == data_len) {
-            printf("Error while finding skill on guess %i\n", i);
+            printf("Invalid word detected on guess #%i aka `%s`\n", i, guess);
             exit(0);
         }
         double guess_score = data[skill_index].score;
