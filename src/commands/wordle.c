@@ -381,9 +381,6 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         possible.count = next_possible.count;
         memcpy(possible.data, next_possible.data, all_solutions.len * sizeof(bool));
         update_possible(&next_possible, guess, answer);
-        #if HARD_MODE
-        update_guessable(guessable, guess, answer);
-        #endif
         if (i == 0) {
             memcpy(data, first_guesses, all_guesses.len * sizeof(WordAndScore));
             qsort(data, all_guesses.len, sizeof(WordAndScore), word_and_score_sorter);
@@ -557,6 +554,9 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         }
         printf("`\n");
         strncat(previous_guesses, guess, WORD_LENGTH);
+        #if HARD_MODE
+        update_guessable(guessable, guess, answer);
+        #endif
     }
     printf("Overall: ");
     if (skill_guesses == 0) {
