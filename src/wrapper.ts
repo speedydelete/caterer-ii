@@ -41,12 +41,12 @@ let lastRestartHour = getHour();
 let restartsInLastHour = 1;
 
 async function saveCounter(): Promise<void> {
-    await writeFile('counter.txt', lastRestartHour + '\n' + restartsInLastHour);
+    await writeFile('counter.txt', lastRestartHour + '\n' + restartsInLastHour + '\n');
 }
 
 if (exists('counter.txt')) {
     let data = await readFile('counter.txt');
-    let match = data.match(/^(\d+)\n(\d+)$/);
+    let match = data.match(/^(\d+)\n(\d+)\n$/);
     if (match) {
         let hour = Number(match[0]);
         let restarts = Number(match[1]);
