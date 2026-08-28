@@ -102,25 +102,27 @@ async function startBot(manual: boolean = false): Promise<void> {
     if (caterer) {
         throw new BotError('Bot is running!');
     }
-    let currentHour = getHour();
-    if (counterHour === currentHour) {
-        counter++;
-    } else {
-        counterHour = currentHour;
-        counter = 1;
-    }
-    await saveCounter();
-    if (counter > config.wrapper.maxRestartsPerHour) {
-        log('Maximum automatic restarts exceeded for this hour, not restarting');
-        isSupposedToBeOn = false;
-        let interval = setInterval(async () => {
-            if (getHour() !== currentHour) {
-                clearInterval(interval);
-                isSupposedToBeOn = true;
-                await startBot();
-            }
-        }, 60000);
-        return;
+    if (manual) {
+        let currentHour = getHour();
+        if (counterHour === currentHour) {
+            counter++;
+        } else {
+            counterHour = currentHour;
+            counter = 1;
+        }
+        await saveCounter();
+        if (counter > config.wrapper.maxRestartsPerHour) {
+            log('Maximum automatic restarts exceeded for this hour, not restarting');
+            isSupposedToBeOn = false;
+            let interval = setInterval(async () => {
+                if (getHour() !== currentHour) {
+                    clearInterval(interval);
+                    isSupposedToBeOn = true;
+                    await startBot();
+                }
+            }, 60000);
+            return;
+        }
     }
     let args = [`${import.meta.dirname}/index.js`];
     if (IS_TESTING) {
