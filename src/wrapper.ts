@@ -54,6 +54,8 @@ if (exists('counter.txt')) {
             restartsInLastHour = restarts + 1;
         }
     }
+} else {
+    await saveCounter();
 }
 
 let isSupposedToBeOn = true;
