@@ -71,7 +71,7 @@ addCommand(
             let emojis: string[] = [];
             let codeblock: string[] = [];
             for (let line of out.split('\n')) {
-                let index = line.indexOf(' ');
+                let index = line.indexOf('>') + 1;
                 emojis.push(line.slice(0, index));
                 codeblock.push(line.slice(index + 1));
             }
