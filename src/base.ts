@@ -714,11 +714,11 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
     let posArgsPos = 0;
     for (let pos = nestLevel + 1; pos < argv.length; pos++) {
         let [value, isFlag] = argv[pos];
+        console.log(value, isFlag);
         if (!isFlag) {
             let data = parsePosArgs(out, cmd.posArgs, argv, pos, posArgsPos);
             pos = data.pos - 1;
             posArgsPos = data.posArgsPos;
-            console.log(pos, argv.slice(pos));
         } else if (value === '-' || value === '--') {
             // git-style shortcut, can also be used to stop variadic args
             continue;
@@ -747,6 +747,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
                 continue;
             }
             pos++;
+            console.log(pos, argv.slice(pos), 'parsing option arg');
             pos = parseOptionArg(out, cmd, argv, pos, option, value, mustBeFlag, flagValue) - 1;
         }
     }
