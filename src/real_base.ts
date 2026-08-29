@@ -83,6 +83,7 @@ export function sentByOwner(msg: Message): boolean {
 }
 
 export function sentByAdmin(msg: Message): boolean {
+    console.log('test', config.owners.includes(msg.author.id), config.admins.includes(msg.author.id));
     return config.owners.includes(msg.author.id) || config.admins.includes(msg.author.id);
 }
 
