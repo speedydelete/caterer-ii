@@ -392,9 +392,10 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             data_len = rank_guesses(data, &possible);
             #endif
         }
+        double raw_skill_score = score_guess(&possible, guess);
         uint32_t skill_index;
         for (skill_index = 0; skill_index < data_len; skill_index++) {
-            if (strncmp(guess, data[skill_index].word, WORD_LENGTH) == 0) {
+            if (raw_skill_score >= data[skill_index].score) {
                 break;
             }
         }
