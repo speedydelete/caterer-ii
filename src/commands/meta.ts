@@ -343,7 +343,7 @@ addCommand(
         if (!(cmd in aclData.commands)) {
             throw new BotError(`Command '${cmd}' is not bound to an ACL`);
         }
-        return {type: 'string', value: await aclToString(client, aclData.acls[cmd], true)};
+        return {type: 'string', value: await aclToString(client, aclData.commands[cmd], true)};
     },
 );
 
