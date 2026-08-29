@@ -392,30 +392,40 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
             data_len = rank_guesses(data, &possible);
             #endif
         }
-        double raw_skill_score = score_guess(&possible, guess);
-        uint32_t skill_index;
-        for (skill_index = 0; skill_index < data_len; skill_index++) {
-            if (raw_skill_score >= data[skill_index].score) {
+        bool found = false;
+        for (size_t j = 0; j < data_len; j++) {
+            if (strncmp(data[j].word, guess, WORD_LENGTH) == 0) {
+                found = true;
                 break;
             }
         }
-        if (skill_index == data_len) {
+        if (!found) {
             printf("Invalid word detected on guess #%i aka `%s`\n", i, guess);
-            exit(0);
         }
-        double guess_score = data[skill_index].score;
-        // change index to be the earliest one with the same score
-        for (skill_index = 0; skill_index < data_len; skill_index++) {
-            if (guess_score == data[skill_index].score) {
-                break;
-            }
-        }
+        double guess_score = score_guess(&possible, guess);
         double skill;
         if (guess_score == data[data_len - 1].score) {
             skill = 100.0;
         } else {
-            skill = skill_index * 100.0 / data_len;
+            skill = 100 - ((guess_score - data[data_len - 1].score) / (data[0].score - data[data_len - 1].score) * 100);
         }
+        // if (skill_index == data_len) {
+        //     printf("Invalid word detected on guess #%i aka `%s`\n", i, guess);
+        //     exit(0);
+        // }
+        // double guess_score = data[skill_index].score;
+        // // change index to be the earliest one with the same score
+        // for (skill_index = 0; skill_index < data_len; skill_index++) {
+        //     if (guess_score == data[skill_index].score) {
+        //         break;
+        //     }
+        // }
+        // double skill;
+        // if (guess_score == data[data_len - 1].score) {
+        //     skill = 100.0;
+        // } else {
+        //     skill = skill_index * 100.0 / data_len;
+        // }
         // calculate luck:
         // find the distribution of remaining possible answers
         // and rank it by its position in there
@@ -486,7 +496,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
                 for (int i = 0; RARE_LETTERS[i] != '\0'; i++) {
                     char letter = RARE_LETTERS[i];
                     if (strchr(guess, letter) != NULL && strchr(previous_guesses, letter) == NULL) {
-                        emoji = "<brilliant />";
+                        emoji = "<superbrilliant />";
                         break;
                     }
                 }
@@ -494,8 +504,8 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         } else if (skill > 90) {
             emoji = "<excellent />";
             if (possible.count > 2) {
-                for (int i = 0; RARE_LETTERS[i] != '\0'; i++) {
-                    char letter = RARE_LETTERS[i];
+                for (int j = 0; RARE_LETTERS[j] != '\0'; j++) {
+                    char letter = RARE_LETTERS[j];
                     if (strchr(guess, letter) != NULL && strchr(previous_guesses, letter) == NULL) {
                         emoji = "<brilliant />";
                         break;
@@ -505,8 +515,8 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
         } else if (skill > 70) {
             emoji = "<good />";
             if (possible.count > 2) {
-                for (int i = 0; RARE_LETTERS[i] != '\0'; i++) {
-                    char letter = RARE_LETTERS[i];
+                for (int j = 0; RARE_LETTERS[j] != '\0'; j++) {
+                    char letter = RARE_LETTERS[j];
                     if (strchr(guess, letter) != NULL && strchr(previous_guesses, letter) == NULL) {
                         emoji = "<great />";
                         break;
