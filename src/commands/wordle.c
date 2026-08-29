@@ -34,7 +34,7 @@ typedef struct Possible {
     bool* data;
 } Possible;
 
-const char* RARE_LETTERS = "KWVZXQJ";
+const char* RARE_LETTERS = "kwvzxqj";
 
 const char* BOOK_GUESSES[] = {
     "salet",
