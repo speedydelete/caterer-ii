@@ -200,6 +200,12 @@ if (ME === 'bot') {
         if (!msg.author || msg.author.id !== client.user?.id || !msg.deletable) {
             return;
         }
+        for (let owner of config.owners) {
+            if (data.users.cache.has(owner)) {
+                msg.delete();
+                return;
+            }
+        }
         for (let admin of config.admins) {
             if (data.users.cache.has(admin)) {
                 msg.delete();
@@ -209,21 +215,20 @@ if (ME === 'bot') {
         if (msg.author?.id === client.user?.id && msg.reference) {
             try {
                 let id = (await data.message.fetchReference()).author.id;
-                let users = await data.users.fetch();
-                if (users.find(x => x.id === id)) {
+                if (data.users.cache.find(x => x.id === id)) {
                     msg.delete();
                     return;
-                }
-                for (let [userID, msgID] of deleters) {
-                    if (msgID === msg.id && users.find(x => x.id === userID)) {
-                        msg.delete();
-                        return;
-                    }
                 }
             } catch (error) {
                 if (!(error instanceof DiscordAPIError && error.message === 'Unknown Message')) {
                     return;
                 }
+            }
+        }
+        for (let [userID, msgID] of deleters) {
+            if (msgID === msg.id && data.users.cache.find(x => x.id === userID)) {
+                msg.delete();
+                return;
             }
         }
     });
