@@ -103,7 +103,7 @@ async function startBot(manual: boolean = false): Promise<void> {
         throw new BotError('Bot is running!');
     }
     let currentHour = getHour();
-    if (manual) {
+    if (!manual) {
         if (counterHour === currentHour) {
             counter++;
         } else {
