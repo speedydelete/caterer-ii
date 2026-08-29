@@ -40,6 +40,7 @@ addCommand(
     [
         requiredVariadicArg('words', 'string', 'The words to submit, last one should be the answer (if you didn\'t get it, put it at the end anyway)'),
         flagArg('hard', ['h'], 'Enables hard mode'),
+        flagArg('alternate-format', ['a'], 'Print in alternate format'),
     ],
     async args => {
         let words = args.words.map(word => word.toLowerCase());
@@ -66,9 +67,20 @@ addCommand(
         }
         execSync(`gcc -Wall -Werror -Wpedantic -Wextra -g -O3 -march=native -mtune=native -flto -fomit-frame-pointer -DHARD_MODE=${args.hard ? 'true' : 'false'} -o ${resolvePath('wordle')} ${resolvePath('src/commands/wordle.c')} -lm`, {timeout: 5000});
         let out = execSync(`${resolvePath('wordle')} ${resolvePath('data/wordle/nyt_guesses.txt')} ${resolvePath('data/wordle/nyt_solutions.txt')} ${resolvePath('data/wordle/nyt_first_guesses.txt')} ${solution} ${guesses.join(' ')}`, {timeout: 10000}).toString();
-        out = out.replaceAll(/\x1b\[\d+m/g, '');
-        for (let [before, after] of Object.entries(EMOJIS)) {
-            out = out.replaceAll(before, after);
+        if (args.alternateFormat) {
+            let emojis: string[] = [];
+            let codeblock: string[] = [];
+            for (let line of out.split('\n')) {
+                let index = line.indexOf(' ');
+                emojis.push(line.slice(0, index));
+                codeblock.push(line.slice(index + 1));
+            }
+            out = `${emojis.join(' ')}\n\`\`\`\n${codeblock.join('\n')}\n\`\`\``;
+        } else {
+            out = out.replaceAll(/\x1b\[\d+m/g, '');
+            for (let [before, after] of Object.entries(EMOJIS)) {
+                out = out.replaceAll(before, after);
+            }
         }
         return {type: 'string', value: out};
     },
