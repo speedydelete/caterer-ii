@@ -268,7 +268,7 @@ export type Response = undefined | void | ((
 ) & {deleters?: string[]});
 
 
-export type CommandFunc<T extends Arg[] = Arg[]> = (args: ParsedArgs<T> & {msg: Message, argv: string[], rawArgs: string, isInsidePipe: boolean}) => Promise<Response>;
+export type CommandFunc<T extends Arg[] = Arg[]> = (args: ParsedArgs<T> & {msg: Message, argv: string[], rawArgs: string, willBePiped: boolean}) => Promise<Response>;
 
 export interface BasicCommand<T extends Arg[] = Arg[]> {
     type: 'basic';
@@ -281,6 +281,7 @@ export interface BasicCommand<T extends Arg[] = Arg[]> {
     optionArgs: OptionArg[];
     patternArg?: PatternArg;
     func: CommandFunc<T>;
+    protected?: boolean;
     sendTyping?: boolean;
     extraHelp?: string;
     noArgParse?: boolean;
@@ -288,7 +289,7 @@ export interface BasicCommand<T extends Arg[] = Arg[]> {
     noPipe?: boolean;
 }
 
-export type ExtraOptions = Omit<BasicCommand, 'type' | 'name' | 'category' | 'aliases' | 'desc' | 'args' | 'posArgs' | 'optionArgs' | 'patternArg' | 'func'>;
+export type BasicCommandExtraOptions = Omit<BasicCommand, 'type' | 'name' | 'category' | 'aliases' | 'desc' | 'args' | 'posArgs' | 'optionArgs' | 'patternArg' | 'func'>;
 
 export interface SuperCommand {
     type: 'super';
@@ -297,15 +298,18 @@ export interface SuperCommand {
     aliases: string[];
     desc: string;
     subCommands: string[];
+    protected?: boolean;
     extraHelp?: string;
 }
+
+export type SuperCommandExtraOptions = Omit<SuperCommand, 'type' | 'name' | 'category' | 'aliases' | 'desc' | 'subCommands'>;
 
 export type Command = BasicCommand | SuperCommand;
 
 export const COMMANDS: {[key: string]: Command} = Object.create(null);
 export const COMMANDS_BY_CATEGORY: {[key: string]: Command[]} = Object.create(null);
 
-export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, otherOptions: ExtraOptions = {}): void {
+export function addCommand<T extends Arg[]>(name: string, category: CommandCategory, aliases: string[], desc: string, args: T, func: CommandFunc<T>, extraOptions: BasicCommandExtraOptions = {}): void {
     if (ME !== 'bot') {
         return;
     }
@@ -350,8 +354,8 @@ export function addCommand<T extends Arg[]>(name: string, category: CommandCateg
             throw new Error(`Confusing argument name '${arg}' detected in command '${name}'`);
         }
     }
-    if (otherOptions.extraHelp !== undefined) {
-        otherOptions.extraHelp = otherOptions.extraHelp.trim();
+    if (extraOptions.extraHelp !== undefined) {
+        extraOptions.extraHelp = extraOptions.extraHelp.trim();
     }
     let command: BasicCommand<T> = {
         type: 'basic',
@@ -364,7 +368,7 @@ export function addCommand<T extends Arg[]>(name: string, category: CommandCateg
         optionArgs,
         patternArg,
         func,
-        ...otherOptions,
+        ...extraOptions,
     };
     if (name in COMMANDS) {
         throw new Error(`Command '${name}' is already used`);
@@ -383,9 +387,12 @@ export function addCommand<T extends Arg[]>(name: string, category: CommandCateg
     }
 }
 
-export function addSuperCommand(name: string, category: CommandCategory, aliases: string[], desc: string, subCommands: string[], extraHelp?: string) {
+export function addSuperCommand(name: string, category: CommandCategory, aliases: string[], desc: string, subCommands: string[], extraOptions: SuperCommandExtraOptions = {}) {
     if (ME !== 'bot') {
         return;
+    }
+    if (extraOptions.extraHelp !== undefined) {
+        extraOptions.extraHelp = extraOptions.extraHelp.trim();
     }
     let command: SuperCommand = {
         type: 'super',
@@ -394,7 +401,7 @@ export function addSuperCommand(name: string, category: CommandCategory, aliases
         aliases,
         desc,
         subCommands,
-        extraHelp: extraHelp ? extraHelp.trim() : undefined,
+        ...extraOptions,
     };
     COMMANDS[name] = command;
     for (let alias of aliases) {
@@ -405,6 +412,75 @@ export function addSuperCommand(name: string, category: CommandCategory, aliases
     } else {
         COMMANDS_BY_CATEGORY[category] = [command];
     }
+}
+
+
+export function normalizeCommand(cmd: string): string {
+    cmd = cmd.toLowerCase().replaceAll('_', '');
+    if (cmd.startsWith('!') || cmd.startsWith('$')) {
+        cmd = cmd.slice(1);
+    } else if (cmd.startsWith('ca.')) {
+        cmd = cmd.slice(3);
+    }
+    return cmd;
+}
+
+export function resolveCommand(cmd: string): string | false {
+    cmd = normalizeCommand(cmd);
+    let out = '';
+    for (let part of cmd.split(' ')) {
+        if (out.length > 0) {
+            out += ' ';
+        }
+        out += part;
+        out = COMMANDS[out].name;
+    }
+    return out;
+}
+
+export function commandIsAlias(cmd: string): boolean {
+    let value = resolveCommand(cmd);
+    if (!value) {
+        throw new BotError(`Command '${cmd}' does not exist`);
+    }
+    return cmd !== COMMANDS[value].name;
+}
+
+export function commandIsProtected(cmd: string): boolean {
+    let cmd2 = '';
+    for (let part of cmd.split(' ')) {
+        if (cmd2.length > 0) {
+            cmd2 += ' ';
+        }
+        cmd2 += part;
+        let data = COMMANDS[cmd];
+        if (data.protected) {
+            return true;
+        }
+        // this is to make supercommand aliases work
+        cmd2 = data.name;
+    }
+    return false;
+}
+
+
+export function commandValidator(cmd: string): ReturnType<Validator<string>> {
+    cmd = normalizeCommand(cmd);
+    let out = resolveCommand(cmd);
+    if (!out) {
+        return {isError: true, name: 'command', reason: 'does not exist'};
+    }
+    return out;
+}
+
+export function resolvedCommandValidator(cmd: string): ReturnType<Validator<string>> {
+    if (!(cmd in COMMANDS)) {
+        return {isError: true, name: 'command', reason: 'does not exist'};
+    }
+    if (COMMANDS[cmd].name !== cmd) {
+        return {isError: true, name: 'command', reason: `is an alias for \`${COMMANDS[cmd].name}\``};
+    }
+    return cmd;
 }
 
 
@@ -774,8 +850,8 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
     }
 }
 
-async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, isInsidePipe: boolean, useThisPattern?: Pattern, extraArgs?: string): Promise<Response> {
-    if (!matchesACL(msg, aclData.commands[cmd.name])) {
+async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, willBePiped: boolean, useThisPattern?: Pattern, extraArgs?: string): Promise<Response> {
+    if (!matchesACL(msg, aclData.commands[cmd.name], !commandIsProtected(cmd.name))) {
         return {type: 'string', value: 'Error: You do not have permission to run this command'};
     }
     if (cmd.type === 'super') {
@@ -787,7 +863,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         if (!(subCmd in COMMANDS)) {
             throw new ArgumentError(`Nonexistent subcommand: '${rawSubCmd}'`);
         }
-        return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, isInsidePipe, useThisPattern);
+        return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, willBePiped, useThisPattern);
     }
     if (cmd.noArgvParse) {
         argv = parseArgv(rawArgs, true);
@@ -830,7 +906,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
             await msg.channel.sendTyping();
         } catch {}
     }
-    return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs, isInsidePipe}));
+    return await cmd.func(Object.assign(args, {msg, argv: argv.map(x => x[0]), rawArgs, willBePiped}));
 }
 
 const STUPID_COMMAND_TEMPLATES: {[key: string]: string} = {
@@ -923,20 +999,6 @@ export async function internalRunTextCommand(msg: Message, rawArgs: string): Pro
         out = await _internalRunTextCommand(msg, cmdData, rawArgs, argv, 0, false)
     }
     return {response: out, spoiler};
-}
-
-
-export function commandValidator(cmd: string): ReturnType<Validator<string>> {
-    cmd = cmd.toLowerCase().replaceAll('_', '');
-    if (cmd.startsWith('!') || cmd.startsWith('$')) {
-        cmd = cmd.slice(1);
-    } else if (cmd.startsWith('ca.')) {
-        cmd = cmd.slice(3);
-    }
-    if (!(cmd in COMMANDS)) {
-        return {isError: true, name: 'command', reason: 'does not exist'};
-    }
-    return cmd;
 }
 
 

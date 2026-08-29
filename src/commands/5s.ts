@@ -47,7 +47,7 @@ addCommand(
         if (!resp.ok) {
             throw new BotError(`Server returned ${resp.status} ${resp.statusText}`);
         }
-        if (args.isInsidePipe) {
+        if (args.willBePiped) {
             return {type: 'pattern', value: parse(await resp.text())};
         } else {
             return {type: 'string', value: await resp.text()};

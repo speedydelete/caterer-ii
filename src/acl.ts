@@ -3,7 +3,7 @@ import {Node, Expression, PrivateName} from '@babel/types';
 import {parseExpression} from '@babel/parser';
 import {CategoryChannel, Guild, Client} from 'discord.js';
 
-import {BotError, Message, readFile, writeFile, sentByAdmin, Validator} from './base.js';
+import {BotError, Message, readFile, writeFile, sentByOwner, sentByAdmin, Validator} from './base.js';
 
 
 export type ACL = 
@@ -26,6 +26,8 @@ export interface ACLData {
 }
 
 export let aclData: ACLData = Object.assign(Object.create(null), JSON.parse(await readFile('data/acls.json')));
+aclData.acls = Object.assign(Object.create(null), aclData.acls);
+aclData.commands = Object.assign(Object.create(null), aclData.commands);
 
 export async function saveACLs(): Promise<void> {
     await writeFile('data/acls.json', JSON.stringify(aclData));
@@ -33,6 +35,7 @@ export async function saveACLs(): Promise<void> {
 
 
 export const ACL_NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
 export const INVALID_ACL_NAMES = ['everyone', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'new', 'null', 'return', 'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with', 'undefined', 'Infinity', 'NaN', '__proto__', 'constructor'];
 
 export function aclValidator(arg: string): ReturnType<Validator<string>> {
@@ -257,8 +260,16 @@ function _matchesACL(msg: Message, acl: ACL): boolean {
     }
 }
 
-export function matchesACL(msg: Message, acl: ACL | undefined): boolean {
-    return Boolean(sentByAdmin(msg) || (acl && _matchesACL(msg, acl)));
+export function matchesACL(msg: Message, acl: ACL | undefined, allowAdmins: boolean): boolean {
+    if (sentByOwner(msg)) {
+        return true;
+    } else if (allowAdmins && sentByAdmin(msg)) {
+        return true;
+    } else if (acl) {
+        return _matchesACL(msg, acl);
+    } else {
+        return false;
+    }
 }
 
 

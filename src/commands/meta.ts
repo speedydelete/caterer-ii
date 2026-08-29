@@ -7,7 +7,7 @@ import * as lifeweb from '../../lifeweb/lib/index.js';
 import * as lifewebRPF from '../../lifeweb/lib/editor/rpf.js';
 import * as lifewebRuleSymmetries from '../../lifeweb/lib/rule_symmetries/index.js';
 
-import {BotError, readFile, writeFile, aliases, CommandCategory, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, Command, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, findPatternInChannel, commandValidator, createEmbed} from '../base.js';
+import {BotError, readFile, writeFile, sentByOwner, aliases, findPatternInChannel, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandIsProtected, commandValidator, resolvedCommandValidator, createEmbed} from '../base.js';
 import {aclData, saveACLs, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses} from '../acl.js';
 import {client} from '../index.js';
 
@@ -80,7 +80,7 @@ addCommand(
     'help', 'meta', [],
     `Display a help message.`,
     [
-        optionalArg('command', 'string', 'A command to display infomation for. If omitted, displays generic help/info message.'),
+        optionalArg('command', commandValidator, 'A command to display infomation for. If omitted, displays generic help/info message.'),
     ],
     async args => {
         if (args.command === undefined) {
@@ -93,16 +93,13 @@ addCommand(
             }
             return {type: 'string', value: HELP_TEMPLATE.replace('$$$', out.join('\n'))};
         } else {
-            let cmdName = args.command.toLowerCase().replaceAll('_', '');
-            if (!(cmdName in COMMANDS)) {
-                throw new BotError(`Command '${cmdName}' does not exist`);
-            }
+            let cmdName = args.command;
             let cmd = COMMANDS[cmdName];
             let title = `\`${cmdName}\` command documentation`;
-            if (cmd.aliases.length > 0) {
-                title += ` (aliases ${cmd.aliases.map(alias => `\`${alias}\``).join(', ')})`;
+            let desc = '';
+            if (cmd.aliases) {
+                desc += `**ALiases:** ${cmd.aliases.map(alias => `\`${alias}\``).join(', ')}\n`;
             }
-            let desc: string;
             if (cmd.type === 'basic') {
                 let usage: string[] = [`${cmd.name}`];
                 let argStrs: string[] = [];
@@ -113,15 +110,18 @@ addCommand(
                     usage.push(formatArgUsage(arg));
                     argStrs.push(`* \`${arg.name}\`: ${arg.desc}`);
                 }
-                desc = `Usage: \`${usage.join(' ')}\`\n${cmd.desc}`;
+                desc += `**Usage:** \`${usage.join(' ')}\`\n${cmd.desc}`;
                 if (argStrs.length > 0) {
-                    desc += `\nArguments:\n${argStrs.join('\n')}`;
+                    desc += `\n**Arguments:**\n${argStrs.join('\n')}`;
                 }
                 if (cmd.patternArg) {
                     desc += `\nThis command finds a pattern posted farther up to use, if it cannot find one it will fail.`;
                 }
             } else {
-                desc = `${cmd.desc}\nSubcommands:\n${cmd.subCommands.map(subCmd => `* \`${cmd.name} ${subCmd}\``).join('\n')}`;
+                desc += `${cmd.desc}\nSubcommands:\n${cmd.subCommands.map(subCmd => `* \`${cmd.name} ${subCmd}\``).join('\n')}`;
+            }
+            if (commandIsProtected(cmd.name)) {
+                desc += `\nThis command is protected, admins are treated as normal users with regard to it.`;
             }
             if (cmd.extraHelp) {
                 desc += `\n${cmd.extraHelp}`;
@@ -136,7 +136,7 @@ const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\
 
 addCommand(
     'eval', 'meta', [],
-    `Evaluates code (admin only).`,
+    `Evaluates JavaScript code.`,
     [],
     async args => {
         if (args.msg.author.id !== '1253852708826386518') {
@@ -178,6 +178,7 @@ addCommand(
         }
     },
     {
+        protected: true,
         sendTyping: true,
         noArgParse: true,
         noPipe: true,
@@ -201,8 +202,10 @@ addCommand(
 addSuperCommand(
     'acl', 'meta', [],
     'Manage Access Control Lists (ACLs)',
-    ['show', 'get', 'set', 'delete', 'list', 'uses', 'showcmd', 'getcmd', 'deletecmd'],
-    `
+    ['show', 'get', 'set', 'delete', 'list', 'uses', 'showcmd', 'getcmd', 'deletecmd', 'listcmd'],
+    {
+        protected: true,
+        extraHelp: `
 ACLs are used to control access to coommands, they match properties of messages. Commands are always accessible by admins, regardless of the ACLs. By default, a command is inaccessible to non-admins.
 The ACL format is alternative semantics for a subset of the ECMAScript grammar, an ACL is a ES expression.
 IDs can be given as numeric snowflakes (the exact literal input is used), or as a name, wihch is lookup-ed when the comamnd is run, the names can be identifiers or string literals (though the command parser interferes with these).
@@ -219,7 +222,8 @@ Valid expression constructs:
 * \`<acl1> | <acl2>\` - Matches messages that match either of the ACLs
 * \`<acl1> ^ <acl2>\` - Matches messages that match exactly 1 of the given ACLs
 Parentheses can be used for grouping.
-`,
+        `,
+    },
 );
 
 addCommand(
@@ -283,7 +287,11 @@ addCommand(
     'List all the ACLs.',
     [],
     async () => {
-        return {type: 'string', value: Object.keys(aclData.acls).join(', ')};
+        let out = Object.keys(aclData.acls).join(', ');
+        if (out.length === 0) {
+            out = 'There are no ACLs';
+        }
+        return {type: 'string', value: out};
     },
 );
 
@@ -307,12 +315,18 @@ addCommand(
     'acl showcmd', 'sub', [],
     `Pretty-print a command ACL.`,
     [
-        requiredArg('command', commandValidator, 'The command to show the ACL for.'),
+        requiredArg('command', resolvedCommandValidator, 'The command to show the ACL for.'),
     ],
     async args => {
         let cmd = args.command;
         if (!(cmd in aclData.commands)) {
             throw new BotError(`Command '${cmd}' is not bound to an ACL`);
+        }
+        if (cmd.includes(' ')) {
+            let cmd = '';
+        }
+        if (COMMANDS[cmd].protected && !sentByOwner(args.msg)) {
+            throw new BotError(`Only owners can modify protected commands`);
         }
         return {type: 'string', value: await aclToString(client, aclData.commands[cmd], true)};
     },
@@ -322,7 +336,7 @@ addCommand(
     'acl getcmd', 'sub', [],
     `Print a command ACL in the format used to input them.`,
     [
-        requiredArg('command', commandValidator, 'The command to get the ACL for.'),
+        requiredArg('command', resolvedCommandValidator, 'The command to get the ACL for.'),
     ],
     async args => {
         let cmd = args.command;
@@ -337,7 +351,7 @@ addCommand(
     'acl setcmd', 'sub', [],
     `Set a command ACL.`,
     [
-        requiredArg('command', commandValidator, 'The command to set the ACL for.'),
+        requiredArg('command', resolvedCommandValidator, 'The command to set the ACL for.'),
         requiredRestArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation.'),
     ],
     async args => {
@@ -352,7 +366,7 @@ addCommand(
     'acl deletecmd', 'sub', [],
     `Delete a command ACL, making it unusable by everyone except for admins.`,
     [
-        requiredArg('command', commandValidator, 'The command to delete the ACL for.'),
+        requiredArg('command', 'string', 'The command to delete the ACL for'),
     ],
     async args => {
         let cmd = args.command;
@@ -364,3 +378,16 @@ addCommand(
         return {type: 'string', value: 'Command ACL deleted!'};
     },
 );
+
+addCommand(
+    'acl listcmd', 'sub', [],
+    'List the commands that are bound to ACLs',
+    [],
+    async () => {
+        let out = Object.keys(aclData.commands).join(', ');
+        if (out.length === 0) {
+            out = 'No commands are bound to ACLs';
+        }
+        return {type: 'string', value: out};
+    },
+)

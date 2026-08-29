@@ -47,6 +47,7 @@ export async function writeFile(path: string, data: Parameters<typeof fs.writeFi
 
 
 export interface Config {
+    readonly owners: string[];
     readonly admins: string[];
     readonly token: string;
     readonly wrapper: {
@@ -77,8 +78,12 @@ export interface Config {
 
 export const config: Config = Object.freeze(JSON.parse(await readFile('config.json')));
 
+export function sentByOwner(msg: Message): boolean {
+    return config.owners.includes(msg.author.id);
+}
+
 export function sentByAdmin(msg: Message): boolean {
-    return config.admins.includes(msg.author.id);
+    return config.owners.includes(msg.author.id) || config.admins.includes(msg.author.id);
 }
 
 

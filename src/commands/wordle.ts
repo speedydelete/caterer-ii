@@ -38,9 +38,9 @@ addCommand(
     'ratewordle', 'other', [],
     'Rates a game of Wordle like chess.com would.',
     [
-        requiredVariadicArg('words', 'string', 'The words to submit, last one should be the answer (if you didn\'t get it, put it at the end anyway)'),
-        flagArg('hard', ['h'], 'Enables hard mode'),
-        flagArg('alternate-format', ['a'], 'Print in alternate format'),
+        requiredVariadicArg('words', 'string', 'The words to submit, last one should be the answer (if you didn\'t get it, put it at the end anyway).'),
+        flagArg('hard', ['h'], 'Enables hard mode.'),
+        flagArg('alternate-format', ['a'], 'Enables printing output in alternate format.'),
     ],
     async args => {
         let words = args.words.map(word => word.toLowerCase());
