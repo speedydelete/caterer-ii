@@ -77,7 +77,10 @@ addCommand(
                 } else {
                     index += 1;
                     emojis.push(line.slice(0, index));
-                    codeblock.push(line.slice(index + 1).replaceAll('`', ''));
+                    line = line.slice(index + 1);
+                    line = line.replaceAll('`', '');
+                    line = line.replaceAll('\x1b[9', '\x1b[3');
+                    codeblock.push(line);
                 }
             }
             out = `${emojis.join(' ')}\n\`\`\`ansi\n${codeblock.join('\n')}\n\`\`\``;
