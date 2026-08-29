@@ -575,7 +575,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
 function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: number, posArgsPos: number): {pos: number, posArgsPos: number} {
     for (; pos < argv.length; pos++) {
         if (argv[pos][1]) {
-            return {pos, posArgsPos};
+            return {pos: pos - 1, posArgsPos};
         }
         if (posArgsPos >= posArgs.length) {
             throw new ArgumentError(`Too many positional arguments provided`);

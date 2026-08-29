@@ -71,16 +71,21 @@ addCommand(
             let emojis: string[] = [];
             let codeblock: string[] = [];
             for (let line of out.split('\n')) {
-                let index = line.indexOf('>') + 1;
-                emojis.push(line.slice(0, index));
-                codeblock.push(line.slice(index + 1).replaceAll('`', ''));
+                let index = line.indexOf('>');
+                if (index === -1) {
+                    codeblock.push(line);
+                } else {
+                    index += 1;
+                    emojis.push(line.slice(0, index));
+                    codeblock.push(line.slice(index + 1).replaceAll('`', ''));
+                }
             }
             out = `${emojis.join(' ')}\n\`\`\`ansi\n${codeblock.join('\n')}\n\`\`\``;
         } else {
             out = out.replaceAll(/\x1b\[\d+m/g, '');
-            for (let [before, after] of Object.entries(EMOJIS)) {
-                out = out.replaceAll(before, after);
-            }
+        }
+        for (let [before, after] of Object.entries(EMOJIS)) {
+            out = out.replaceAll(before, after);
         }
         return {type: 'string', value: out};
     },
