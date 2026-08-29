@@ -197,14 +197,9 @@ if (ME === 'bot') {
         if (msg.partial) {
             msg = await msg.fetch();
         }
-        if (!msg.author || (msg.author.id !== client.user?.id) || !msg.deletable) {
+        if (!msg.author || msg.author.id !== client.user?.id || !msg.deletable) {
             return;
         }
-        // for (let channel of Object.values(starboardChannels)) {
-        //     if (msg.channel.id === channel.id) {
-        //         return;
-        //     }
-        // }
         for (let admin of config.admins) {
             if (data.users.cache.has(admin)) {
                 msg.delete();
@@ -212,20 +207,25 @@ if (ME === 'bot') {
             }
         }
         if (msg.author?.id === client.user?.id && msg.reference) {
-            let id = (await data.message.fetchReference()).author.id;
-            let users = await data.users.fetch();
-            if (users.find(x => x.id === id)) {
-                msg.delete();
-                return;
-            }
-            for (let [userID, msgID] of deleters) {
-                if (msgID === msg.id && users.find(x => x.id === userID)) {
+            try {
+                let id = (await data.message.fetchReference()).author.id;
+                let users = await data.users.fetch();
+                if (users.find(x => x.id === id)) {
                     msg.delete();
+                    return;
+                }
+                for (let [userID, msgID] of deleters) {
+                    if (msgID === msg.id && users.find(x => x.id === userID)) {
+                        msg.delete();
+                        return;
+                    }
+                }
+            } catch (error) {
+                if (!(error instanceof DiscordAPIError && error.message === 'Unknown Message')) {
                     return;
                 }
             }
         }
-        return;
     });
 
     client.once('clientReady', async () => {
