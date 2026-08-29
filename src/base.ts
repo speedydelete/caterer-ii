@@ -453,7 +453,7 @@ export function commandIsProtected(cmd: string): boolean {
             cmd2 += ' ';
         }
         cmd2 += part;
-        let data = COMMANDS[cmd];
+        let data = COMMANDS[cmd2];
         if (data.protected) {
             return true;
         }
