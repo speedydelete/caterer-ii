@@ -496,7 +496,7 @@ static inline void rate_game(char** guesses, int guess_count, char* answer) {
                 for (int i = 0; RARE_LETTERS[i] != '\0'; i++) {
                     char letter = RARE_LETTERS[i];
                     if (strchr(guess, letter) != NULL && strchr(previous_guesses, letter) == NULL) {
-                        emoji = "<superbrilliant />";
+                        emoji = "<brilliant />";
                         break;
                     }
                 }

@@ -22,7 +22,6 @@ const SOLUTIONS = await loadWordList('data/wordle/nyt_solutions.txt');
 const EMOJIS: {[key: string]: string} = {
     '<book />': '<:book:1541544540962295818>',
     '<best />': '<:best:1541544471345504326>',
-    '<superbrilliant />': '<:superbrilliant:1543268754798936144>',
     '<brilliant />': '<:brilliant:1541544576249110649>',
     '<great />': '<:great:1541543749379952690>',
     '<excellent />': '<:excellent:1541545113413492877>',
