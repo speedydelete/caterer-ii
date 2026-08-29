@@ -574,6 +574,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
 
 function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: number, posArgsPos: number): {pos: number, posArgsPos: number} {
     for (; pos < argv.length; pos++) {
+        console.log('pos arg', argv[pos]);
         if (argv[pos][1]) {
             console.log('hi');
             return {pos: pos - 1, posArgsPos};
