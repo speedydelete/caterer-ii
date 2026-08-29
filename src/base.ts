@@ -719,6 +719,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
             let data = parsePosArgs(out, cmd.posArgs, argv, pos, posArgsPos);
             pos = data.pos - 1;
             posArgsPos = data.posArgsPos;
+            console.log(pos, argv.slice(pos));
         } else if (value === '-' || value === '--') {
             // git-style shortcut, can also be used to stop variadic args
             continue;
