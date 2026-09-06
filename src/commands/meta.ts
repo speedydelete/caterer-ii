@@ -97,8 +97,8 @@ addCommand(
             let cmd = COMMANDS[cmdName];
             let title = `\`${cmdName}\` command documentation`;
             let desc = '';
-            if (cmd.aliases) {
-                desc += `**ALiases:** ${cmd.aliases.map(alias => `\`${alias}\``).join(', ')}\n`;
+            if (cmd.aliases.length > 0) {
+                desc += `**Aliases:** ${cmd.aliases.map(alias => `\`${alias}\``).join(', ')}\n`;
             }
             if (cmd.type === 'basic') {
                 let usage: string[] = [`${cmd.name}`];
