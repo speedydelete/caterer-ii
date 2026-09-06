@@ -982,6 +982,9 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
 
 export async function internalRunTextCommand(msg: Message, rawArgs: string): Promise<{response: Response, spoiler: boolean}> {
     let argv = parseArgv(rawArgs);
+    if (argv.length === 0) {
+        return {response: undefined, spoiler: false};
+    }
     let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
     let spoiler = false;
     if (argv.length > 1 && argv[1][0].startsWith('||') && argv[argv.length - 1][0].endsWith('||')) {
