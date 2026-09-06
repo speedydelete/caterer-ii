@@ -91,21 +91,17 @@ export async function check5S(channel: Exclude<TextBasedChannel, PartialGroupDMC
     for (let _key of Object.keys(groups).sort()) {
         let key = _key as Type;
         let data = groups[key] as ShipGroup;
-        let newMsgs: string[] = [];
         if (data.newSpeeds.length > 0) {
-            newMsgs = formatShips('speed', 'new', key, data.newSpeeds);
+            msgs.push(...formatShips('speed', 'new', key, data.newSpeeds));
         }
         if (data.newPeriods.length > 0) {
-            newMsgs = formatShips('period', 'new', key, data.newPeriods);
+            msgs.push(...formatShips('period', 'new', key, data.newPeriods));
         }
         if (data.improvedSpeeds.length > 0) {
-            newMsgs = formatShips('speed', 'improved', key, data.improvedSpeeds);
+            msgs.push(...formatShips('speed', 'improved', key, data.improvedSpeeds));
         }
         if (data.improvedPeriods.length > 0) {
-            newMsgs = formatShips('period', 'improved', key, data.improvedPeriods);
-        }
-        for (let msg of newMsgs) {
-            msgs.push(msg);
+            msgs.push(...formatShips('period', 'improved', key, data.improvedPeriods));
         }
     }
     for (let msg of msgs) {
