@@ -77,7 +77,7 @@ function runGeneration(p: Pattern): void {
     p.shrinkToFit();
 }
 
-function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: PartRunnerData): void {
+function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: PartRunnerData): Pattern {
     while (part.length > 0) {
         if (typeof part[0] === 'number') {
             if (part[1] === 'fps') {
@@ -93,6 +93,7 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
                 if (data.partCount === 1) {
                     part[0] = part[0] - 1;
                     if (part[0] === 0) {
+                        part = part.slice(remove);
                         continue;
                     }
                 }
@@ -288,9 +289,10 @@ function runPart(part: (string | number)[], frames: Frame[], p: Pattern, data: P
             throw new BotError(`Invalid part: Unrecognized command: ${part.join(' ')}`);
         }
     }
+    return p;
 }
 
-function runParts(parts: (string | number)[][], frames: Frame[], p: Pattern, data: PartRunnerData): void {
+function runParts(parts: (string | number)[][], frames: Frame[], p: Pattern, data: PartRunnerData): Pattern {
     if (parts.some(x => x[0] === 'repeat' || x[0] === 'endrepeat')) {
         let level = 0;
         let times = 0;
@@ -313,7 +315,7 @@ function runParts(parts: (string | number)[][], frames: Frame[], p: Pattern, dat
                         throw new Error('Times is 0 (this is a bug!)');
                     }
                     for (let i = 0; i < times; i++) {
-                        runParts(current, frames, p, data);
+                        p = runParts(current, frames, p, data);
                     }
                     times = 0;
                 } else if (level < 0) {
@@ -323,7 +325,7 @@ function runParts(parts: (string | number)[][], frames: Frame[], p: Pattern, dat
                 }
             } else {
                 if (level === 0) {
-                    runPart(part, frames, p, data);
+                    p = runPart(part, frames, p, data);
                 } else {
                     current.push(part);
                 }
@@ -334,9 +336,10 @@ function runParts(parts: (string | number)[][], frames: Frame[], p: Pattern, dat
         }
     } else {
         for (let part of parts) {
-            runPart(part, frames, p, data);
+            p = runPart(part, frames, p, data);
         }
     }
+    return p;
 }
 
 function parseSim(pattern: string, argv: string[]): SimData {
@@ -377,9 +380,6 @@ function parseSim(pattern: string, argv: string[]): SimData {
     }
     let frames: Frame[] = [{p: p.copy(), time}];
     let gifSize = 200;
-    if (eval('true')) {
-        throw new Error('hi ' + parts.length);
-    }
     let data: PartRunnerData = {
         partCount: parts.length,
         gifSize: 200,
@@ -390,7 +390,7 @@ function parseSim(pattern: string, argv: string[]): SimData {
         bb: undefined,
         origin: [0, 0],
     };
-    runParts(parts, frames, p, data);
+    p = runParts(parts, frames, p, data);
     let minX = Infinity;
     let maxX = -Infinity;
     let minY = Infinity;
