@@ -377,6 +377,9 @@ function parseSim(pattern: string, argv: string[]): SimData {
     }
     let frames: Frame[] = [{p: p.copy(), time}];
     let gifSize = 200;
+    if (eval('true')) {
+        throw new Error('hi ' + parts.length);
+    }
     let data: PartRunnerData = {
         partCount: parts.length,
         gifSize: 200,
