@@ -95,6 +95,9 @@ addCommand(
         } else {
             let cmdName = args.command;
             let cmd = COMMANDS[cmdName];
+            if (cmd === undefined) {
+                return {type: 'string', value: `That command does not exist`};
+            }
             let title = `\`${cmdName}\` command documentation`;
             let desc = '';
             if (cmd.aliases.length > 0) {
