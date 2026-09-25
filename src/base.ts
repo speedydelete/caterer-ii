@@ -950,11 +950,11 @@ async function runPipe(msg: Message, rawArgs: string): Promise<Response> {
         let rawArgs = parsedPipe[i];
         let argv = parseArgv(rawArgs);
         let value: Response;
-        let cmd = argv[0][0].toLowerCase().replaceAll('_', '');
+        let cmd = normalizeCommand(argv[0][0]);
         if (!(cmd in COMMANDS)) {
             let stupid = tryStupidCommand(cmd);
             if (stupid === undefined) {
-                return;
+                throw new BotError(`Command '${cmd}' does not exist`);
             } else {
                 value = stupid;
             }
