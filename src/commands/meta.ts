@@ -93,7 +93,7 @@ addCommand(
             }
             return {type: 'string', value: HELP_TEMPLATE.replace('$$$', out.join('\n'))};
         } else if (args.command === false) {
-            throw new BotError(`Command '${args.command}' does not exist`);
+            throw new BotError(`That command does not exist`);
         } else {
             let cmdName = args.command;
             let cmd = COMMANDS[cmdName];
