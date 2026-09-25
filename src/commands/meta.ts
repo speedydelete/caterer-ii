@@ -8,7 +8,7 @@ import * as lifewebRPF from '../../lifeweb/lib/editor/rpf.js';
 import * as lifewebRuleSymmetries from '../../lifeweb/lib/rule_symmetries/index.js';
 
 import {BotError, readFile, writeFile, sentByOwner, aliases, findPatternInChannel, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandIsProtected, possiblyNonexistentCommandValidator, resolvedCommandValidator, createEmbed} from '../base.js';
-import {aclData, saveACLs, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses} from '../acl.js';
+import {aclData, saveACLs, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses, aclIsProtected} from '../acl.js';
 import {client} from '../index.js';
 
 
@@ -259,6 +259,9 @@ addCommand(
     ],
     async args => {
         let parsed = await parseACL(args.value, args.msg.guild as Guild);
+        if (aclIsProtected(args.acl) && !sentByOwner(args.msg)) {
+            throw new BotError(`Only owners can modify protected ACLs`);
+        }
         aclData.acls[args.acl] = parsed;
         await saveACLs();
         return {type: 'string', value: 'ACL set!'};
@@ -328,9 +331,6 @@ addCommand(
         if (!(cmd in aclData.commands)) {
             throw new BotError(`Command '${cmd}' is not bound to an ACL`);
         }
-        if (cmd.includes(' ')) {
-            let cmd = '';
-        }
         if (COMMANDS[cmd].protected && !sentByOwner(args.msg)) {
             throw new BotError(`Only owners can modify protected commands`);
         }
@@ -362,6 +362,9 @@ addCommand(
     ],
     async args => {
         let parsed = await parseACL(args.value, args.msg.guild as Guild);
+        if (COMMANDS[args.command].protected && !sentByOwner(args.msg)) {
+            throw new BotError(`Only owners can modify protected commands`);
+        }
         aclData.commands[args.command] = parsed;
         await saveACLs();
         return {type: 'string', value: 'Command ACL set!'};
