@@ -45,7 +45,7 @@ export function aclValidator(arg: string): ReturnType<Validator<string>> {
     if (INVALID_ACL_NAMES.includes(arg)) {
         return {isError: true, name: 'ACL', reason: 'name is forbidden'};
     }
-    return arg;
+    return {isError: false, value: arg};
 }
 
 export function aclAndExistsValidator(arg: string): ReturnType<Validator<string>> {
@@ -58,7 +58,7 @@ export function aclAndExistsValidator(arg: string): ReturnType<Validator<string>
     if (!(arg in aclData.acls)) {
         return {isError: true, name: 'ACL', reason: 'does not exist'};
     }
-    return arg;
+    return {isError: false, value: arg};
 }
 
 

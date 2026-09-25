@@ -7,7 +7,7 @@ import * as lifeweb from '../../lifeweb/lib/index.js';
 import * as lifewebRPF from '../../lifeweb/lib/editor/rpf.js';
 import * as lifewebRuleSymmetries from '../../lifeweb/lib/rule_symmetries/index.js';
 
-import {BotError, readFile, writeFile, sentByOwner, aliases, findPatternInChannel, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandIsProtected, commandValidator, resolvedCommandValidator, createEmbed} from '../base.js';
+import {BotError, readFile, writeFile, sentByOwner, aliases, findPatternInChannel, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandIsProtected, possiblyNonexistentCommandValidator, resolvedCommandValidator, createEmbed} from '../base.js';
 import {aclData, saveACLs, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses} from '../acl.js';
 import {client} from '../index.js';
 
@@ -80,7 +80,7 @@ addCommand(
     'help', 'meta', [],
     `Display a help message.`,
     [
-        optionalArg('command', commandValidator, 'A command to display infomation for. If omitted, displays generic help/info message.'),
+        optionalArg('command', possiblyNonexistentCommandValidator, 'A command to display infomation for. If omitted, displays generic help/info message.'),
     ],
     async args => {
         if (args.command === undefined) {
@@ -92,12 +92,11 @@ addCommand(
                 out.push(`* ${name}: ${COMMANDS_BY_CATEGORY[category].map(cmd => `\`${cmd.name}\``).join(', ')}`);
             }
             return {type: 'string', value: HELP_TEMPLATE.replace('$$$', out.join('\n'))};
+        } else if (args.command === false) {
+            return {type: 'string', value: `Command '${args.command}' does not exist`};
         } else {
             let cmdName = args.command;
             let cmd = COMMANDS[cmdName];
-            if (cmd === undefined) {
-                return {type: 'string', value: `That command does not exist`};
-            }
             let title = `\`${cmdName}\` command documentation`;
             let desc = '';
             if (cmd.aliases.length > 0) {

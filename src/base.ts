@@ -141,7 +141,8 @@ export const CATEGORY_NAMES: {[K in CommandCategory]: string} = {
 };
 
 
-export type Validator<T = any> = (arg: string) => T | {isError: true, name: string, reason?: string};
+export type ValidatorResult<T> = {isError: false, value: T} | {isError: true, name: string, reason?: string};
+export type Validator<T = any> = (arg: string) => ValidatorResult<T>;
 
 export type SingleArgType = 
     | 'string'
@@ -433,6 +434,9 @@ export function resolveCommand(cmd: string): string | false {
             out += ' ';
         }
         out += part;
+        if (!(out in COMMANDS)) {
+            return false;
+        }
         out = COMMANDS[out].name;
     }
     return out;
@@ -464,23 +468,28 @@ export function commandIsProtected(cmd: string): boolean {
 }
 
 
-export function commandValidator(cmd: string): ReturnType<Validator<string>> {
+export function commandValidator(cmd: string): ValidatorResult<string> {
     cmd = normalizeCommand(cmd);
     let out = resolveCommand(cmd);
     if (!out) {
         return {isError: true, name: 'command', reason: 'does not exist'};
     }
-    return out;
+    return {isError: false, value: out};
 }
 
-export function resolvedCommandValidator(cmd: string): ReturnType<Validator<string>> {
+export function possiblyNonexistentCommandValidator(cmd: string): ValidatorResult<string | false> {
+    return {isError: false, value: resolveCommand(normalizeCommand(cmd))};
+}
+
+
+export function resolvedCommandValidator(cmd: string): ValidatorResult<string> {
     if (!(cmd in COMMANDS)) {
         return {isError: true, name: 'command', reason: 'does not exist'};
     }
     if (COMMANDS[cmd].name !== cmd) {
         return {isError: true, name: 'command', reason: `is an alias for \`${COMMANDS[cmd].name}\``};
     }
-    return cmd;
+    return {isError: false, value: cmd};
 }
 
 
@@ -606,7 +615,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
         }
     } else if (typeof type === 'function') {
         let result = type(value);
-        if (result && typeof result === 'object' && result.isError) {
+        if (result.isError) {
             let msg = `Invalid value '${value}' for argument ${arg.name}`;
             if (result.reason !== undefined) {
                 msg += ` (expected ${result.name}, ${result.reason})`;
@@ -614,8 +623,9 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
                 msg += ` (expected ${result.name})`;
             }
             throw new ArgumentError(msg);
+        } else {
+            return result.value;
         }
-        return result;
     } else {
         if (Array.isArray(type.value)) {
             for (let option of type.value) {
