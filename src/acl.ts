@@ -3,7 +3,7 @@ import {Node, Expression, PrivateName} from '@babel/types';
 import {parseExpression} from '@babel/parser';
 import {CategoryChannel, Guild, Client} from 'discord.js';
 
-import {BotError, Message, readFile, writeFile, sentByOwner, sentByAdmin, Validator} from './base.js';
+import {BotError, Message, readFile, writeFile, sentByOwner, sentByAdmin, Validator, commandIsProtected} from './base.js';
 
 
 export type ACL = 
@@ -285,17 +285,32 @@ function _aclIsUsed(name: string, acl: ACL): boolean {
     }
 }
 
-export function getACLUses(name: string): string[] {
-    let out: string[] = [];
+export function getACLUses(name: string): {type: 'acl' | 'command', value: string}[] {
+    let out: {type: 'acl' | 'command', value: string}[] = [];
     for (let [aclName, acl] of Object.entries(aclData.acls)) {
         if (_aclIsUsed(name, acl)) {
-            out.push(`ACL '${aclName}'`);
+            out.push({type: 'acl', value: aclName});
         }
     }
     for (let [command, acl] of Object.entries(aclData.commands)) {
         if (_aclIsUsed(name, acl)) {
-            out.push(`command '${command}'`);
+            out.push({type: 'command', value: command});
         }
     }
     return out;
+}
+
+export function aclIsProtected(name: string): boolean {
+    for (let {type, value} of getACLUses(name)) {
+        if (type === 'acl') {
+            if (aclIsProtected(value)) {
+                return true;
+            }
+        } else {
+            if (commandIsProtected(value)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }

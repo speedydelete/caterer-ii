@@ -263,6 +263,10 @@ addCommand(
     }
 );
 
+function getStringACLUses(name: string): string[] {
+    return getACLUses(name).map(x => x.type === 'acl' ? `ACL '${x.value}'` : `command '${x.value}'`);
+}
+
 addCommand(
     'acl delete', 'sub', [],
     `Delete an ACL, if it's unused.`,
@@ -271,7 +275,7 @@ addCommand(
     ],
     async args => {
         let acl = args.acl;
-        let uses = getACLUses(acl);
+        let uses = getStringACLUses(acl);
         if (uses.length === 0) {
             delete aclData.acls[acl];
         } else {
@@ -302,7 +306,7 @@ addCommand(
         requiredArg('acl', aclAndExistsValidator, 'The ACL to check.'),
     ],
     async args => {
-        let uses = getACLUses(args.acl);
+        let uses = getStringACLUses(args.acl);
         if (uses.length === 0) {
             return {type: 'string', value: `ACL is not used`};
         } else {

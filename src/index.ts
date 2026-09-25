@@ -15,6 +15,7 @@ import './commands/wiki.js';
 import {CalcError} from './commands/calc.js';
 import './commands/secret.js';
 import './commands/wordle.js';
+import './commands/msg.js';
 
 import './other/starboard.js';
 import {check5S} from './other/notifier.js';
