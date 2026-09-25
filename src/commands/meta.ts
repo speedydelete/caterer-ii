@@ -331,9 +331,6 @@ addCommand(
         if (!(cmd in aclData.commands)) {
             throw new BotError(`Command '${cmd}' is not bound to an ACL`);
         }
-        if (COMMANDS[cmd].protected && !sentByOwner(args.msg)) {
-            throw new BotError(`Only owners can modify protected commands`);
-        }
         return {type: 'string', value: await aclToString(client, aclData.commands[cmd], true)};
     },
 );
