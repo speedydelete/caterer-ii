@@ -359,7 +359,7 @@ addCommand(
     ],
     async args => {
         let parsed = await parseACL(args.value, args.msg.guild as Guild);
-        if (COMMANDS[args.command].protected && !sentByOwner(args.msg)) {
+        if (commandIsProtected(args.command) && !sentByOwner(args.msg)) {
             throw new BotError(`Only owners can modify protected commands`);
         }
         aclData.commands[args.command] = parsed;
