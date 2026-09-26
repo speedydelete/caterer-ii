@@ -1,7 +1,7 @@
 
 import {PartialGroupDMChannel, TextBasedChannel} from 'discord.js';
 import {parseSpeed} from '../../lifeweb/lib/index.js';
-import {Type, TYPE_NAMES, shipIsOptimal} from '../../sssss/lib/index.js';
+import {Rulespace, RULESPACE_NAMES, shipIsOptimal} from '../../sssss/lib/index.js';
 
 
 const LIMIT = 1997;
@@ -38,7 +38,7 @@ function splitMessages(...data: (string | string[])[]): string[] {
     return out;
 }
 
-function formatShips(category: 'speed' | 'period', changeType: 'new' | 'improved', type: Type, data: [string, number][] | [string, number, number][]): string[] {
+function formatShips(category: 'speed' | 'period', changeType: 'new' | 'improved', space: Rulespace, data: [string, number][] | [string, number, number][]): string[] {
     let out: string[] = [];
     for (let value of data) {
         let speed = value[0];
@@ -53,12 +53,12 @@ function formatShips(category: 'speed' | 'period', changeType: 'new' | 'improved
                 str = `${speed} (${value[1]} cell${value[1] === 1 ? '' : 's'})`;
             }
         }
-        if (shipIsOptimal(type, {pop: value[2] ?? value[1], dx, dy, period, rle: '', rule: ''})) {
+        if (shipIsOptimal(space, {pop: value[2] ?? value[1], dx, dy, period, rle: '', rule: ''})) {
             str = `**${str}**`;
         }
         out.push(str);
     }
-    return splitMessages(`${data.length === 1 ? changeType[0].toUpperCase() + changeType.slice(1) : data.length + ' ' + changeType} ${category}${data.length === 1 ? '' : 's'} in ${TYPE_NAMES[type]}: `, out);
+    return splitMessages(`${data.length === 1 ? changeType[0].toUpperCase() + changeType.slice(1) : data.length + ' ' + changeType} ${category}${data.length === 1 ? '' : 's'} in ${RULESPACE_NAMES[space]}: `, out);
 }
 
 type ShipGroup = {newSpeeds: [string, number][], newPeriods: [string, number][], improvedSpeeds: [string, number, number][], improvedPeriods: [string, number, number][]};
@@ -69,11 +69,11 @@ export async function check5S(channel: Exclude<TextBasedChannel, PartialGroupDMC
         await channel.send(`<@1253852708826386518> ${resp.status} ${resp.statusText} while fetching new ships`);
         return;
     }
-    let data = await resp.json() as {newSpeeds: [Type, string, number][], improvedSpeeds: [Type, string, number, number][], newPeriods: [Type, string, number][], improvedPeriods: [Type, string, number, number][]};
+    let data = await resp.json() as {newSpeeds: [Rulespace, string, number][], improvedSpeeds: [Rulespace, string, number, number][], newPeriods: [Rulespace, string, number][], improvedPeriods: [Rulespace, string, number, number][]};
     if (data.newSpeeds.length === 0 && data.improvedSpeeds.length === 0 && data.newPeriods.length === 0 && data.improvedPeriods.length === 0) {
         return;
     }
-    let groups: {[K in Type]?: ShipGroup} = {};
+    let groups: {[K in Rulespace]?: ShipGroup} = {};
     for (let key of ['newSpeeds', 'improvedSpeeds', 'newPeriods', 'improvedPeriods'] as const) {
         for (let ship of data[key]) {
             let data: ShipGroup;
@@ -89,7 +89,7 @@ export async function check5S(channel: Exclude<TextBasedChannel, PartialGroupDMC
     }
     let msgs: string[] = [];
     for (let _key of Object.keys(groups).sort()) {
-        let key = _key as Type;
+        let key = _key as Rulespace;
         let data = groups[key] as ShipGroup;
         if (data.newSpeeds.length > 0) {
             msgs.push(...formatShips('speed', 'new', key, data.newSpeeds));

@@ -1,18 +1,16 @@
 
 import {LifewebError, parseSpeed, parse} from '../../lifeweb/lib/index.js';
-import {Type, TYPE_NAMES} from '../../sssss/lib/index.js';
+import {Rulespace, RULESPACES, RULESPACE_NAMES, isRulespace} from '../../sssss/lib/index.js';
 
 import {BotError, ValidatorResult, requiredArg, requiredRestArg, optionalArg, optionArg, addCommand} from '../base.js';
 
 
-let rulespaces = Object.keys(TYPE_NAMES);
-
-function rulespaceValidator(arg: string): ValidatorResult<Type> {
+function rulespaceValidator(arg: string): ValidatorResult<Rulespace> {
     arg = arg.toLowerCase();
-    if (!rulespaces.includes(arg)) {
-        return {isError: true, name: 'rulespace', reason: `not one of ${rulespaces.join('/')} (case insensitive)`};
+    if (!isRulespace(arg)) {
+        return {isError: true, name: 'rulespace', reason: `not one of ${RULESPACES.join('/')} (case insensitive)`};
     }
-    return {isError: false, value: arg as Type};
+    return {isError: false, value: arg};
 }
 
 function speedValidator(arg: string): ValidatorResult<{dx: number, dy: number, period: number}> {
@@ -36,14 +34,14 @@ addCommand(
     '5s', '5s', ['sssss'],
     'Query the [5S](<https://conwaylife.com/forums/viewtopic.php?t=2892>) database.',
     [
-        optionalArg('rulespace', rulespaceValidator, `The rulespace to use, one of ${rulespaces.join('/')} (case insensitive, default 'int')`, 'int'),
+        optionalArg('rulespace', rulespaceValidator, `The rulespace to use, one of ${RULESPACES.join('/')} (case insensitive, default 'int')`, 'int'),
         requiredRestArg('speed', speedValidator, 'The speed to look up.'),
         optionArg('adjustables', ['a'], requiredArg('value', {name: 'yes, no, or only', value: ['yes', 'no', 'only']}, 'why are you seeing this message 😭'), `Whether to include adjustable spaceships (default 'yes'), allowed values are 'yes', 'no', and 'only' (which means only adjustable spaceships).).`),
     ],
     async args => {
-        let type = args.rulespace as Type;
+        let space = args.rulespace;
         let {dx, dy, period} = args.speed;
-        let resp = await fetch(`https://speedydelete.com/5s/api/get?type=${type}&dx=${dx}&dy=${dy}&period=${period}&adjustables=${args.adjustables ?? 'yes'}`);
+        let resp = await fetch(`https://speedydelete.com/5s/api/get?rulespace=${space}&dx=${dx}&dy=${dy}&period=${period}&adjustables=${args.adjustables ?? 'yes'}`);
         if (!resp.ok) {
             throw new BotError(`Server returned ${resp.status} ${resp.statusText}`);
         }
@@ -63,16 +61,13 @@ addCommand(
     '5sinfo', '5s', ['sssssinfo'],
     'Get information about the status of a [5S](<https://conwaylife.com/forums/viewtopic.php?t=2892>) rulespace.',
     [
-        optionalArg('rulespace', rulespaceValidator, `The rulespace to use, one of ${rulespaces.join('/')} (case insensitive, default 'int')`, 'int'),
+        optionalArg('rulespace', rulespaceValidator, `The rulespace to use, one of ${RULESPACES.join('/')} (case insensitive, default 'int')`, 'int'),
     ],
     async args => {
-        let type = args.rulespace.toLowerCase();
-        if (!rulespaces.includes(type)) {
-            throw new BotError(`Invalid rulespace: '${type}' (expected one of ${rulespaces.join('/')}, case insensitive)`);
-        }
-        let resp = await fetch(`https://speedydelete.com/5s/api/getcounts?type=${type}`);
+        let space = args.rulespace;
+        let resp = await fetch(`https://speedydelete.com/5s/api/getcounts?rulespace=${space}`);
         if (resp.ok) {
-            return {type: 'string', value: (await resp.text()).replaceAll('This rulespace', `The ${TYPE_NAMES[type as Type]} rulespace`)};
+            return {type: 'string', value: (await resp.text()).replaceAll('This rulespace', `The ${RULESPACE_NAMES[space]} rulespace`)};
         } else {
             throw new BotError(`Server returned ${resp.status} ${resp.statusText}`);
         }
