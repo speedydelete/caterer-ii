@@ -234,32 +234,32 @@ if (ME === 'bot') {
         }
     });
 
-    client.once('clientReady', async () => {
-        if (config.sssssChannel === undefined) {
-            return;
-        }
-        let channel = await client.channels.fetch(config.sssssChannel);
-        if (!channel || !channel.isTextBased() || channel instanceof PartialGroupDMChannel) {
-            return;
-        }
-        sssssChannel = channel;
-        setInterval(async () => {
-            try {
-                await check5S(channel);
-            } catch (error) {
-                let str: string;
-                if (error && typeof error === 'object' && 'stack' in error) {
-                    str = String(error.stack);
-                    if (str.length > 1900) {
-                        str = str.slice(0, 1900) + '... (truncated)';
-                    }
-                } else {
-                    str = String(error);
-                }
-                await channel.send('<@1253852708826386518>\n```' + str + '```');
-            }
-        }, 300000);
-    });
+    // client.once('clientReady', async () => {
+    //     if (config.sssssChannel === undefined) {
+    //         return;
+    //     }
+    //     let channel = await client.channels.fetch(config.sssssChannel);
+    //     if (!channel || !channel.isTextBased() || channel instanceof PartialGroupDMChannel) {
+    //         return;
+    //     }
+    //     sssssChannel = channel;
+    //     setInterval(async () => {
+    //         try {
+    //             await check5S(channel);
+    //         } catch (error) {
+    //             let str: string;
+    //             if (error && typeof error === 'object' && 'stack' in error) {
+    //                 str = String(error.stack);
+    //                 if (str.length > 1900) {
+    //                     str = str.slice(0, 1900) + '... (truncated)';
+    //                 }
+    //             } else {
+    //                 str = String(error);
+    //             }
+    //             await channel.send('<@1253852708826386518>\n```' + str + '```');
+    //         }
+    //     }, 300000);
+    // });
 
     client.login(config.token);
 
