@@ -119,7 +119,7 @@ function workerOnExit(code: number): void {
     workerAlive = false;
     let msg = `Worker exited with code ${code}`;
     console.log(`${msg}, restarting worker`);
-    workerHandleFatal(new BotError(`${msg}!`));
+    workerHandleFatal(new BotError(msg));
 }
 
 

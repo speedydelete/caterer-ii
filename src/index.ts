@@ -94,7 +94,7 @@ async function runCommand(msg: OmitPartialGroupDMChannel<_Message>): Promise<voi
                 content = `${error.name}: ${error.message}`;
             }
             previousMsgs.push([msg.id, await msg.reply({content, allowedMentions: {repliedUser: true, parse: []}})]);
-        } else if (error instanceof Error && (error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim.gif'` || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim_base.gif'`)) {
+        } else if (error instanceof Error && (error.message === 'Worker exited with code 1' || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim.gif'` || error.message === `ENOENT: no such file or directory, stat '/home/caterer/caterer-ii/sim_base.gif'`)) {
             previousMsgs.push([msg.id, await msg.reply({content: `${error.name}: ${error.message} (try running the command again!)`, allowedMentions: {repliedUser: true, parse: []}})]);
         } else if ((error instanceof DiscordAPIError && error.message.match(/Must be (2|4)000 or fewer in length/)) || (error instanceof Error && error.message === 'Received one or more errors' && typeof error.stack === 'string' && error.stack.toLowerCase().includes('sapphire'))) {
             previousMsgs.push([msg.id, await msg.reply({content: 'Error: Message too long!', allowedMentions: {repliedUser: true, parse: []}})]);
