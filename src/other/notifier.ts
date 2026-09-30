@@ -53,7 +53,7 @@ function formatShips(category: 'speed' | 'period', changeType: 'new' | 'improved
                 str = `${speed} (${value[1]} cell${value[1] === 1 ? '' : 's'})`;
             }
         }
-        if (shipIsOptimal(space, {pop: value[2] ?? value[1], dx, dy, period, rle: '', rule: ''})) {
+        if (shipIsOptimal(space, {pop: value[1], dx, dy, period, rle: '', rule: ''})) {
             str = `**${str}**`;
         }
         out.push(str);
