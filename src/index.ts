@@ -1,5 +1,5 @@
 
-import {DiscordAPIError, GatewayIntentBits, MessageReplyOptions, Message as _Message, PartialGroupDMChannel, OmitPartialGroupDMChannel, TextBasedChannel, Partials, Client} from 'discord.js';
+import {DiscordAPIError, GatewayIntentBits, MessageReplyOptions, Message as _Message, PartialGroupDMChannel, OmitPartialGroupDMChannel, TextBasedChannel, Partials, ActivityType, Client} from 'discord.js';
 import {LifewebError} from '../lifeweb/lib/index.js';
 
 import {IS_TESTING, ME, BotError, Message, internalRunTextCommand, config} from './base.js';
@@ -238,6 +238,7 @@ if (ME === 'bot') {
     });
 
     client.once('clientReady', async () => {
+        client.user.setActivity(`B3/S23`, {type: ActivityType.Playing});
         if (config.sssssChannel === undefined) {
             return;
         }
