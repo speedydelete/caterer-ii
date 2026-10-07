@@ -17,7 +17,7 @@ import './commands/secret.js';
 import './commands/wordle.js';
 import './commands/msg.js';
 
-import './other/starboard.js';
+import {starboardChannels} from './other/starboard.js';
 import {check5S} from './other/notifier.js';
 
 
@@ -210,10 +210,12 @@ if (ME === 'bot') {
                 return;
             }
         }
-        for (let admin of config.admins) {
-            if (data.users.cache.has(admin)) {
-                msg.delete();
-                return;
+        if (!Object.values(starboardChannels).some(id => msg.channel.id)) {
+            for (let admin of config.admins) {
+                if (data.users.cache.has(admin)) {
+                    msg.delete();
+                    return;
+                }
             }
         }
         if (msg.author?.id === client.user?.id && msg.reference) {
