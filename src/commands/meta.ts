@@ -249,6 +249,9 @@ addCommand(
         if (!code.includes(';')) {
             code = code + ';';
         }
+        if (!code.includes('return')) {
+            code += `\nreturn;`;
+        }
         if (!code.includes('fn none main')) {
             code = `fn none main() {${code}}`;
         }
@@ -256,7 +259,9 @@ addCommand(
         await writeFile('eval.coda', code);
         let out = '';
         let data = spawnSync(resolvePath('coda/codac'), [resolvePath(`eval.coda`)], {stdio: 'pipe'});
-        out = addOutput(out, data);
+        if (data?.stderr?.length > 0) {
+            out += data.stderr.toString();
+        }
         if (data.status === 0) {
             let data = spawnSync('as', [resolvePath(`a.s`)], {stdio: 'pipe'});
             out = addOutput(out, data);
