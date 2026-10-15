@@ -160,6 +160,7 @@ function parseEvalCode(code: string): string {
         }
         code = code.slice(index + 1);
     }
+    code = code.trim();
     return code;
 }
 
@@ -246,11 +247,14 @@ addCommand(
         }
         let code = parseEvalCode(args.rawArgs);
         code = CEVAL_PREFIX + code;
+        if (!code.includes(';')) {
+            code = code + ';';
+        }
         if (!code.includes('fn main')) {
             code = `fn none main() {${code}}`;
         }
         await writeFile('eval.coda', code);
-        let out = '```ansi\n';
+        let out = '';
         let data = spawnSync(resolvePath('coda/codac'), [resolvePath(`eval.coda`)], {stdio: 'pipe'});
         out = addOutput(out, data);
         if (data.status === 0) {
@@ -261,7 +265,10 @@ addCommand(
                 out = addOutput(out, data);
             }
         }
-        out += '```';
+        if (out.length === 0) {
+            out = 'No output';
+        }
+        out = '```ansi\n' + out + '```';
         return {type: 'string', value: out};
     },
     {
