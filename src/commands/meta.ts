@@ -1,5 +1,6 @@
 
 import {inspect} from 'node:util';
+import {spawnSync} from 'node:child_process';
 
 import {Guild} from 'discord.js';
 import {Pattern} from '../../lifeweb/lib/index.js';
@@ -7,7 +8,7 @@ import * as lifeweb from '../../lifeweb/lib/index.js';
 import * as lifewebRPF from '../../lifeweb/lib/editor/rpf.js';
 import * as lifewebRuleSymmetries from '../../lifeweb/lib/rule_symmetries/index.js';
 
-import {BotError, readFile, writeFile, sentByOwner, aliases, findPatternInChannel, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandIsProtected, possiblyNonexistentCommandValidator, resolvedCommandValidator, createEmbed} from '../base.js';
+import {BotError, resolvePath, readFile, writeFile, sentByOwner, aliases, findPatternInChannel, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandIsProtected, possiblyNonexistentCommandValidator, resolvedCommandValidator, createEmbed} from '../base.js';
 import {aclData, saveACLs, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses, aclIsProtected} from '../acl.js';
 import {client} from '../index.js';
 
@@ -133,18 +134,18 @@ addCommand(
     },
 );
 
-
-const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\nlet {' + Object.keys(lifewebRuleSymmetries).join(', ') + '} = lifewebRuleSymmetries;\n';
-
-addCommand(
-    'eval', 'meta', [],
-    `Evaluates JavaScript code.`,
-    [],
-    async args => {
-        if (args.msg.author.id !== '1253852708826386518') {
-            throw new BotError('You are not speedydelete');
+function parseEvalCode(code: string): string {
+    if (code.includes('```')) {
+        code = code.slice(code.indexOf('```') + 3);
+        if (!code.includes('\n')) {
+            throw new BotError(`Invalid code block`);
         }
-        let code = args.rawArgs;
+        code = code.slice(code.indexOf('\n') + 1);
+        if (!code.includes('```')) {
+            throw new BotError(`Invalid code block`);
+        }
+        code = code.slice(0, code.lastIndexOf('```'));
+    } else {
         let index = code.indexOf(' ');
         let index2 = code.indexOf('\n');
         if (index === -1) {
@@ -158,6 +159,21 @@ addCommand(
             }
         }
         code = code.slice(index + 1);
+    }
+    return code;
+}
+
+const EVAL_PREFIX = '\nlet {' + Object.keys(lifeweb).join(', ') + '} = lifeweb;\nlet {' + Object.keys(lifewebRPF).join(', ') + '} = lifewebRPF;\nlet {' + Object.keys(lifewebRuleSymmetries).join(', ') + '} = lifewebRuleSymmetries;\n';
+
+addCommand(
+    'eval', 'meta', [],
+    `Evaluates JavaScript code.`,
+    [],
+    async args => {
+        if (args.msg.author.id !== '1253852708826386518') {
+            throw new BotError('You are not speedydelete');
+        }
+        let code = parseEvalCode(args.rawArgs);
         if (!code.includes(';') && !code.includes('\n')) {
             code = 'return ' + code;
         }
@@ -178,6 +194,63 @@ addCommand(
                 breakLength: 120,
             }).replaceAll('\x1b[22m', '\x1b[0m').replaceAll('\x1b[39m', '\x1b[0m') + '\n```'};
         }
+    },
+    {
+        protected: true,
+        sendTyping: true,
+        noArgParse: true,
+        noPipe: true,
+    },
+);
+
+const CEVAL_PREFIX = `
+    include std;
+    include std::algorithm : _;
+    include std::allocator : _;
+    include std::collections : _;
+    include std::constraints : _;
+    include std::debug : _;
+    include std::fmt : _;
+    include std::fs : _;
+    include std::io : _;
+    include std::log : _;
+    include std::mem : _;
+    include std::net : _;
+    include std::path : _;
+    include std::process : _;
+    include std::result : _;
+    include std::string : _;
+    include std::system : _;
+    include std::time : _;
+    include std::prelude : _;
+`.trim().split('\n').map(line => line.trim()).join(' ');
+
+addCommand(
+    'ceval', 'meta', [],
+    `Evaluates Coda code`,
+    [],
+    async args => {
+        if (args.msg.author.id !== '1253852708826386518') {
+            throw new BotError('You are not speedydelete');
+        }
+        let code = parseEvalCode(args.rawArgs);
+        code = CEVAL_PREFIX + code;
+        if (!code.includes('fn main')) {
+            code = `fn main() {${code}}`;
+        }
+        await writeFile('eval.coda', code);
+        let data = spawnSync(`codac '${resolvePath(`eval.coda`)}'`);
+        let out = '```ansi\n';
+        if (data.stdout.length > 0) {
+            out += data.stdout.toString();
+            if (data.stderr.length > 0) {
+                out += '\n' + data.stderr.toString();
+            }
+        } else if (data.stderr.length > 0) {
+            out += data.stderr.toString();
+        }
+        out += '```';
+        return {type: 'string', value: out};
     },
     {
         protected: true,
