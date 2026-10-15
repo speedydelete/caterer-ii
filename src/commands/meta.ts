@@ -239,7 +239,7 @@ addCommand(
             code = `fn main() {${code}}`;
         }
         await writeFile('eval.coda', code);
-        let data = spawnSync(`codac '${resolvePath(`eval.coda`)}'`);
+        let data = spawnSync(`codac '${resolvePath(`eval.coda`)}'`, {stdio: 'pipe'});
         let out = '```ansi\n';
         if (data.stdout.length > 0) {
             out += data.stdout.toString();
