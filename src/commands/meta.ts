@@ -204,7 +204,6 @@ addCommand(
 );
 
 const CEVAL_PREFIX = `
-    include std;
     include std::algorithm : _;
     include std::allocator : _;
     include std::collections : _;
@@ -225,6 +224,18 @@ const CEVAL_PREFIX = `
     include std::prelude : _;
 `.trim().split('\n').map(line => line.trim()).join(' ');
 
+function addOutput(out: string, data: ReturnType<typeof spawnSync>): string {
+    if (data?.stdout?.length > 0) {
+        out += data.stdout.toString();
+        if (data.stderr.length > 0) {
+            out += '\n' + data.stderr.toString();
+        }
+    } else if (data?.stderr?.length > 0) {
+        out += data.stderr.toString();
+    }
+    return out;
+}
+
 addCommand(
     'ceval', 'meta', [],
     `Evaluates Coda code`,
@@ -236,39 +247,18 @@ addCommand(
         let code = parseEvalCode(args.rawArgs);
         code = CEVAL_PREFIX + code;
         if (!code.includes('fn main')) {
-            code = `fn main() {${code}}`;
+            code = `fn none main() {${code}}`;
         }
         await writeFile('eval.coda', code);
         let out = '```ansi\n';
         let data = spawnSync(resolvePath('coda/codac'), [resolvePath(`eval.coda`)], {stdio: 'pipe'});
-        if (data.stdout.length > 0) {
-            out += data.stdout.toString();
-            if (data.stderr.length > 0) {
-                out += '\n' + data.stderr.toString();
-            }
-        } else if (data.stderr.length > 0) {
-            out += data.stderr.toString();
-        }
+        out = addOutput(out, data);
         if (data.status === 0) {
             let data = spawnSync('as', [resolvePath(`a.s`)], {stdio: 'pipe'});
-            if (data.stdout.length > 0) {
-                out += data.stdout.toString();
-                if (data.stderr.length > 0) {
-                    out += '\n' + data.stderr.toString();
-                }
-            } else if (data.stderr.length > 0) {
-                out += data.stderr.toString();
-            }
+            out = addOutput(out, data);
             if (data.status === 0) {
                 let data = spawnSync(resolvePath('a.out'), [], {stdio: 'pipe'});
-                if (data.stdout.length > 0) {
-                    out += data.stdout.toString();
-                    if (data.stderr.length > 0) {
-                        out += '\n' + data.stderr.toString();
-                    }
-                } else if (data.stderr.length > 0) {
-                    out += data.stderr.toString();
-                }
+                out = addOutput(out, data);
             }
         }
         out += '```';
