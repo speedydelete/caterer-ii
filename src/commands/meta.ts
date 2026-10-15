@@ -204,24 +204,24 @@ addCommand(
 );
 
 const CEVAL_PREFIX = `
-    include std::algorithm : _;
-    include std::allocator : _;
-    include std::collections : _;
-    include std::constraints : _;
-    include std::debug : _;
-    include std::fmt : _;
-    include std::fs : _;
-    include std::io : _;
-    include std::log : _;
-    include std::mem : _;
-    include std::net : _;
-    include std::path : _;
-    include std::process : _;
-    include std::result : _;
-    include std::string : _;
-    include std::system : _;
-    include std::time : _;
-    include std::prelude : _;
+    // include std::algorithm : _;
+    // include std::allocator : _;
+    // include std::collections : _;
+    // include std::constraints : _;
+    // include std::debug : _;
+    // include std::fmt : _;
+    // include std::fs : _;
+    // include std::io : _;
+    // include std::log : _;
+    // include std::mem : _;
+    // include std::net : _;
+    // include std::path : _;
+    // include std::process : _;
+    // include std::result : _;
+    // include std::string : _;
+    // include std::system : _;
+    // include std::time : _;
+    // include std::prelude : _;
 `.trim().split('\n').map(line => line.trim()).join(' ');
 
 function addOutput(out: string, data: ReturnType<typeof spawnSync>): string {
