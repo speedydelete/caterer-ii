@@ -246,13 +246,13 @@ addCommand(
             throw new BotError('You are not speedydelete');
         }
         let code = parseEvalCode(args.rawArgs);
-        code = CEVAL_PREFIX + code;
         if (!code.includes(';')) {
             code = code + ';';
         }
-        if (!code.includes('fn main')) {
+        if (!code.includes('fn none main')) {
             code = `fn none main() {${code}}`;
         }
+        code = CEVAL_PREFIX + code;
         await writeFile('eval.coda', code);
         let out = '';
         let data = spawnSync(resolvePath('coda/codac'), [resolvePath(`eval.coda`)], {stdio: 'pipe'});
