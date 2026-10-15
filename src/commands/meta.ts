@@ -239,8 +239,8 @@ addCommand(
             code = `fn main() {${code}}`;
         }
         await writeFile('eval.coda', code);
-        let data = spawnSync(resolvePath('coda/codac'), [resolvePath(`eval.coda`)], {stdio: 'pipe'});
         let out = '```ansi\n';
+        let data = spawnSync(resolvePath('coda/codac'), [resolvePath(`eval.coda`)], {stdio: 'pipe'});
         if (data.stdout.length > 0) {
             out += data.stdout.toString();
             if (data.stderr.length > 0) {
@@ -248,6 +248,28 @@ addCommand(
             }
         } else if (data.stderr.length > 0) {
             out += data.stderr.toString();
+        }
+        if (data.status === 0) {
+            let data = spawnSync('as', [resolvePath(`a.s`)], {stdio: 'pipe'});
+            if (data.stdout.length > 0) {
+                out += data.stdout.toString();
+                if (data.stderr.length > 0) {
+                    out += '\n' + data.stderr.toString();
+                }
+            } else if (data.stderr.length > 0) {
+                out += data.stderr.toString();
+            }
+            if (data.status === 0) {
+                let data = spawnSync(resolvePath('a.out'), [], {stdio: 'pipe'});
+                if (data.stdout.length > 0) {
+                    out += data.stdout.toString();
+                    if (data.stderr.length > 0) {
+                        out += '\n' + data.stderr.toString();
+                    }
+                } else if (data.stderr.length > 0) {
+                    out += data.stderr.toString();
+                }
+            }
         }
         out += '```';
         return {type: 'string', value: out};
