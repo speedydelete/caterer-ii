@@ -596,7 +596,7 @@ function kebabToCamel(str: string): string {
     return out;
 }
 
-async function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): Promise<string | number | boolean> {
+async function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): Promise<any> {
     if (type === 'string') {
         return value;
     } else if (type === 'number') {
@@ -858,6 +858,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
             out[cmd.patternArg.name] = data;
         }
     }
+    console.log(out);
 }
 
 async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, willBePiped: boolean, patternToUse?: Pattern, extraArgs?: string): Promise<Response> {
