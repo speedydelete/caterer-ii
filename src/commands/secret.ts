@@ -41,85 +41,6 @@ addCommand(
 );
 
 
-function getChannel(msg: Message, args: string[]): [TextBasedChannel & {guild: Guild}, string[]] {
-    let guildName = args[0];
-    if (guildName === 'here') {
-        return [msg.channel as TextBasedChannel & {guild: Guild}, args.slice(1)];
-    }
-    if (!(guildName in config.serverNames)) {
-        throw new BotError(`Invalid server: '${guildName}'`);
-    }
-    let guild = client.guilds.cache.get(config.serverNames[guildName]);
-    if (!guild) {
-        throw new BotError(`Invalid server: '${guildName}'`);
-    }
-    let channelName = args[1];
-    for (let channel of guild.channels.cache.values()) {
-        if (channel.name === channelName && channel.isTextBased()) {
-            return [channel, args.slice(2)];
-        }
-    }
-    throw new BotError(`Nonexistent channel: '${channelName}'`);
-}
-
-addCommand(
-    'say', 'secret', [],
-    `Send a message.`,
-    [],
-    async args => {
-        let msg = args.msg;
-        let argv = args.argv.slice(1);
-        let deleteAfter = argv[0] === '-iq';
-        if (deleteAfter) {
-            argv = argv.slice(1);
-        }
-        if (msg.reference && msg.reference.type === 0) {
-            let replyTo = await msg.fetchReference();
-            await replyTo.reply(argv.join(' '));
-        } else {
-            let [channel, toSend] = getChannel(msg, argv);
-            if (channel.isSendable()) {
-                await channel.send(toSend.join(' '));
-            } else {
-                throw new BotError(`Cannot send in channel`);
-            }
-        }
-        if (deleteAfter && msg.deletable) {
-            await msg.delete();
-        }
-    },
-    {
-        noArgParse: true,
-    },
-);
-
-addCommand(
-    'edit', 'secret', [],
-    `Edit a message.`,
-    [],
-    async args => {
-        let msg = args.msg;
-        let argv = args.argv.slice(1);
-        let deleteAfter = argv[0] === '-iq';
-        if (deleteAfter) {
-            argv = argv.slice(1);
-        }
-        if (msg.reference) {
-            (await msg.fetchReference()).edit(argv.join(' '));
-        } else {
-            let [channel, args] = getChannel(msg, argv);
-            let toEdit = await channel.messages.fetch(args[0]);
-            toEdit.edit(args.slice(1).join(' '));
-        }
-        if (deleteAfter && msg.deletable) {
-            await msg.delete();
-        }
-    },
-    {
-        noArgParse: true,
-    },
-);
-
 addCommand(
     'react', 'secret', [],
     `React to a message and unreact after 30 seconds, so you can react to it before it unreacts for NQN!`,
@@ -131,16 +52,14 @@ addCommand(
         if (deleteAfter) {
             argv = argv.slice(1);
         }
-        let toReact: Message;
-        let emoji: string;
-        if (msg.reference) {
-            toReact = await msg.fetchReference();
-            emoji = argv[0];
-        } else {
-            let [channel, args] = getChannel(msg, argv);
-            toReact = await channel.messages.fetch(args[0]) as Message;
-            emoji = args.slice(1).join(' ');
+        if (!msg.reference) {
+            throw new Error(`!react must be used as a reply`);
         }
+        if (argv.length > 1) {
+            throw new Error(`Too many arguments provided to !react`);
+        }
+        let toReact = await msg.fetchReference();
+        let emoji = argv[0];
         let out: string;
         let match: RegExpMatchArray | null;
         if (match = emoji.match(/^<(a?):([a-zA-Z0-9_]+):(\d+)>$/)) {

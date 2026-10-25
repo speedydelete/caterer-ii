@@ -1,10 +1,11 @@
 
-import {DiscordAPIError, ColorResolvable, EmbedBuilder, MessageReferenceType, MessageCreateOptions, Message as _Message} from 'discord.js';
+import {DiscordAPIError, ColorResolvable, EmbedBuilder, MessageReferenceType, MessageCreateOptions, Message as _Message, GuildBasedChannel, Guild} from 'discord.js';
 import {Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
 import {RPFPattern, RPFParser} from '../lifeweb/lib/editor/rpf.js';
 
 import {ME, BotError, Message, readFile, writeFile} from './real_base.js';
 import {aclData, matchesACL} from './acl.js';
+import {client} from './index.js';
 
 export * from './ipc_and_error_setup.js';
 export * from './real_base.js';
@@ -141,7 +142,8 @@ export const CATEGORY_NAMES: {[K in CommandCategory]: string} = {
 };
 
 
-export type ValidatorResult<T> = {isError: false, value: T} | {isError: true, name: string, reason?: string};
+export type NonPromiseValidatorResult<T> = {isError: false, value: T} | {isError: true, name: string, reason?: string};
+export type ValidatorResult<T> = NonPromiseValidatorResult<T> | Promise<NonPromiseValidatorResult<T>>;
 export type Validator<T = any> = (arg: string) => ValidatorResult<T>;
 
 export type SingleArgType = 
@@ -468,29 +470,90 @@ export function commandIsProtected(cmd: string): boolean {
 }
 
 
-export function commandValidator(cmd: string): ValidatorResult<string> {
-    cmd = normalizeCommand(cmd);
-    let out = resolveCommand(cmd);
+export function commandValidator(arg: string): ValidatorResult<string> {
+    arg = normalizeCommand(arg);
+    let out = resolveCommand(arg);
     if (!out) {
-        return {isError: true, name: 'command', reason: 'does not exist'};
+        return {isError: true, name: 'command', reason: `does not exist`};
     }
     return {isError: false, value: out};
 }
 
-export function possiblyNonexistentCommandValidator(cmd: string): ValidatorResult<string | false> {
-    return {isError: false, value: resolveCommand(normalizeCommand(cmd))};
+export function possiblyNonexistentCommandValidator(arg: string): ValidatorResult<string | false> {
+    return {isError: false, value: resolveCommand(normalizeCommand(arg))};
 }
 
-
-export function resolvedCommandValidator(cmd: string): ValidatorResult<string> {
-    if (!(cmd in COMMANDS)) {
-        return {isError: true, name: 'command', reason: 'does not exist'};
+export function resolvedCommandValidator(arg: string): ValidatorResult<string> {
+    if (!(arg in COMMANDS)) {
+        return {isError: true, name: 'command', reason: `does not exist`};
     }
-    if (COMMANDS[cmd].name !== cmd) {
-        return {isError: true, name: 'command', reason: `is an alias for \`${COMMANDS[cmd].name}\``};
+    if (COMMANDS[arg].name !== arg) {
+        return {isError: true, name: 'command', reason: `is an alias for \`${COMMANDS[arg].name}\``};
     }
-    return {isError: false, value: cmd};
+    return {isError: false, value: arg};
 }
+
+export async function channelLinkValidator(arg: string): Promise<NonPromiseValidatorResult<GuildBasedChannel>> {
+    let match = arg.match(/^https:\/\/discord\.com\/channels\/(\d+)\/(\d+)/);
+    if (!match) {
+        return {isError: true, name: 'channel link', reason: `invalid link`};
+    }
+    let serverID = match[1];
+    let channelID = match[2];
+    let server: Guild;
+    try {
+        server = await client.guilds.fetch(serverID);
+    } catch (error) {
+        if (error instanceof DiscordAPIError) {
+            return {isError: true, name: 'channel link', reason: `server does not exist or cannot be accessed`};
+        } else {
+            throw error;
+        }
+    }
+    let channel = await server.channels.fetch(channelID);
+    if (channel === null) {
+        return {isError: true, name: 'channel link', reason: `channel does not exist or cannot be accessed`};
+    }
+    return {isError: false, value: channel};
+}
+
+export async function messageLinkValidator(arg: string): Promise<NonPromiseValidatorResult<Message>> {
+    let match = arg.match(/^https:\/\/discord\.com\/channels\/(\d+)\/(\d+)\/(\d+)/);
+    if (!match) {
+        return {isError: true, name: 'channel link', reason: `invalid link`};
+    }
+    let serverID = match[1];
+    let channelID = match[2];
+    let messageID = match[3];
+    let server: Guild;
+    try {
+        server = await client.guilds.fetch(serverID);
+    } catch (error) {
+        if (error instanceof DiscordAPIError) {
+            return {isError: true, name: 'message link', reason: `server does not exist or cannot be accessed`};
+        } else {
+            throw error;
+        }
+    }
+    let channel = await server.channels.fetch(channelID);
+    if (channel === null) {
+        return {isError: true, name: 'message link', reason: `channel does not exist or cannot be accessed`};
+    }
+    if (!channel.isTextBased()) {
+        return {isError: true, name: 'message link', reason: `channel is not text-based`};
+    }
+    try {
+        let message = await channel.messages.fetch(messageID);
+        return {isError: false, value: message};
+    } catch (error) {
+        if (error instanceof DiscordAPIError) {
+            return {isError: true, name: 'message link', reason: `message does not exist`};
+        } else {
+            throw error;
+        }
+    }
+}
+
 
 
 export class ArgumentError extends BotError {
@@ -596,7 +659,7 @@ function kebabToCamel(str: string): string {
     return out;
 }
 
-function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): string | number | boolean {
+async function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): Promise<string | number | boolean> {
     if (type === 'string') {
         return value;
     } else if (type === 'number') {
@@ -614,7 +677,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
             throw new ArgumentError(`Invalid value '${value}' for argument '${arg.name}' (expected boolean)`);
         }
     } else if (typeof type === 'function') {
-        let result = type(value);
+        let result = await type(value);
         if (result.isError) {
             let msg = `Invalid value '${value}' for argument ${arg.name}`;
             if (result.reason !== undefined) {
@@ -658,7 +721,7 @@ function validate<T extends SingleArgType>(value: string, arg: Arg, type: T): st
     }
 }
 
-function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: number, posArgsPos: number): {pos: number, posArgsPos: number} {
+async function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos: number, posArgsPos: number): Promise<{pos: number, posArgsPos: number}> {
     for (; pos < argv.length; pos++) {
         if (argv[pos][1]) {
             return {pos: pos, posArgsPos};
@@ -760,7 +823,7 @@ function parseMultiFlagArg(out: ParsedArgs, cmd: BasicCommand, value: string, fl
     }
 }
 
-function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: number, option: string, rawOption: string, mustBeFlag: boolean, flagValue: boolean): number {
+async function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: number, option: string, rawOption: string, mustBeFlag: boolean, flagValue: boolean): Promise<number> {
     let foundArg: OptionArg | undefined = undefined;
     for (let arg of cmd.optionArgs) {
         if (arg.name === option || arg.aliases.includes(option)) {
@@ -780,7 +843,7 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
         pos++;
         let result: ParsedArgs<PosArg[]> = {};
         let argArgs = 'arg' in arg ? [arg.arg] : arg.args;
-        let data = parsePosArgs(result, argArgs, argv, pos, 0);
+        let data = await parsePosArgs(result, argArgs, argv, pos, 0);
         pos = data.pos;
         if ('arg' in arg) {
             out[kebabToCamel(arg.name)] = result[arg.arg.name];
@@ -797,12 +860,12 @@ function parseOptionArg(out: ParsedArgs, cmd: BasicCommand, argv: Argv, pos: num
     return pos;
 }
 
-async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv: Argv, nestLevel: number, useThisPattern?: Pattern): Promise<void> {
+async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv: Argv, nestLevel: number, patternToUse?: Pattern): Promise<void> {
     let posArgsPos = 0;
     for (let pos = nestLevel + 1; pos < argv.length; pos++) {
         let [value, isFlag] = argv[pos];
         if (!isFlag) {
-            let data = parsePosArgs(out, cmd.posArgs, argv, pos, posArgsPos);
+            let data = await parsePosArgs(out, cmd.posArgs, argv, pos, posArgsPos);
             pos = data.pos - 1;
             posArgsPos = data.posArgsPos;
         } else if (value === '-' || value === '--') {
@@ -834,7 +897,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
             }
             pos++;
             console.log(pos, argv.slice(pos), 'parsing option arg');
-            pos = parseOptionArg(out, cmd, argv, pos, option, value, mustBeFlag, flagValue) - 1;
+            pos = await parseOptionArg(out, cmd, argv, pos, option, value, mustBeFlag, flagValue) - 1;
         }
     }
     afterPosArgsParsed(out, cmd.posArgs);
@@ -848,8 +911,8 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
     }
     // add the pattern arg
     if (cmd.patternArg && !out[cmd.patternArg.name]) {
-        if (useThisPattern) {
-            out[cmd.patternArg.name] = {p: useThisPattern, msg, msgInChannel: msg};
+        if (patternToUse) {
+            out[cmd.patternArg.name] = {p: patternToUse, msg, msgInChannel: msg};
         } else {
             let data = await findPatternInChannel(msg);
             if (data === undefined) {
@@ -860,7 +923,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
     }
 }
 
-async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, willBePiped: boolean, useThisPattern?: Pattern, extraArgs?: string): Promise<Response> {
+async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, willBePiped: boolean, patternToUse?: Pattern, extraArgs?: string): Promise<Response> {
     if (!matchesACL(msg, aclData.commands[cmd.name], !commandIsProtected(cmd.name))) {
         return {type: 'string', value: 'Error: You do not have permission to run this command'};
     }
@@ -873,16 +936,16 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
         if (!(subCmd in COMMANDS)) {
             throw new ArgumentError(`Nonexistent subcommand: '${rawSubCmd}'`);
         }
-        return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, willBePiped, useThisPattern);
+        return await _internalRunTextCommand(msg, COMMANDS[subCmd], rawArgs, argv, nestLevel + 1, willBePiped, patternToUse);
     }
     if (cmd.noArgvParse) {
         argv = parseArgv(rawArgs, true);
     }
-    if (!cmd.patternArg && useThisPattern) {
+    if (!cmd.patternArg && patternToUse) {
         if (extraArgs === undefined) {
             extraArgs = '';
         } 
-        extraArgs += useThisPattern.toRLE();
+        extraArgs += patternToUse.toRLE();
     }
     if (extraArgs !== undefined) {
         let parsedExtra = parseArgv(extraArgs, cmd.noArgvParse);
@@ -909,7 +972,7 @@ async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: stri
     }
     let args: ParsedArgs = {};
     if (!cmd.noArgParse) {
-        await parseArgs(args, cmd, msg, argv, nestLevel, useThisPattern);
+        await parseArgs(args, cmd, msg, argv, nestLevel, patternToUse);
     }
     if (cmd.sendTyping) {
         try {

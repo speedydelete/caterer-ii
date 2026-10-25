@@ -2,7 +2,6 @@
 import {inspect} from 'node:util';
 import {spawnSync} from 'node:child_process';
 
-import {Guild} from 'discord.js';
 import {Pattern} from '../../lifeweb/lib/index.js';
 import * as lifeweb from '../../lifeweb/lib/index.js';
 import * as lifewebRPF from '../../lifeweb/lib/editor/rpf.js';
@@ -72,7 +71,7 @@ function formatArgUsage(arg: Exclude<Arg, PatternArg>): string {
         }
         out = `[${str}]`;
     } else {
-        throw new Error(`This error should not occur (invalid argument type: '${(arg as Arg).kind}')`);
+        throw new Error(`This error should not occur (invalid argument type)`);
     }
     return out;
 }
@@ -355,10 +354,10 @@ addCommand(
         requiredRestArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation.'),
     ],
     async args => {
-        let parsed = await parseACL(args.value, args.msg.guild as Guild);
         if (aclIsProtected(args.acl) && !sentByOwner(args.msg)) {
             throw new BotError(`Only owners can modify protected ACLs`);
         }
+        let parsed = await parseACL(args.value, args.msg.guild);
         aclData.acls[args.acl] = parsed;
         await saveACLs();
         return {type: 'string', value: 'ACL set!'};
@@ -455,10 +454,10 @@ addCommand(
         requiredRestArg('value', 'string', 'The ACL expression to set it to, see help for !acl for an explanation.'),
     ],
     async args => {
-        let parsed = await parseACL(args.value, args.msg.guild as Guild);
         if (commandIsProtected(args.command) && !sentByOwner(args.msg)) {
             throw new BotError(`Only owners can modify protected commands`);
         }
+        let parsed = await parseACL(args.value, args.msg.guild);
         aclData.commands[args.command] = parsed;
         await saveACLs();
         return {type: 'string', value: 'Command ACL set!'};

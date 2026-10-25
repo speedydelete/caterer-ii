@@ -17,7 +17,6 @@ import './commands/secret.js';
 import './commands/wordle.js';
 import './commands/msg.js';
 
-import {starboardChannels} from './other/starboard.js';
 import {check5S} from './other/notifier.js';
 
 
