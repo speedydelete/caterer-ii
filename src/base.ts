@@ -682,7 +682,7 @@ async function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos:
                 throw new ArgumentError(`Empty value provided for required argument '${arg.name}'`);
             }
             if (arg.kind === 'required-variadic' || arg.kind === 'optional-variadic') {
-                out[kebabToCamel(arg.name)] = Promise.all(found.map(value => validate(value, arg, arg.type)));
+                out[kebabToCamel(arg.name)] = await Promise.all(found.map(value => validate(value, arg, arg.type)));
             } else {
                 out[kebabToCamel(arg.name)] = await validate(found.join(' '), arg, arg.type);
             }
@@ -702,7 +702,7 @@ async function parsePosArgs(out: ParsedArgs, posArgs: PosArg[], argv: Argv, pos:
                     }
                     throw new ArgumentError(`Not enough values provided for argument '${arg.name}' (expected ${type.length}, got ${got})`);
                 }
-                out[kebabToCamel(arg.name)] = Promise.all(found.map((value, i) => validate(value[0], arg, type[i])));
+                out[kebabToCamel(arg.name)] = await Promise.all(found.map((value, i) => validate(value[0], arg, type[i])));
                 pos += type.length - 1;
             } else {
                 out[kebabToCamel(arg.name)] = await validate(argv[pos][0], arg, type);
