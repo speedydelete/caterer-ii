@@ -97,6 +97,9 @@ addCommand(
         } else {
             let cmdName = args.command;
             let cmd = COMMANDS[cmdName];
+            if (cmd === undefined) {
+                throw new BotError(`That command does not exist (resolved to '${cmdName}')`);
+            }
             let title = `\`${cmdName}\` command documentation`;
             let desc = '';
             if (cmd.aliases.length > 0) {
