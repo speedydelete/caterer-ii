@@ -1,7 +1,7 @@
 
-import {Message as _Message, Guild, TextBasedChannel} from 'discord.js';
+import {Message as _Message} from 'discord.js';
 
-import {BotError, Message, addCommand, config} from '../base.js';
+import {BotError, Message, addCommand} from '../base.js';
 import {client} from '../index.js';
 
 

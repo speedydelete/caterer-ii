@@ -493,68 +493,6 @@ export function resolvedCommandValidator(arg: string): ValidatorResult<string> {
     return {isError: false, value: arg};
 }
 
-export async function channelLinkValidator(arg: string): Promise<NonPromiseValidatorResult<GuildBasedChannel>> {
-    let match = arg.match(/^https:\/\/discord\.com\/channels\/(\d+)\/(\d+)/);
-    if (!match) {
-        return {isError: true, name: 'channel link', reason: `invalid link`};
-    }
-    let serverID = match[1];
-    let channelID = match[2];
-    let server: Guild;
-    try {
-        server = await client.guilds.fetch(serverID);
-    } catch (error) {
-        if (error instanceof DiscordAPIError) {
-            return {isError: true, name: 'channel link', reason: `server does not exist or cannot be accessed`};
-        } else {
-            throw error;
-        }
-    }
-    let channel = await server.channels.fetch(channelID);
-    if (channel === null) {
-        return {isError: true, name: 'channel link', reason: `channel does not exist or cannot be accessed`};
-    }
-    return {isError: false, value: channel};
-}
-
-export async function messageLinkValidator(arg: string): Promise<NonPromiseValidatorResult<Message>> {
-    let match = arg.match(/^https:\/\/discord\.com\/channels\/(\d+)\/(\d+)\/(\d+)/);
-    if (!match) {
-        return {isError: true, name: 'channel link', reason: `invalid link`};
-    }
-    let serverID = match[1];
-    let channelID = match[2];
-    let messageID = match[3];
-    let server: Guild;
-    try {
-        server = await client.guilds.fetch(serverID);
-    } catch (error) {
-        if (error instanceof DiscordAPIError) {
-            return {isError: true, name: 'message link', reason: `server does not exist or cannot be accessed`};
-        } else {
-            throw error;
-        }
-    }
-    let channel = await server.channels.fetch(channelID);
-    if (channel === null) {
-        return {isError: true, name: 'message link', reason: `channel does not exist or cannot be accessed`};
-    }
-    if (!channel.isTextBased()) {
-        return {isError: true, name: 'message link', reason: `channel is not text-based`};
-    }
-    try {
-        let message = await channel.messages.fetch(messageID);
-        return {isError: false, value: message};
-    } catch (error) {
-        if (error instanceof DiscordAPIError) {
-            return {isError: true, name: 'message link', reason: `message does not exist`};
-        } else {
-            throw error;
-        }
-    }
-}
-
-
 
 export class ArgumentError extends BotError {
 

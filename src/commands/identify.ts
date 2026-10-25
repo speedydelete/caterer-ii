@@ -1,6 +1,5 @@
 
 import {EmbedBuilder} from 'discord.js';
-
 import {Pattern, Minmax, findMinmax, PatternType, identifyPeriodic, getApgcode, getDescription, ALTERNATE_SYMMETRIES, Identified, identify, toCatagolueRule} from '../../lifeweb/lib/index.js';
 
 import {requiredArg, optionalArg, flagArg, addCommand, createEmbed, patternArg} from '../base.js';

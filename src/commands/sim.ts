@@ -2,7 +2,7 @@
 import * as fs from 'node:fs/promises';
 import {execSync} from 'node:child_process';
 
-import {Pattern, TreePattern, HistoryPattern, SuperPattern, InvestigatorPattern, TorusPattern, identifyPeriodic, getDescription, INTSeparator, Separator, createPattern} from '../../lifeweb/lib/index.js';
+import {Pattern, TreePattern, HistoryPattern, SuperPattern, InvestigatorPattern, identifyPeriodic, getDescription, INTSeparator, Separator, createPattern} from '../../lifeweb/lib/index.js';
 
 import {BotError, resolvePath, readFile, writeFile, aliases, requiredArg, optionalArg, optionalVariadicArg, flagArg, patternArg, addCommand, createEmbed} from '../base.js';
 import {deserialize, registerWorkerTask} from '../worker.js';
