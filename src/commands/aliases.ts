@@ -47,6 +47,9 @@ addCommand(
         aliases[alias] = rule;
         await saveAliases();
         return {type: 'string', value: 'Alias set!'};
+    },
+    {
+        noArgParse: true,
     }
 );
 
@@ -92,6 +95,9 @@ addCommand(
         aliases[alias] = rule;
         await saveAliases();
         return {type: 'string', value: 'Alias changed!'};
+    },
+    {
+        noArgParse: true,
     }
 );
 
