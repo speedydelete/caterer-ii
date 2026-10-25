@@ -92,7 +92,7 @@ addCommand(
     },
     {
         protected: true,
-        noArgParse: true,
+        noArgvParse: true,
     },
 );
 
@@ -112,7 +112,7 @@ addCommand(
     },
     {
         protected: true,
-        noArgParse: true,
+        noArgvParse: true,
     },
 );
 
@@ -131,6 +131,5 @@ addCommand(
     },
     {
         protected: true,
-        noArgParse: true,
     },
 );
