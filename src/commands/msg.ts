@@ -23,7 +23,7 @@ export async function channelLinkValidator(arg: string): Promise<NonPromiseValid
         }
     }
     let channel = await server.channels.fetch(channelID);
-    if (channel === null) {
+    if (!channel) {
         return {isError: true, name: 'channel link', reason: `channel does not exist or cannot be accessed`};
     }
     return {isError: false, value: channel};
@@ -48,7 +48,7 @@ export async function messageLinkValidator(arg: string): Promise<NonPromiseValid
         }
     }
     let channel = await server.channels.fetch(channelID);
-    if (channel === null) {
+    if (!channel) {
         return {isError: true, name: 'message link', reason: `channel does not exist or cannot be accessed`};
     }
     if (!channel.isTextBased()) {

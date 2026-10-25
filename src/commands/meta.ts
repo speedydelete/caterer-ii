@@ -7,7 +7,7 @@ import * as lifeweb from '../../lifeweb/lib/index.js';
 import * as lifewebRPF from '../../lifeweb/lib/editor/rpf.js';
 import * as lifewebRuleSymmetries from '../../lifeweb/lib/rule_symmetries/index.js';
 
-import {BotError, resolvePath, readFile, writeFile, sentByOwner, aliases, findPatternInChannel, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, optionalArg, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandIsProtected, possiblyNonexistentCommandValidator, resolvedCommandValidator, createEmbed} from '../base.js';
+import {BotError, resolvePath, readFile, writeFile, sentByOwner, aliases, findPatternInChannel, CATEGORY_NAMES, PatternArg, Arg, requiredArg, requiredRestArg, COMMANDS, COMMANDS_BY_CATEGORY, addCommand, addSuperCommand, commandIsProtected, possiblyNonexistentCommandValidator, resolvedCommandValidator, createEmbed} from '../base.js';
 import {aclData, saveACLs, aclValidator, aclAndExistsValidator, parseACL, aclToString, getACLUses, aclIsProtected} from '../acl.js';
 import {client} from '../index.js';
 

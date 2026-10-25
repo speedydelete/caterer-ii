@@ -1,11 +1,10 @@
 
-import {DiscordAPIError, ColorResolvable, EmbedBuilder, MessageReferenceType, MessageCreateOptions, Message as _Message, GuildBasedChannel, Guild} from 'discord.js';
+import {DiscordAPIError, ColorResolvable, EmbedBuilder, MessageReferenceType, MessageCreateOptions, Message as _Message} from 'discord.js';
 import {Pattern, PLACEHOLDER_PATTERN, parse} from '../lifeweb/lib/index.js';
 import {RPFPattern, RPFParser} from '../lifeweb/lib/editor/rpf.js';
 
 import {ME, BotError, Message, readFile, writeFile} from './real_base.js';
 import {aclData, matchesACL} from './acl.js';
-import {client} from './index.js';
 
 export * from './ipc_and_error_setup.js';
 export * from './real_base.js';
