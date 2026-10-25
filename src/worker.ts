@@ -37,6 +37,7 @@ async function onMessage(data: BotToWorkerMessage): Promise<void> {
 }
 
 if (ME === 'worker') {
+    workerTaskFunctions = Object.create(null);
     if (!parentPort) {
         throw new Error('Worker is not being run as worker');
     }
