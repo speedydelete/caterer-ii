@@ -80,7 +80,7 @@ addCommand(
     'help', 'meta', [],
     `Display a help message.`,
     [
-        optionalArg('command', possiblyNonexistentCommandValidator, 'A command to display infomation for. If omitted, displays generic help/info message.'),
+        requiredRestArg('command', possiblyNonexistentCommandValidator, 'A command to display infomation for. If omitted, displays generic help/info message.'),
     ],
     async args => {
         if (args.command === undefined) {
