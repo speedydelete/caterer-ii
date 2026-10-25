@@ -210,14 +210,6 @@ if (ME === 'bot') {
                 return;
             }
         }
-        if (!Object.values(starboardChannels).some(id => msg.channel.id)) {
-            for (let admin of config.admins) {
-                if (data.users.cache.has(admin)) {
-                    msg.delete();
-                    return;
-                }
-            }
-        }
         if (msg.author?.id === client.user?.id && msg.reference) {
             try {
                 let id = (await data.message.fetchReference()).author.id;
