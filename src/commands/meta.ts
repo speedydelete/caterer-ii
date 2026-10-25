@@ -92,7 +92,7 @@ addCommand(
                 out.push(`* ${name}: ${COMMANDS_BY_CATEGORY[category].map(cmd => `\`${cmd.name}\``).join(', ')}`);
             }
             return {type: 'string', value: HELP_TEMPLATE.replace('$$$', out.join('\n'))};
-        } else if (args.command === false) {
+        } else if (args.command === false || !(args.command in COMMANDS)) {
             throw new BotError(`That command does not exist`);
         } else {
             let cmdName = args.command;
