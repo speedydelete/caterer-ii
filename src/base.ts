@@ -858,6 +858,7 @@ async function parseArgs(out: ParsedArgs, cmd: BasicCommand, msg: Message, argv:
             out[cmd.patternArg.name] = data;
         }
     }
+    console.log(out);
 }
 
 async function _internalRunTextCommand(msg: Message, cmd: Command, rawArgs: string, argv: Argv, nestLevel: number, willBePiped: boolean, patternToUse?: Pattern, extraArgs?: string): Promise<Response> {
